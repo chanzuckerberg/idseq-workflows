@@ -8,7 +8,7 @@ task RunValidateInput {
     String dag_branch
     String s3_wd_uri
     File fastqs_0
-    File fastqs_1
+    File? fastqs_1
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -444,7 +444,7 @@ workflow idseq_host_filter {
     String dag_branch
     String s3_wd_uri
     File fastqs_0
-    File fastqs_1
+    File? fastqs_1
   }
 
   call RunValidateInput {

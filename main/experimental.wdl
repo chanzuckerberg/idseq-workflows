@@ -138,7 +138,7 @@ task RunSRST2 {
     String dag_branch
     String s3_wd_uri
     File fastqs_0
-    File fastqs_1
+    File? fastqs_1
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -219,7 +219,7 @@ task NonhostFastq {
     String dag_branch
     String s3_wd_uri
     File fastqs_0
-    File fastqs_1
+    File? fastqs_1
     File nonhost_fasta_refined_taxid_annot_fasta
     File cdhitdup_clusters_dedup1_fa_clstr
     File deduped_fasta_dedup1_fa
@@ -268,7 +268,7 @@ workflow idseq_experimental {
     File contig_in_contig_stats_json
     File contig_in_contigs_fasta
     File fastqs_0
-    File fastqs_1
+    File? fastqs_1
     File nonhost_fasta_refined_taxid_annot_fasta
     File cdhitdup_clusters_dedup1_fa_clstr
     File deduped_fasta_dedup1_fa

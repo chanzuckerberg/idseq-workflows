@@ -13,7 +13,7 @@ task GenerateTaxidFasta {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -47,7 +47,7 @@ task GenerateTaxidLocator {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -108,7 +108,7 @@ task GenerateAlignmentViz {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -139,13 +139,12 @@ task RunSRST2 {
     String deployment_env
     String dag_branch
     String s3_wd_uri
-    File fastqs_0
-    File? fastqs_1
+    Array[File] fastqs
     String file_ext
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -153,7 +152,7 @@ task RunSRST2 {
     --step-module idseq_dag.steps.run_srst2 \
     --step-class PipelineStepRunSRST2 \
     --step-name srst2_out \
-    --input-files '[["~{fastqs_0}", "~{fastqs_1}"]]' \
+    --input-files '[["~{sep='","' fastqs}"]]' \
     --output-files '["out.log", "out__genes__ARGannot_r2__results.txt", "out__fullgenes__ARGannot_r2__results.txt", "amr_processed_results.csv", "amr_summary_results.csv", "output__.ARGannot_r2.sorted.bam"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{"resist_gene_db": "s3://idseq-database/amr/ARGannot_r2.fasta", "resist_genome_bed": "s3://idseq-database/amr/argannot_genome.bed"}' \
@@ -191,7 +190,7 @@ task GenerateCoverageViz {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -222,8 +221,7 @@ task NonhostFastq {
     String deployment_env
     String dag_branch
     String s3_wd_uri
-    File fastqs_0
-    File? fastqs_1
+    Array[File] fastqs
     File nonhost_fasta_refined_taxid_annot_fasta
     File cdhitdup_clusters_dedup1_fa_clstr
     File deduped_fasta_dedup1_fa
@@ -231,7 +229,7 @@ task NonhostFastq {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -239,15 +237,15 @@ task NonhostFastq {
     --step-module idseq_dag.steps.nonhost_fastq \
     --step-class PipelineStepNonhostFastq \
     --step-name nonhost_fastq_out \
-    --input-files '[["~{fastqs_0}", "~{fastqs_1}"], ["~{nonhost_fasta_refined_taxid_annot_fasta}"], ["~{cdhitdup_clusters_dedup1_fa_clstr}"], ["~{deduped_fasta_dedup1_fa}"]]' \
-    --output-files '["nonhost_R1.fastq", "nonhost_R2.fastq"]' \
+    --input-files '[["~{sep='","' fastqs}"], ["~{nonhost_fasta_refined_taxid_annot_fasta}"], ["~{cdhitdup_clusters_dedup1_fa_clstr}"], ["~{deduped_fasta_dedup1_fa}"]]' \
+    --output-files '[~{if length(fastqs) == 2 then '"nonhost_R1.fastq", "nonhost_R2.fastq"' else '"nonhost_R1.fastq"'}]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{}' \
     --additional-attributes '{"use_taxon_whitelist": ~{use_taxon_whitelist}}'
   >>>
   output {
     File nonhost_R1_fastq = "nonhost_R1.fastq"
-    File nonhost_R2_fastq = "nonhost_R2.fastq"
+    File? nonhost_R2_fastq = "nonhost_R2.fastq"
     File? output_read_count = "nonhost_fastq_out.count"
   }
   runtime {
@@ -338,8 +336,7 @@ workflow idseq_experimental {
       deployment_env = deployment_env,
       dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
-      fastqs_0 = fastqs_0,
-      fastqs_1 = fastqs_1,
+      fastqs = select_all([fastqs_0, fastqs_1]),
       file_ext = file_ext
   }
 
@@ -367,8 +364,7 @@ workflow idseq_experimental {
       deployment_env = deployment_env,
       dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
-      fastqs_0 = fastqs_0,
-      fastqs_1 = fastqs_1,
+      fastqs = select_all([fastqs_0, fastqs_1]),
       nonhost_fasta_refined_taxid_annot_fasta = nonhost_fasta_refined_taxid_annot_fasta,
       cdhitdup_clusters_dedup1_fa_clstr = cdhitdup_clusters_dedup1_fa_clstr,
       deduped_fasta_dedup1_fa = deduped_fasta_dedup1_fa,
@@ -404,7 +400,7 @@ workflow idseq_experimental {
     File coverage_viz_out_coverage_viz_summary_json = GenerateCoverageViz.coverage_viz_summary_json
     File? coverage_viz_out_count = GenerateCoverageViz.output_read_count
     File nonhost_fastq_out_nonhost_R1_fastq = NonhostFastq.nonhost_R1_fastq
-    File nonhost_fastq_out_nonhost_R2_fastq = NonhostFastq.nonhost_R2_fastq
+    File? nonhost_fastq_out_nonhost_R2_fastq = NonhostFastq.nonhost_R2_fastq
     File? nonhost_fastq_out_count = NonhostFastq.output_read_count
     Array[File] align_viz = GenerateAlignmentViz.align_viz
     Array[File] coverage_viz = GenerateCoverageViz.coverage_viz

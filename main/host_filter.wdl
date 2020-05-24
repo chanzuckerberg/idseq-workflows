@@ -17,7 +17,7 @@ task RunValidateInput {
   # jq -n '$ARGS.positional' --args a b c
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -59,7 +59,7 @@ task RunStar {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -98,7 +98,7 @@ task RunTrimmomatic {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -133,7 +133,7 @@ task RunPriceSeq {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -168,7 +168,7 @@ task RunCDHitDup {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -207,7 +207,7 @@ task RunLZW {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -246,7 +246,7 @@ task RunBowtie2_bowtie2_out {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -286,7 +286,7 @@ task RunSubsample {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -328,7 +328,7 @@ task RunStarDownstream {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -367,7 +367,7 @@ task RunBowtie2_bowtie2_human_out {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x
@@ -406,7 +406,7 @@ task RunGsnapFilter {
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
-  if ! [[ -z "~{dag_branch}" ]]; then
+  if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   set -x

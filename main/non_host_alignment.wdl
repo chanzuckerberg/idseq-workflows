@@ -11,6 +11,10 @@ task RunAlignmentRemotely_gsnap_out {
     File host_filter_out_gsnap_filter_2_fa
     File host_filter_out_gsnap_filter_merged_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+    String lineage_db
+    String accession2taxid_db
+    String taxon_blacklist
+    String index_dir_suffix
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -25,8 +29,8 @@ task RunAlignmentRemotely_gsnap_out {
     --input-files '[["~{host_filter_out_gsnap_filter_1_fa}", "~{host_filter_out_gsnap_filter_2_fa}", "~{host_filter_out_gsnap_filter_merged_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["gsnap.m8", "gsnap.deduped.m8", "gsnap.hitsummary.tab", "gsnap_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"lineage_db": "s3://idseq-database/taxonomy/2020-02-10/taxid-lineages.db", "accession2taxid_db": "s3://idseq-database/alignment_data/2020-02-10/accession2taxid.db", "taxon_blacklist": "s3://idseq-database/taxonomy/2018-04-01-utc-1522569777-unixtime__2018-04-04-utc-1522862260-unixtime/taxon_blacklist.txt"}' \
-    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "2020-02-10"}'
+    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}"}' \
+    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}"}'
   >>>
   output {
     File gsnap_m8 = "gsnap.m8"
@@ -51,6 +55,10 @@ task RunAlignmentRemotely_rapsearch2_out {
     File host_filter_out_gsnap_filter_2_fa
     File host_filter_out_gsnap_filter_merged_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+    String lineage_db
+    String accession2taxid_db
+    String taxon_blacklist
+    String index_dir_suffix
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -65,8 +73,8 @@ task RunAlignmentRemotely_rapsearch2_out {
     --input-files '[["~{host_filter_out_gsnap_filter_1_fa}", "~{host_filter_out_gsnap_filter_2_fa}", "~{host_filter_out_gsnap_filter_merged_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["rapsearch2.m8", "rapsearch2.deduped.m8", "rapsearch2.hitsummary.tab", "rapsearch2_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"lineage_db": "s3://idseq-database/taxonomy/2020-02-10/taxid-lineages.db", "accession2taxid_db": "s3://idseq-database/alignment_data/2020-02-10/accession2taxid.db", "taxon_blacklist": "s3://idseq-database/taxonomy/2018-04-01-utc-1522569777-unixtime__2018-04-04-utc-1522862260-unixtime/taxon_blacklist.txt"}' \
-    --additional-attributes '{"alignment_algorithm": "rapsearch2", "index_dir_suffix": "2020-02-10"}'
+    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}"}' \
+    --additional-attributes '{"alignment_algorithm": "rapsearch2", "index_dir_suffix": "~{index_dir_suffix}"}'
   >>>
   output {
     File rapsearch2_m8 = "rapsearch2.m8"
@@ -182,6 +190,10 @@ workflow idseq_non_host_alignment {
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File cdhitdup_out_dedup1_fa_clstr
     File cdhitdup_out_dedup1_fa
+    String lineage_db
+    String accession2taxid_db
+    String taxon_blacklist
+    String index_dir_suffix
   }
 
   call RunAlignmentRemotely_gsnap_out {
@@ -194,7 +206,11 @@ workflow idseq_non_host_alignment {
       host_filter_out_gsnap_filter_1_fa = host_filter_out_gsnap_filter_1_fa,
       host_filter_out_gsnap_filter_2_fa = host_filter_out_gsnap_filter_2_fa,
       host_filter_out_gsnap_filter_merged_fa = host_filter_out_gsnap_filter_merged_fa,
-      cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+      cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv,
+      lineage_db = lineage_db,
+      accession2taxid_db = accession2taxid_db,
+      taxon_blacklist = taxon_blacklist,
+      index_dir_suffix = index_dir_suffix
   }
 
   call RunAlignmentRemotely_rapsearch2_out {
@@ -207,7 +223,11 @@ workflow idseq_non_host_alignment {
       host_filter_out_gsnap_filter_1_fa = host_filter_out_gsnap_filter_1_fa,
       host_filter_out_gsnap_filter_2_fa = host_filter_out_gsnap_filter_2_fa,
       host_filter_out_gsnap_filter_merged_fa = host_filter_out_gsnap_filter_merged_fa,
-      cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+      cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv,
+      lineage_db = lineage_db,
+      accession2taxid_db = accession2taxid_db,
+      taxon_blacklist = taxon_blacklist,
+      index_dir_suffix = index_dir_suffix
   }
 
   call CombineTaxonCounts {

@@ -29,7 +29,6 @@ task RunValidateInput {
   >>>
   output {
     File validate_input_summary_json = "validate_input_summary.json"
-    #Array[File] valid_input_fastq = select???
     File valid_input1_fastq = "valid_input1.fastq"
     File? valid_input2_fastq = "valid_input2.fastq"
     File? output_read_count = "validate_input_out.count"

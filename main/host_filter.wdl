@@ -7,14 +7,10 @@ task RunValidateInput {
     String deployment_env
     String dag_branch
     String s3_wd_uri
-    # use select_all() in call from workflow
     Array[File] fastqs
-    #File fastqs_0
-    #File? fastqs_1
     Int max_input_fragments
     String file_ext
   }
-  # jq -n '$ARGS.positional' --args a b c
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
   if [[ -n "~{dag_branch}" ]]; then

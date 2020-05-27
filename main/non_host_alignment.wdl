@@ -12,7 +12,9 @@ task RunAlignmentRemotely_gsnap_out {
     String lineage_db
     String accession2taxid_db
     String taxon_blacklist
+    String? deuterostome_db
     String index_dir_suffix
+    Boolean use_taxon_whitelist
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -27,8 +29,8 @@ task RunAlignmentRemotely_gsnap_out {
     --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["gsnap.m8", "gsnap.deduped.m8", "gsnap.hitsummary.tab", "gsnap_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}"}' \
-    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}"}'
+    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}", "deuterostome_db": "~{deuterostome_db}"}' \
+    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": "~{use_taxon_whitelist}"}'
   >>>
   output {
     File gsnap_m8 = "gsnap.m8"
@@ -55,6 +57,7 @@ task RunAlignmentRemotely_rapsearch2_out {
     String accession2taxid_db
     String taxon_blacklist
     String index_dir_suffix
+    Boolean use_taxon_whitelist
   }
   command<<<
   export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
@@ -70,7 +73,7 @@ task RunAlignmentRemotely_rapsearch2_out {
     --output-files '["rapsearch2.m8", "rapsearch2.deduped.m8", "rapsearch2.hitsummary.tab", "rapsearch2_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}"}' \
-    --additional-attributes '{"alignment_algorithm": "rapsearch2", "index_dir_suffix": "~{index_dir_suffix}"}'
+    --additional-attributes '{"alignment_algorithm": "rapsearch2", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": "~{use_taxon_whitelist}"}'
   >>>
   output {
     File rapsearch2_m8 = "rapsearch2.m8"
@@ -188,6 +191,8 @@ workflow idseq_non_host_alignment {
     String accession2taxid_db
     String taxon_blacklist
     String index_dir_suffix
+    String? deuterostome_db
+    Boolean use_taxon_whitelist
   }
 
   call RunAlignmentRemotely_gsnap_out {
@@ -202,7 +207,9 @@ workflow idseq_non_host_alignment {
       lineage_db = lineage_db,
       accession2taxid_db = accession2taxid_db,
       taxon_blacklist = taxon_blacklist,
-      index_dir_suffix = index_dir_suffix
+      deuterostome_db = deuterostome_db,
+      index_dir_suffix = index_dir_suffix,
+      use_taxon_whitelist = use_taxon_whitelist
   }
 
   call RunAlignmentRemotely_rapsearch2_out {
@@ -217,7 +224,8 @@ workflow idseq_non_host_alignment {
       lineage_db = lineage_db,
       accession2taxid_db = accession2taxid_db,
       taxon_blacklist = taxon_blacklist,
-      index_dir_suffix = index_dir_suffix
+      index_dir_suffix = index_dir_suffix,
+      use_taxon_whitelist = use_taxon_whitelist
   }
 
   call CombineTaxonCounts {

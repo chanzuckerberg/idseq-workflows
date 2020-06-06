@@ -3,8 +3,8 @@ version 1.0
 task RunValidateInput {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] fastqs
@@ -12,8 +12,9 @@ task RunValidateInput {
     String file_ext
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
   set -euxo pipefail
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
@@ -42,8 +43,8 @@ task RunValidateInput {
 task RunStar {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File validate_input_summary_json
@@ -53,7 +54,8 @@ task RunStar {
     String host_genome
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -84,15 +86,16 @@ task RunStar {
 task RunTrimmomatic {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] unmapped_fastq
     String adapter_fasta
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -120,14 +123,15 @@ task RunTrimmomatic {
 task RunPriceSeq {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] trimmomatic_fastq
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -155,14 +159,15 @@ task RunPriceSeq {
 task RunCDHitDup {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] priceseq_fa
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -192,8 +197,8 @@ task RunCDHitDup {
 task RunLZW {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] dedup_fa
@@ -201,7 +206,8 @@ task RunLZW {
     File cdhitdup_cluster_sizes_tsv
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -229,8 +235,8 @@ task RunLZW {
 task RunBowtie2_bowtie2_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] lzw_fa
@@ -240,7 +246,8 @@ task RunBowtie2_bowtie2_out {
     String bowtie2_genome
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -269,8 +276,8 @@ task RunBowtie2_bowtie2_out {
 task RunSubsample {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] bowtie2_fa
@@ -280,7 +287,8 @@ task RunSubsample {
     Int max_subsample_fragments
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -309,8 +317,8 @@ task RunSubsample {
 task RunStarDownstream {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] subsampled_fa
@@ -322,7 +330,8 @@ task RunStarDownstream {
     String human_star_genome
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -350,8 +359,8 @@ task RunStarDownstream {
 task RunBowtie2_bowtie2_human_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] unmapped_human_fa
@@ -361,7 +370,8 @@ task RunBowtie2_bowtie2_human_out {
     String human_bowtie2_genome
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -390,8 +400,8 @@ task RunBowtie2_bowtie2_human_out {
 task RunGsnapFilter {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] subsampled_fa
@@ -400,7 +410,8 @@ task RunGsnapFilter {
     File cdhitdup_cluster_sizes_tsv
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -429,8 +440,8 @@ task RunGsnapFilter {
 workflow idseq_host_filter {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File fastqs_0

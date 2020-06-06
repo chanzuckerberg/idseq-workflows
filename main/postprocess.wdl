@@ -3,15 +3,16 @@ version 1.0
 task RunAssembly {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] host_filter_out_gsnap_filter_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -41,8 +42,8 @@ task RunAssembly {
 task GenerateCoverageStats {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File assembly_contigs_fasta
@@ -51,7 +52,8 @@ task GenerateCoverageStats {
     File assembly_contig_stats_json
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -79,8 +81,8 @@ task GenerateCoverageStats {
 task DownloadAccessions_gsnap_accessions_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File gsnap_out_gsnap_m8
@@ -92,7 +94,8 @@ task DownloadAccessions_gsnap_accessions_out {
     String lineage_db
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -119,8 +122,8 @@ task DownloadAccessions_gsnap_accessions_out {
 task DownloadAccessions_rapsearch2_accessions_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File rapsearch2_out_rapsearch2_m8
@@ -132,7 +135,8 @@ task DownloadAccessions_rapsearch2_accessions_out {
     String nr_db
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -159,8 +163,8 @@ task DownloadAccessions_rapsearch2_accessions_out {
 task BlastContigs_refined_gsnap_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File gsnap_out_gsnap_m8
@@ -179,7 +183,8 @@ task BlastContigs_refined_gsnap_out {
     Boolean use_taxon_whitelist
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -211,8 +216,8 @@ task BlastContigs_refined_gsnap_out {
 task BlastContigs_refined_rapsearch2_out {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File rapsearch2_out_rapsearch2_m8
@@ -230,7 +235,8 @@ task BlastContigs_refined_rapsearch2_out {
     Boolean use_taxon_whitelist
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -262,8 +268,8 @@ task BlastContigs_refined_rapsearch2_out {
 task CombineTaxonCounts {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File assembly_gsnap_blast_m8
@@ -280,7 +286,8 @@ task CombineTaxonCounts {
     File assembly_rapsearch2_blast_top_m8
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -307,8 +314,8 @@ task CombineTaxonCounts {
 task CombineJson {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File assembly_gsnap_blast_m8
@@ -325,7 +332,8 @@ task CombineJson {
     File assembly_rapsearch2_blast_top_m8
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -352,8 +360,8 @@ task CombineJson {
 task GenerateAnnotatedFasta {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     Array[File] host_filter_out_gsnap_filter_fa
@@ -374,7 +382,8 @@ task GenerateAnnotatedFasta {
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -402,8 +411,8 @@ task GenerateAnnotatedFasta {
 task GenerateTaxidFasta {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File assembly_refined_annotated_merged_fa
@@ -423,7 +432,8 @@ task GenerateTaxidFasta {
     String lineage_db
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -450,14 +460,15 @@ task GenerateTaxidFasta {
 task GenerateTaxidLocator {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File assembly_refined_taxid_annot_fasta
   }
   command<<<
-  export AWS_DEFAULT_REGION=~{aws_region} DEPLOYMENT_ENVIRONMENT=~{deployment_env}
+  ~{"export AWS_DEFAULT_REGION=" + aws_region}
+  ~{"export DEPLOYMENT_ENVIRONMENT=" + deployment_env}
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
@@ -496,8 +507,8 @@ task GenerateTaxidLocator {
 workflow idseq_postprocess {
   input {
     String docker_image_id
-    String aws_region
-    String deployment_env
+    String? aws_region
+    String? deployment_env
     String dag_branch
     String s3_wd_uri
     File host_filter_out_gsnap_filter_1_fa

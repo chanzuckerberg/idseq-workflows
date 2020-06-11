@@ -396,7 +396,7 @@ task RunGsnapFilter {
 workflow idseq_host_filter {
   input {
     String docker_image_id
-    String dag_branch
+    String dag_branch = ""
     String s3_wd_uri
     File fastqs_0
     File? fastqs_1

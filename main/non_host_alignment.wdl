@@ -166,7 +166,7 @@ task GenerateAnnotatedFasta {
 workflow idseq_non_host_alignment {
   input {
     String docker_image_id
-    String? dag_branch
+    String dag_branch = ""
     String s3_wd_uri
     File host_filter_out_gsnap_filter_1_fa
     File? host_filter_out_gsnap_filter_2_fa

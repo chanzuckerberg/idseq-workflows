@@ -238,7 +238,7 @@ task NonhostFastq {
 workflow idseq_experimental {
   input {
     String docker_image_id
-    String? dag_branch
+    String dag_branch = ""
     String s3_wd_uri
     File taxid_fasta_in_annotated_merged_fa
     File taxid_fasta_in_gsnap_hitsummary_tab

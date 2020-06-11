@@ -255,13 +255,13 @@ workflow idseq_experimental {
     File nonhost_fasta_refined_taxid_annot_fasta
     File cdhitdup_clusters_dedup1_fa_clstr
     File deduped_fasta_dedup1_fa
-    String? file_ext = "fastq"
-    String? idseq_db_bucket = "idseq-database"
-    String? index_version = "2020-04-20"
-    String? nt_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt"
-    String? nt_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_loc.db"
-    String? nt_info_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_info.db"
-    Boolean? use_taxon_whitelist = false
+    String file_ext = "fastq"
+    String idseq_db_bucket = "idseq-database"
+    String index_version = "2020-04-20"
+    String nt_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt"
+    String nt_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_loc.db"
+    String nt_info_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_info.db"
+    Boolean use_taxon_whitelist = false
   }
 
   call GenerateTaxidFasta {

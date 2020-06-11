@@ -480,17 +480,17 @@ workflow idseq_postprocess {
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File cdhitdup_out_dedup1_fa_clstr
     File cdhitdup_out_dedup1_fa
-    String? idseq_db_bucket = "idseq-database"
-    String? index_version = "2020-04-20"
-    String? nt_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt"
-    String? nt_loc_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt_loc.db"
-    String? nr_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr"
-    String? nr_loc_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr_loc.db"
-    String? lineage_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxid-lineages.db"
-    String? taxon_blacklist = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxon_blacklist.txt"
-    String? deuterostome_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/deuterostome_taxids.txt"
-    Boolean? use_deuterostome_filter = true
-    Boolean? use_taxon_whitelist = false
+    String idseq_db_bucket = "idseq-database"
+    String index_version = "2020-04-20"
+    String nt_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt"
+    String nt_loc_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt_loc.db"
+    String nr_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr"
+    String nr_loc_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr_loc.db"
+    String lineage_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxid-lineages.db"
+    String taxon_blacklist = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxon_blacklist.txt"
+    String deuterostome_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/deuterostome_taxids.txt"
+    Boolean use_deuterostome_filter = true
+    Boolean use_taxon_whitelist = false
   }
 
   call RunAssembly {

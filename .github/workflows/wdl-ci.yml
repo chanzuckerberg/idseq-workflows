@@ -29,3 +29,19 @@ jobs:
         run: |
           source .venv/bin/activate
           make lint
+  docker-images:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: detect tag
+        run: echo "::set-env TAG=$(git describe --long --tags --always --dirty)"
+      - name: docker login
+        run: echo $GITHUB_TOKEN | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin
+      - name: docker build
+        run: |
+          DOCKER_BUILD_DIR=main
+          DOCKER_IMAGE_NAME=idseq-wdl
+          DOCKER_IMAGE_URI="docker.pkg.github.com/${GITHUB_REPOSITORY}/${DOCKER_IMAGE_NAME}"
+          CACHE_FROM=""; docker pull "$DOCKER_IMAGE_URI" && CACHE_FROM="--cache-from $DOCKER_IMAGE_URI"
+          docker build "$DOCKER_BUILD_DIR" --tag "${DOCKER_IMAGE_URI}:${TAG}" $CACHE_FROM || docker build "$DOCKER_BUILD_DIR" --tag "${DOCKER_IMAGE_URI}:${TAG}"
+          docker push "${DOCKER_IMAGE_URI}:${TAG}"

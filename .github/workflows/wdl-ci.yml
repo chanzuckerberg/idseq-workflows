@@ -36,7 +36,8 @@ jobs:
       - name: detect tag
         run: echo "::set-env TAG=$(git describe --long --tags --always --dirty)"
       - name: docker login
-        run: echo $GITHUB_TOKEN | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin
+        run: |
+          echo $GITHUB_TOKEN | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin
       - name: docker build
         run: |
           DOCKER_BUILD_DIR=main

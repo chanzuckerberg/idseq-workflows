@@ -38,14 +38,14 @@ jobs:
       - name: docker build
         run: |
           TAG=$(git describe --long --tags --always --dirty)
-          DOCKER_BUILD_DIR=main
-          DOCKER_IMAGE_NAME=idseq-wdl-public
-          DOCKER_IMAGE_URI="docker.pkg.github.com/${GITHUB_REPOSITORY}/${DOCKER_IMAGE_NAME}"
+          BUILD_DIR=main
+          IMAGE_NAME=idseq-wdl-public
+          IMAGE_URI="docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}"
 
-          CACHE_FROM=""; docker pull "$DOCKER_IMAGE_URI" && CACHE_FROM="--cache-from $DOCKER_IMAGE_URI"
-          docker build "$DOCKER_BUILD_DIR" --tag "${DOCKER_IMAGE_URI}:${TAG}" $CACHE_FROM || docker build "$DOCKER_BUILD_DIR" --tag "${DOCKER_IMAGE_URI}:${TAG}"
-          docker push "${DOCKER_IMAGE_URI}:${TAG}"
+          CACHE_FROM=""; docker pull "$IMAGE_URI" && CACHE_FROM="--cache-from $IMAGE_URI"
+          docker build "$BUILD_DIR" --tag "${IMAGE_URI}:${TAG}" $CACHE_FROM || docker build "$BUILD_DIR" --tag "${IMAGE_URI}:${TAG}"
+          docker push "${IMAGE_URI}:${TAG}"
           if [[ ${GITHUB_REF##*/} == "master" ]]; then
-            docker tag "${DOCKER_IMAGE_URI}:${TAG}" "${DOCKER_IMAGE_URI}:latest"
-            docker push "${DOCKER_IMAGE_URI}:latest"
+            docker tag "${IMAGE_URI}:${TAG}" "${IMAGE_URI}:latest"
+            docker push "${IMAGE_URI}:latest"
           fi

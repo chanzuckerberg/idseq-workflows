@@ -39,7 +39,7 @@ jobs:
         run: |
           TAG=$(git describe --long --tags --always --dirty)
           DOCKER_BUILD_DIR=main
-          DOCKER_IMAGE_NAME=idseq-wdl
+          DOCKER_IMAGE_NAME=idseq-wdl-public
           DOCKER_IMAGE_URI="docker.pkg.github.com/${GITHUB_REPOSITORY}/${DOCKER_IMAGE_NAME}"
 
           CACHE_FROM=""; docker pull "$DOCKER_IMAGE_URI" && CACHE_FROM="--cache-from $DOCKER_IMAGE_URI"

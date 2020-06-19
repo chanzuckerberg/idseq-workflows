@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import logging
+import subprocess
 import pytest
 import WDL
 
@@ -129,3 +130,26 @@ def _compare_outputs(actual, expected):
         assert actual is None
     else:
         assert False
+
+
+@pytest.fixture(scope="session")
+def RunFailed_stderr_json():
+    "given WDL.runtime.RunFailed exception, attempt to JSON-parse the last line of failing task's standard error"
+
+    def kappa(exc):
+        ans = None
+        if isinstance(exc, WDL.runtime.RunFailed):
+            info = WDL.runtime.error_json(exc)
+            if info["cause"]["error"] == "CommandFailed":
+                # read last line of failed task's standard error
+                stderr_file = info["cause"]["stderr_file"]
+                tail = subprocess.run(
+                    ["tail", "-n", "1", stderr_file], stdout=subprocess.PIPE, check=True
+                )
+                try:
+                    ans = json.loads(tail.stdout)
+                except Exception:
+                    pass
+        return ans
+
+    return kappa

@@ -1,2 +1,3 @@
 miniwdl
 pre-commit
+pytest

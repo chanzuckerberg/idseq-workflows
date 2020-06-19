@@ -1,10 +1,16 @@
-
 import sys
 import os
 import json
 import logging
 import pytest
 import WDL
+
+
+COMMON_INPUTS = {
+    "docker_image_id": "docker.pkg.github.com/chanzuckerberg/idseq-workflows/idseq-main-public:17c3bd9",
+    "dag_branch": "master",
+    "s3_wd_uri": "s3://DUMMY_URI/",
+}
 
 
 @pytest.fixture(scope="session")
@@ -32,11 +38,15 @@ def load_inputs_outputs():
 
     def kappa(exe, call_dir):
         with open(os.path.join(call_dir, "inputs.json")) as infile:
-            inputs = WDL.values_from_json(
-                json.load(infile), exe.available_inputs, exe.required_inputs
-            )
+            inputs = json.load(infile)
+        for key in COMMON_INPUTS:
+            if key in inputs:
+                inputs[key] = COMMON_INPUTS[key]
         # absolutify paths to make cwd irrelevant
-        inputs = WDL.Value.rewrite_env_files(inputs, lambda fn: os.path.join(call_dir, fn))
+        inputs = WDL.values_from_json(inputs, exe.available_inputs, exe.required_inputs)
+        inputs = WDL.Value.rewrite_env_files(
+            inputs, lambda fn: os.path.join(call_dir, fn) if "://" not in fn else fn
+        )
         inputs = WDL.values_to_json(inputs)
         with open(os.path.join(call_dir, "expected_outputs.json")) as infile:
             expected_outputs = WDL.values_from_json(

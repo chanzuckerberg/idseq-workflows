@@ -57,11 +57,12 @@ jobs:
   wdl_tasks:
     runs-on: ubuntu-18.04
     steps:
+      - uses: actions/checkout@v2
       - name: docker login
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin
-      - name: docker build
+      - name: tests
         run: |
           source /etc/profile
           sudo apt-get -qq update

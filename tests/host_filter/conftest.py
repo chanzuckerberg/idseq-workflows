@@ -16,7 +16,7 @@ COMMON_INPUTS = {
 @pytest.fixture(scope="session")
 def miniwdl_run_cfg():
     "miniwdl run session-wide initialization"
-    logging.basicConfig(level=logging.INFO + 1)
+    logging.basicConfig(level=logging.DEBUG)
     with WDL._util.configure_logger():
         logger = logging.getLogger(__name__)
         cfg = WDL.runtime.config.Loader(logger)

@@ -6,4 +6,3 @@ publish:
 
 test:
 	pytest -v -n 4 --tb=short --log-cli-level=11 tests/
-	prove -v tests/*.t

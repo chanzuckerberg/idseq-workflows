@@ -1,0 +1,13 @@
+{
+  "docker_image_id": "732052188396.dkr.ecr.us-east-2.amazonaws.com/idseq-wdl:sha-aba548e599edcaa5",
+  "dag_branch": "master",
+  "s3_wd_uri": "s3://DUMMY_URI/",
+  "validate_input_summary_json": "input_files/validate_input_summary.json",
+  "valid_input_fastq": [
+    "input_files/valid_input1.fastq",
+    "input_files/valid_input2.fastq"
+  ],
+  "star_genome": "s3://idseq-database/host_filter/human/2018-02-15-utc-1518652800-unixtime__2018-02-15-utc-1518652800-unixtime/human_STAR_genome.tar",
+  "nucleotide_type": "DNA",
+  "host_genome": "human"
+}

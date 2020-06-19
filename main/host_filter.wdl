@@ -81,13 +81,15 @@ task RunTrimmomatic {
     String dag_branch
     String s3_wd_uri
     Array[File] unmapped_fastq
-    String adapter_fasta
+    File adapter_fasta
   }
   command<<<
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
+    pip3 uninstall -y idseq-dag
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
+  cp "~{adapter_fasta}" "~{adapter_fasta}.lz4"  # FIXME: woeful hack needed to use localized file instead of public S3 URI
   idseq-dag-run-step --workflow-name host_filter \
     --step-module idseq_dag.steps.run_trimmomatic \
     --step-class PipelineStepRunTrimmomatic \
@@ -403,7 +405,7 @@ workflow idseq_host_filter {
     String file_ext
     String nucleotide_type
     String host_genome
-    String adapter_fasta
+    File adapter_fasta
     String star_genome
     String bowtie2_genome
     String human_star_genome

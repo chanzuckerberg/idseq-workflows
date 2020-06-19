@@ -1,3 +1,4 @@
 miniwdl
 pre-commit
 pytest
+pytest-xdist

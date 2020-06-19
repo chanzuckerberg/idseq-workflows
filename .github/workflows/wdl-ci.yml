@@ -70,6 +70,4 @@ jobs:
           virtualenv --python=python3.6 .venv
           source .venv/bin/activate
           pip install -r requirements-dev.txt
-          which -a pytest
-          pytest --version
           make test

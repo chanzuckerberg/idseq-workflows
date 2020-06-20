@@ -6,8 +6,9 @@ import subprocess
 import pytest
 import WDL
 
-
-COMMON_INPUTS = {
+# In any test case inputs.json, the following keys will be overridden with the corresponding value
+# IF PRESENT. So the inputs.json can just put null expecting this to fill it.
+INPUT_OVERRIDES = {
     "docker_image_id": "docker.pkg.github.com/chanzuckerberg/idseq-workflows/idseq-main-public:17c3bd9",
     "dag_branch": "master",
     "s3_wd_uri": "s3://DUMMY_URI/",
@@ -40,9 +41,9 @@ def load_inputs_outputs():
     def kappa(exe, call_dir):
         with open(os.path.join(call_dir, "inputs.json")) as infile:
             inputs = json.load(infile)
-        for key in COMMON_INPUTS:
+        for key in INPUT_OVERRIDES:
             if key in inputs:
-                inputs[key] = COMMON_INPUTS[key]
+                inputs[key] = INPUT_OVERRIDES[key]
         # absolutify paths to make cwd irrelevant
         inputs = WDL.values_from_json(inputs, exe.available_inputs, exe.required_inputs)
         inputs = WDL.Value.rewrite_env_files(

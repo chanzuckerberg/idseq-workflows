@@ -86,7 +86,6 @@ task RunTrimmomatic {
   command<<<
   set -euxo pipefail
   if [[ -n "~{dag_branch}" ]]; then
-    pip3 uninstall -y idseq-dag
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   cp "~{adapter_fasta}" "~{adapter_fasta}.lz4"  # FIXME: woeful hack needed to use localized file instead of public S3 URI

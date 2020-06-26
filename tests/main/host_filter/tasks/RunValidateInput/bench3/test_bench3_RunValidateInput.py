@@ -3,7 +3,7 @@ import pytest
 import WDL
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def inputs_outputs(exe, load_inputs_outputs):
     "(test_inputs, expected_outputs) for this case, as JSON-like dicts"
     return load_inputs_outputs(exe, os.path.dirname(__file__))

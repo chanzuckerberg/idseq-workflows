@@ -17,6 +17,10 @@ INPUT_OVERRIDES = {
     "s3_wd_uri": "s3://DUMMY_URI/",
 }
 
+@pytest.fixture
+def repo_dir():
+    return os.path.dirname(os.path.dirname(__file__))
+
 
 @pytest.fixture(scope="session")
 def miniwdl_run_cfg():

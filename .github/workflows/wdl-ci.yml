@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        docker_dir: [main]
+        workflow_dir: [main]
     steps:
       - uses: actions/checkout@v2
       - name: docker login
@@ -43,12 +43,12 @@ jobs:
       - name: docker build
         run: |
           TAG=$(git describe --long --tags --always --dirty)
-          IMAGE_NAME=idseq-${{ matrix.docker_dir }}-public
+          IMAGE_NAME=idseq-${{ matrix.workflow_dir }}-public
           IMAGE_URI="docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}"
 
           CACHE_FROM=""; docker pull "$IMAGE_URI" && CACHE_FROM="--cache-from $IMAGE_URI"
-          docker build "${{ matrix.docker_dir }}" --tag "${IMAGE_URI}:${TAG}" $CACHE_FROM \
-            || docker build "${{ matrix.docker_dir }}" --tag "${IMAGE_URI}:${TAG}"
+          docker build "${{ matrix.workflow_dir }}" --tag "${IMAGE_URI}:${TAG}" $CACHE_FROM \
+            || docker build "${{ matrix.workflow_dir }}" --tag "${IMAGE_URI}:${TAG}"
           docker push "${IMAGE_URI}:${TAG}"
           if [[ ${GITHUB_REF##*/} == "master" ]]; then
             docker tag "${IMAGE_URI}:${TAG}" "${IMAGE_URI}:latest"
@@ -66,4 +66,4 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements-dev.txt
           export DOCKER_IMAGE_ID="${IMAGE_URI}:${TAG}"
-          make test
+          make test-$${{ workflow_dir }}

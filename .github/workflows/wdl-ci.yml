@@ -66,4 +66,4 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements-dev.txt
           export DOCKER_IMAGE_ID="${IMAGE_URI}:${TAG}"
-          make test-$${{ workflow_dir }}
+          make test-${{ workflow_dir }}

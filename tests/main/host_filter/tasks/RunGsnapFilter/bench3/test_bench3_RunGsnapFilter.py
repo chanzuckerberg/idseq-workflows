@@ -1,12 +1,13 @@
-
 import os
 import pytest
 import WDL
+
 
 @pytest.fixture(scope="session")
 def inputs_outputs(exe, load_inputs_outputs):
     "(test_inputs, expected_outputs) for this case, as JSON-like dicts"
     return load_inputs_outputs(exe, os.path.dirname(__file__))
+
 
 @pytest.mark.xfail
 def test_bench3_RunGsnapFilter(exe, inputs_outputs, miniwdl_run, compare_outputs):
@@ -19,5 +20,6 @@ def test_bench3_RunGsnapFilter(exe, inputs_outputs, miniwdl_run, compare_outputs
     # - del keys from expected_outputs that needn't be checked
     # - custom assertions on actual/expected
     compare_outputs(exe, actual_outputs, expected_outputs)
+
 
 # Optional: add more test cases, perhaps with perturbed inputs

@@ -88,7 +88,6 @@ task RunTrimmomatic {
   if [[ -n "~{dag_branch}" ]]; then
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
-  cp "~{adapter_fasta}" "~{adapter_fasta}.lz4"  # FIXME: woeful hack needed to use localized file instead of public S3 URI
   idseq-dag-run-step --workflow-name host_filter \
     --step-module idseq_dag.steps.run_trimmomatic \
     --step-class PipelineStepRunTrimmomatic \

@@ -9,8 +9,8 @@ import WDL
 # In any test case inputs.json, the following keys will be overridden with the corresponding value
 # IF PRESENT. So the inputs.json can just put null expecting this to fill it.
 INPUT_OVERRIDES = {
-    "docker_image_id": "docker.pkg.github.com/chanzuckerberg/idseq-workflows/idseq-main-public:17c3bd9",
-    "dag_branch": "master",
+    "docker_image_id": "docker.pkg.github.com/chanzuckerberg/idseq-workflows/idseq-main-public:ef6c98e",
+    "dag_branch": "",
     "s3_wd_uri": "s3://DUMMY_URI/",
 }
 

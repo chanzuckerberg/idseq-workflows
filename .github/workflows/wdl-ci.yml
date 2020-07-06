@@ -66,4 +66,7 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements-dev.txt
           export DOCKER_IMAGE_ID="${IMAGE_URI}:${TAG}"
+          # https://github.com/aws/aws-cli/issues/5234#issuecomment-635459464
+          # https://github.com/aws/aws-cli/issues/5262
+          ip route add blackhole 169.254.169.254
           make test-${{ matrix.workflow_dir }}

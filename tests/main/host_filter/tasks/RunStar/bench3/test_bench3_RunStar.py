@@ -9,7 +9,6 @@ def inputs_outputs(exe, load_inputs_outputs):
     return load_inputs_outputs(exe, os.path.dirname(__file__))
 
 
-@pytest.mark.xfail
 def test_bench3_RunStar(exe, inputs_outputs, miniwdl_run, compare_outputs):
     # Load the test inputs & expected outputs
     (inputs, expected_outputs) = inputs_outputs

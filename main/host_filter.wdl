@@ -366,7 +366,7 @@ task RunGsnapFilter {
     Array[File] dedup_fa
     File dedup1_fa_clstr
     File cdhitdup_cluster_sizes_tsv
-    File gsnap_genome = "s3://idseq-database/host_filter/human/2018-02-15-utc-1518652800-unixtime__2018-02-15-utc-1518652800-unixtime/hg38_pantro5_k16.tar"
+    File gsnap_genome
   }
   command<<<
   set -euxo pipefail
@@ -405,8 +405,9 @@ workflow idseq_host_filter {
     String nucleotide_type
     String host_genome
     File adapter_fasta
-    String star_genome
-    String bowtie2_genome
+    File star_genome
+    File bowtie2_genome
+    File gsnap_genome = "s3://idseq-database/host_filter/human/2018-02-15-utc-1518652800-unixtime__2018-02-15-utc-1518652800-unixtime/hg38_pantro5_k16.tar"
     String human_star_genome
     String human_bowtie2_genome
     Int max_input_fragments
@@ -534,7 +535,8 @@ workflow idseq_host_filter {
       subsampled_fa = gsnap_filter_input,
       dedup_fa = select_all([RunCDHitDup.dedup1_fa, RunCDHitDup.dedup2_fa]),
       dedup1_fa_clstr = RunCDHitDup.dedup1_fa_clstr,
-      cdhitdup_cluster_sizes_tsv = RunCDHitDup.cdhitdup_cluster_sizes_tsv
+      cdhitdup_cluster_sizes_tsv = RunCDHitDup.cdhitdup_cluster_sizes_tsv,
+      gsnap_genome = gsnap_genome
   }
 
   output {

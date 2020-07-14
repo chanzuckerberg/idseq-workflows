@@ -10,6 +10,7 @@ def inputs_outputs(exe, load_inputs_outputs):
     return load_inputs_outputs(exe, os.path.dirname(__file__))
 
 
+@pytest.mark.skip(reason=">900MB input")
 def test_bench3_BlastContigs_refined_gsnap_out(exe, inputs_outputs, miniwdl_run, compare_outputs):
     # Load the test inputs & expected outputs
     (inputs, expected_outputs) = inputs_outputs

@@ -392,7 +392,7 @@ task GenerateTaxidFasta {
     File assembly_refined_rapsearch2_counts_with_dcr_json
     File assembly_rapsearch2_contig_summary_json
     File assembly_rapsearch2_blast_top_m8
-    String lineage_db
+    File lineage_db
   }
   command<<<
   set -euxo pipefail
@@ -486,7 +486,7 @@ workflow idseq_postprocess {
     String nt_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_loc.db"
     String nr_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr"
     String nr_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nr_loc.db"
-    String lineage_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxid-lineages.db"
+    File lineage_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxid-lineages.db"
     String taxon_blacklist = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxon_blacklist.txt"
     String deuterostome_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/deuterostome_taxids.txt"
     Boolean use_deuterostome_filter = true

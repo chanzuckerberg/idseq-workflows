@@ -73,6 +73,6 @@ jobs:
 
           export DOCKER_IMAGE_ID="${IMAGE_URI}:${TAG}"
           # wip:
-          export IDSEQ_DAG_BRANCH=mlin-auto-local-untar
+          export IDSEQ_DAG_BRANCH=master
 
           make test-${{ matrix.workflow_dir }}

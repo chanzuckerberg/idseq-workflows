@@ -160,7 +160,7 @@ task BlastContigs_refined_gsnap_out {
     File assembly_nt_refseq_fasta
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File lineage_db
-    String taxon_blacklist
+    File taxon_blacklist
     String? deuterostome_db
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
@@ -210,7 +210,7 @@ task BlastContigs_refined_rapsearch2_out {
     File assembly_nr_refseq_fasta
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File lineage_db
-    String taxon_blacklist
+    File taxon_blacklist
     Boolean use_taxon_whitelist
   }
   command<<<
@@ -487,7 +487,7 @@ workflow idseq_postprocess {
     String nr_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nr"
     String nr_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nr_loc.db"
     File lineage_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxid-lineages.db"
-    String taxon_blacklist = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxon_blacklist.txt"
+    File taxon_blacklist = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/taxon_blacklist.txt"
     String deuterostome_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/deuterostome_taxids.txt"
     Boolean use_deuterostome_filter = true
     Boolean use_taxon_whitelist = false

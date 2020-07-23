@@ -55,160 +55,158 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    call QuantifyERCCs {
-        input:
-            prefix = prefix,
-            fastqs_0 = RemoveHost.host_removed_fastqs_0,
-            fastqs_1 = RemoveHost.host_removed_fastqs_1,
-            ercc_fasta = ercc_fasta,
-            docker_image_id = docker_image_id
-    }
+    # call QuantifyERCCs {
+    #     input:
+    #         prefix = prefix,
+    #         fastqs_0 = RemoveHost.host_removed_fastqs_0,
+    #         fastqs_1 = RemoveHost.host_removed_fastqs_1,
+    #         ercc_fasta = ercc_fasta,
+    #         docker_image_id = docker_image_id
+    # }
 
-    call FilterReads {
-        input:
-            prefix = prefix,
-            fastqs_0 = RemoveHost.host_removed_fastqs_0,
-            fastqs_1 = RemoveHost.host_removed_fastqs_1,
-            ref_fasta = ref_fasta,
-            kraken2_db_tar_gz = kraken2_db_tar_gz,
-            docker_image_id = docker_image_id
-    }
+    # call FilterReads {
+    #     input:
+    #         prefix = prefix,
+    #         fastqs_0 = RemoveHost.host_removed_fastqs_0,
+    #         fastqs_1 = RemoveHost.host_removed_fastqs_1,
+    #         ref_fasta = ref_fasta,
+    #         kraken2_db_tar_gz = kraken2_db_tar_gz,
+    #         docker_image_id = docker_image_id
+    # }
 
-    # skip remaining steps if no SC2 reads were found (28 = size of an empty bgzip file)
-    if (size(filterReads.filtered_fastqs_0) > 28) {
-        if (trim_adapters) {
-            call TrimReads {
-                input:
-                    fastqs_0 = FilterReads.filtered_fastqs_0,
-                    fastqs_1 = FilterReads.filtered_fastqs_1,
-                    docker_image_id = docker_image_id
-            }
-        }
+    # # skip remaining steps if no SC2 reads were found (28 = size of an empty bgzip file)
+    # if (size(FilterReads.filtered_fastqs_0) > 28) {
+    #     if (trim_adapters) {
+    #         call TrimReads {
+    #             input:
+    #                 fastqs_0 = FilterReads.filtered_fastqs_0,
+    #                 fastqs_1 = FilterReads.filtered_fastqs_1,
+    #                 docker_image_id = docker_image_id
+    #         }
+    #     }
 
-        call AlignReads {
-            input:
-                prefix = prefix,
-                sample = sample,
-                # use trimReads output if we ran it; otherwise fall back to filterReads output
-                fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
-                fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
-                ref_fasta = ref_fasta,
-                docker_image_id = docker_image_id
-        }
+    #     call AlignReads {
+    #         input:
+    #             prefix = prefix,
+    #             sample = sample,
+    #             # use trimReads output if we ran it; otherwise fall back to FilterReads output
+    #             fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
+    #             fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
+    #             ref_fasta = ref_fasta,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        call TrimPrimers {
-            input:
-                prefix = prefix,
-                alignments = AlignReads.alignments,
-                primer_bed = primer_bed,
-                docker_image_id = docker_image_id
-        }
+    #     call TrimPrimers {
+    #         input:
+    #             prefix = prefix,
+    #             alignments = AlignReads.alignments,
+    #             primer_bed = primer_bed,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        if (intrahost_variants) {
-            call IntrahostVariants {
-                input:
-                    bam = TrimPrimers.trimmed_bam_ch,
-                    ref_fasta = ref_fasta,
-                    intrahost_ploidy = intrahost_ploidy,
-                    intrahost_min_frac = intrahost_min_frac,
-                    docker_image_id = docker_image_id
-            }
-        }
+    #     if (intrahost_variants) {
+    #         call IntrahostVariants {
+    #             input:
+    #                 bam = TrimPrimers.trimmed_bam_ch,
+    #                 ref_fasta = ref_fasta,
+    #                 intrahost_ploidy = intrahost_ploidy,
+    #                 intrahost_min_frac = intrahost_min_frac,
+    #                 docker_image_id = docker_image_id
+    #         }
+    #     }
 
-        call MakeConsensus {
-            input:
-                prefix = prefix,
-                sample = sample,
-                bam = TrimPrimers.trimmed_bam_ch,
-                ivarFreqThreshold = ivarFreqThreshold,
-                minDepth = minDepth,
-                ivarQualThreshold = ivarQualTreshold,
-                mpileupDepth = mpileupDepth,
-                docker_image_id = docker_image_id
-        }
+    #     call MakeConsensus {
+    #         input:
+    #             prefix = prefix,
+    #             sample = sample,
+    #             bam = TrimPrimers.trimmed_bam_ch,
+    #             ivarFreqThreshold = ivarFreqThreshold,
+    #             minDepth = minDepth,
+    #             ivarQualThreshold = ivarQualTreshold,
+    #             mpileupDepth = mpileupDepth,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        call Quast {
-            input:
-                prefix = prefix,
-                assembly = MakeConsensus.consensus_fa,
-                bam = TrimPrimers.trimmed_bam_ch,
-                # use trimReads output if we ran it; otherwise fall back to filterReads output
-                fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
-                fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
-                ref_fasta = ref_fasta,
-                no_reads_quast = no_reads_quast,
-                docker_image_id = docker_image_id
-        }
+    #     call Quast {
+    #         input:
+    #             prefix = prefix,
+    #             assembly = MakeConsensus.consensus_fa,
+    #             bam = TrimPrimers.trimmed_bam_ch,
+    #             # use trimReads output if we ran it; otherwise fall back to FilterReads output
+    #             fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
+    #             fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
+    #             ref_fasta = ref_fasta,
+    #             no_reads_quast = no_reads_quast,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        call RealignConsensus {
-            input:
-                prefix = prefix,
-                sample = sample,
-                realign_fa = MakeConsensus.consensus_fa,
-                ref_fasta = ref_fasta,
-                docker_image_id = docker_image_id
-        }
+    #     call RealignConsensus {
+    #         input:
+    #             prefix = prefix,
+    #             sample = sample,
+    #             realign_fa = MakeConsensus.consensus_fa,
+    #             ref_fasta = ref_fasta,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        call CallVariants {
-            input:
-                prefix = prefix,
-                call_variants_bam = TrimPrimers.trimmed_bam_ch,
-                ref_fasta = ref_fasta,
-                bcftoolsCallTheta = bcftoolsCallTheta,
-                minDepth = minDepth,
-                docker_image_id = docker_image_id
-        }
+    #     call CallVariants {
+    #         input:
+    #             prefix = prefix,
+    #             call_variants_bam = TrimPrimers.trimmed_bam_ch,
+    #             ref_fasta = ref_fasta,
+    #             bcftoolsCallTheta = bcftoolsCallTheta,
+    #             minDepth = minDepth,
+    #             docker_image_id = docker_image_id
+    #     }
 
-        call ComputeStats {
-            input:
-                prefix = prefix,
-                sample = sample,
-                cleaned_bam = TrimPrimers.trimmed_bam_ch,
-                assembly = MakeConsensus.consensus_fa,
-                ercc_stats = QuantifyERCCs.ercc_out,
-                vcf = CallVariants.variants_ch,
-                fastqs_0 = fastqs_0,
-                fastqs_1 = fastqs_1,
-                ref_host = ref_host,
-                docker_image_id = docker_image_id
-        }
-    }
+    #     call ComputeStats {
+    #         input:
+    #             prefix = prefix,
+    #             sample = sample,
+    #             cleaned_bam = TrimPrimers.trimmed_bam_ch,
+    #             assembly = MakeConsensus.consensus_fa,
+    #             ercc_stats = QuantifyERCCs.ercc_out,
+    #             vcf = CallVariants.variants_ch,
+    #             fastqs_0 = fastqs_0,
+    #             fastqs_1 = fastqs_1,
+    #             ref_host = ref_host,
+    #             docker_image_id = docker_image_id
+    #     }
+    # }
 
     call ZipOutputs {
         input:
             prefix = prefix,
-            outputFiles = [
+            outputFiles = select_all([
                 RemoveHost.host_removed_fastqs_0,
                 RemoveHost.host_removed_fastqs_1,
-                MakeConsensus.consensus_fa,
-                ComputeStats.depths_fig,
-                TrimPrimers.trimmed_bam_ch,
-                TrimPrimers.trimmed_bam_bai,
-                Quast.quast_txt,
-                Quast.quast_tsv,
-                AlignReads.alignments,
-                QuantifyERCCs.ercc_out,
-                QuantifyERCCs.ercc_out,
-                ComputeStats.output_stats,
-                CallVariants.variants_ch,
-                ZipOutputs.output_zip
-            ]
+                # MakeConsensus.consensus_fa,
+                # ComputeStats.depths_fig,
+                # TrimPrimers.trimmed_bam_ch,
+                # TrimPrimers.trimmed_bam_bai,
+                # Quast.quast_txt,
+                # Quast.quast_tsv,
+                # AlignReads.alignments,
+                # QuantifyERCCs.ercc_out,
+                # QuantifyERCCs.ercc_out,
+                # ComputeStats.output_stats,
+                # CallVariants.variants_ch
+            ])
     }
 
     output {
-        File remove_host_out_host_removed_fastqs_0 = RemoveHost.host_removed_fastqs_0
-        File remove_host__out_host_removed_fastqs_1 = RemoveHost.host_removed_fastqs_1
-        File make_consensus_out_consensus_fa = MakeConsensus.consensus_fa
-        File make_consensus_out_consensus_fa = ComputeStats.depths_fig
-        File trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch
-        File trim_primers__out_trimmed_bam_bai = TrimPrimers.trimmed_bam_bai
-        File quast_out_quast_txt = Quast.quast_txt
-        File quast_out_quast_tsv = Quast.quast_tsv
-        File align_reads_out_alignments = AlignReads.alignments
-        File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
-        File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
-        File compute_stats_out_output_stats = ComputeStats.output_stats
-        File call_variants_out_variants_ch = CallVariants.variants_ch
+        # File remove_host_out_host_removed_fastqs_0 = RemoveHost.host_removed_fastqs_0
+        # File remove_host__out_host_removed_fastqs_1 = RemoveHost.host_removed_fastqs_1
+        # File? make_consensus_out_consensus_fa = MakeConsensus.consensus_fa
+        # File? trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch
+        # File? trim_primers_out_trimmed_bam_bai = TrimPrimers.trimmed_bam_bai
+        # File? quast_out_quast_txt = Quast.quast_txt
+        # File? quast_out_quast_tsv = Quast.quast_tsv
+        # File? align_reads_out_alignments = AlignReads.alignments
+        # File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
+        # File? compute_stats_out_depths_fig = ComputeStats.depths_fig
+        # File? compute_stats_out_output_stats = ComputeStats.output_stats
+        # File? call_variants_out_variants_ch = CallVariants.variants_ch
         File zip_outputs_out_output_zip = ZipOutputs.output_zip
     }
 }
@@ -713,8 +711,8 @@ task ZipOutputs {
 
     command <<<
         mkdir "${TMPDIR}/outputs"
-        cp ${sep=' ' outputFiles} "${TMPDIR}/outputs"
-        tar -czvf "~{prefix}outputs.tar.gz" -C "${TMPDIR}/outputs" .
+        cp "~{sep=' ' outputFiles}" "${TMPDIR}/outputs/"
+        zip -j "~{prefix}outputs.zip" "${TMPDIR}/outputs/" .
     >>>
 
     output {

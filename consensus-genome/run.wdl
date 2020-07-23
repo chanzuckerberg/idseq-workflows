@@ -191,7 +191,8 @@ workflow consensus_genome {
                 QuantifyERCCs.ercc_out,
                 ComputeStats.output_stats,
                 CallVariants.variants_ch
-            ])
+            ]),
+            docker_image_id = docker_image_id
     }
 
     output {
@@ -303,21 +304,21 @@ task FilterReads {
 
             grep --no-group-separator -A3 "kraken:taxid|~{taxid}" \
                 "${TMPDIR}/~{prefix}classified_1.fq" \
-                > "${TMPDIR}/~{prefix}covid_1.fq" || [[ \$? == 1 ]]
+                > "${TMPDIR}/~{prefix}filtered_1.fq" || [[ \$? == 1 ]]
             grep --no-group-separator -A3 "kraken:taxid|~{taxid}" \
                 "${TMPDIR}/~{prefix}classified_2.fq" \
-                > "${TMPDIR}/~{prefix}covid_2.fq" || [[ \$? == 1 ]]
-            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}covid_1.fq" > "~{prefix}covid_1.fq.gz"
-            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}covid_2.fq" > "~{prefix}covid_2.fq.gz"
+                > "${TMPDIR}/~{prefix}filtered_2.fq" || [[ \$? == 1 ]]
+            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}filtered_1.fq" > "~{prefix}filtered_1.fq.gz"
+            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}filtered_2.fq" > "~{prefix}filtered_2.fq.gz"
         else
-            mv "${TMPDIR}/paired1.fq.gz" "~{prefix}covid_1.fq.gz"
-            mv "${TMPDIR}/paired2.fq.gz" "~{prefix}covid_2.fq.gz"
+            mv "${TMPDIR}/paired1.fq.gz" "~{prefix}filtered_1.fq.gz"
+            mv "${TMPDIR}/paired2.fq.gz" "~{prefix}filtered_2.fq.gz"
         fi
     >>>
 
     output {
-        File filtered_fastqs_0 = "~{prefix}covid_1.fq.gz"
-        File filtered_fastqs_1 = "~{prefix}covid_2.fq.gz"
+        File filtered_fastqs_0 = "~{prefix}filtered_1.fq.gz"
+        File filtered_fastqs_1 = "~{prefix}filtered_2.fq.gz"
     }
 
     runtime {
@@ -707,15 +708,22 @@ task ZipOutputs {
     input {
         String prefix
         Array[File] outputFiles
+
+        String docker_image_id
     }
 
     command <<<
-        mkdir "${TMPDIR}/outputs"
-        cp "~{sep=' ' outputFiles}" "${TMPDIR}/outputs/"
-        zip -j "~{prefix}outputs.zip" "${TMPDIR}/outputs/" .
+        mkdir ${TMPDIR}/outputs
+        cp ~{sep=' ' outputFiles} ${TMPDIR}/outputs/
+        zip -r -j ~{prefix}outputs.zip ${TMPDIR}/outputs/
     >>>
 
     output {
-        File output_zip = "~{prefix}outputs.tar.gz"
+        File output_zip = "~{prefix}outputs.zip"
     }
+
+    runtime {
+        docker: docker_image_id
+    }
+
 }

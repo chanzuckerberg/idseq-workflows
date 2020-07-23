@@ -1,3 +1,4 @@
+# The following pipeline was imported from previous work at: https://github.com/czbiohub/sc2-illumina-pipeline
 version 1.0
 
 workflow consensus_genome {
@@ -29,7 +30,7 @@ workflow consensus_genome {
         String  intrahost_ploidy   = "2"
         Boolean intrahost_variants = true
 
-        Float ivarFreqThreshold = 0.6
+        Float ivarFreqThreshold = 0.9
         Int   ivarQualTreshold  = 20
         Int   minDepth          = 10
         Int   mpileupDepth      = 10000
@@ -45,7 +46,7 @@ workflow consensus_genome {
         String dag_branch
     }
 
-    call removeHost {
+    call RemoveHost {
         input:
             prefix = prefix,
             fastqs_0 = fastqs_0,
@@ -54,20 +55,20 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    call quantifyERCCs {
+    call QuantifyERCCs {
         input:
             prefix = prefix,
-            fastqs_0 = removeHost.host_removed_fastqs_0,
-            fastqs_1 = removeHost.host_removed_fastqs_1,
+            fastqs_0 = RemoveHost.host_removed_fastqs_0,
+            fastqs_1 = RemoveHost.host_removed_fastqs_1,
             ercc_fasta = ercc_fasta,
             docker_image_id = docker_image_id
     }
 
-    call filterReads {
+    call FilterReads {
         input:
             prefix = prefix,
-            fastqs_0 = removeHost.host_removed_fastqs_0,
-            fastqs_1 = removeHost.host_removed_fastqs_1,
+            fastqs_0 = RemoveHost.host_removed_fastqs_0,
+            fastqs_1 = RemoveHost.host_removed_fastqs_1,
             ref_fasta = ref_fasta,
             kraken2_db_tar_gz = kraken2_db_tar_gz,
             docker_image_id = docker_image_id
@@ -76,37 +77,37 @@ workflow consensus_genome {
     # skip remaining steps if no SC2 reads were found (28 = size of an empty bgzip file)
     if (size(filterReads.filtered_fastqs_0) > 28) {
         if (trim_adapters) {
-            call trimReads {
+            call TrimReads {
                 input:
-                    fastqs_0 = filterReads.filtered_fastqs_0,
-                    fastqs_1 = filterReads.filtered_fastqs_1,
+                    fastqs_0 = FilterReads.filtered_fastqs_0,
+                    fastqs_1 = FilterReads.filtered_fastqs_1,
                     docker_image_id = docker_image_id
             }
         }
 
-        call alignReads {
+        call AlignReads {
             input:
                 prefix = prefix,
                 sample = sample,
                 # use trimReads output if we ran it; otherwise fall back to filterReads output
-                fastqs_0 = select_first([trimReads.trimmed_fastqs_0, filterReads.filtered_fastqs_0]),
-                fastqs_1 = select_first([trimReads.trimmed_fastqs_1, filterReads.filtered_fastqs_1]),
+                fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
+                fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
                 ref_fasta = ref_fasta,
                 docker_image_id = docker_image_id
         }
 
-        call trimPrimers {
+        call TrimPrimers {
             input:
                 prefix = prefix,
-                alignments = alignReads.alignments,
+                alignments = AlignReads.alignments,
                 primer_bed = primer_bed,
                 docker_image_id = docker_image_id
         }
 
         if (intrahost_variants) {
-            call intrahostVariants {
+            call IntrahostVariants {
                 input:
-                    bam = trimPrimers.trimmed_bam_ch,
+                    bam = TrimPrimers.trimmed_bam_ch,
                     ref_fasta = ref_fasta,
                     intrahost_ploidy = intrahost_ploidy,
                     intrahost_min_frac = intrahost_min_frac,
@@ -114,11 +115,11 @@ workflow consensus_genome {
             }
         }
 
-        call makeConsensus {
+        call MakeConsensus {
             input:
                 prefix = prefix,
                 sample = sample,
-                bam = trimPrimers.trimmed_bam_ch,
+                bam = TrimPrimers.trimmed_bam_ch,
                 ivarFreqThreshold = ivarFreqThreshold,
                 minDepth = minDepth,
                 ivarQualThreshold = ivarQualTreshold,
@@ -126,45 +127,46 @@ workflow consensus_genome {
                 docker_image_id = docker_image_id
         }
 
-        call quast {
+        call Quast {
             input:
                 prefix = prefix,
-                assembly = makeConsensus.consensus_fa,
-                bam = trimPrimers.trimmed_bam_ch,
+                assembly = MakeConsensus.consensus_fa,
+                bam = TrimPrimers.trimmed_bam_ch,
                 # use trimReads output if we ran it; otherwise fall back to filterReads output
-                fastqs_0 = select_first([trimReads.trimmed_fastqs_0, filterReads.filtered_fastqs_0]),
-                fastqs_1 = select_first([trimReads.trimmed_fastqs_1, filterReads.filtered_fastqs_1]),
+                fastqs_0 = select_first([TrimReads.trimmed_fastqs_0, FilterReads.filtered_fastqs_0]),
+                fastqs_1 = select_first([TrimReads.trimmed_fastqs_1, FilterReads.filtered_fastqs_1]),
                 ref_fasta = ref_fasta,
                 no_reads_quast = no_reads_quast,
                 docker_image_id = docker_image_id
         }
 
-        call realignConsensus {
+        call RealignConsensus {
             input:
                 prefix = prefix,
                 sample = sample,
-                realign_fa = makeConsensus.consensus_fa,
+                realign_fa = MakeConsensus.consensus_fa,
                 ref_fasta = ref_fasta,
                 docker_image_id = docker_image_id
         }
-        call callVariants {
+
+        call CallVariants {
             input:
                 prefix = prefix,
-                call_variants_bam = trimPrimers.trimmed_bam_ch,
+                call_variants_bam = TrimPrimers.trimmed_bam_ch,
                 ref_fasta = ref_fasta,
                 bcftoolsCallTheta = bcftoolsCallTheta,
                 minDepth = minDepth,
                 docker_image_id = docker_image_id
         }
 
-        call computeStats {
+        call ComputeStats {
             input:
                 prefix = prefix,
                 sample = sample,
-                cleaned_bam = trimPrimers.trimmed_bam_ch,
-                assembly = makeConsensus.consensus_fa,
-                ercc_stats = quantifyERCCs.ercc_out,
-                vcf = callVariants.variants_ch,
+                cleaned_bam = TrimPrimers.trimmed_bam_ch,
+                assembly = MakeConsensus.consensus_fa,
+                ercc_stats = QuantifyERCCs.ercc_out,
+                vcf = CallVariants.variants_ch,
                 fastqs_0 = fastqs_0,
                 fastqs_1 = fastqs_1,
                 ref_host = ref_host,
@@ -172,19 +174,48 @@ workflow consensus_genome {
         }
     }
 
-    call zipOutputs {
+    call ZipOutputs {
         input:
             prefix = prefix,
             outputFiles = [
-                removeHost.host_removed_fastqs_0,
-                removeHost.host_removed_fastqs_1
+                RemoveHost.host_removed_fastqs_0,
+                RemoveHost.host_removed_fastqs_1,
+                MakeConsensus.consensus_fa,
+                ComputeStats.depths_fig,
+                TrimPrimers.trimmed_bam_ch,
+                TrimPrimers.trimmed_bam_bai,
+                Quast.quast_txt,
+                Quast.quast_tsv,
+                AlignReads.alignments,
+                QuantifyERCCs.ercc_out,
+                QuantifyERCCs.ercc_out,
+                ComputeStats.output_stats,
+                CallVariants.variants_ch,
+                ZipOutputs.output_zip
             ]
+    }
+
+    output {
+        File remove_host_out_host_removed_fastqs_0 = RemoveHost.host_removed_fastqs_0
+        File remove_host__out_host_removed_fastqs_1 = RemoveHost.host_removed_fastqs_1
+        File make_consensus_out_consensus_fa = MakeConsensus.consensus_fa
+        File make_consensus_out_consensus_fa = ComputeStats.depths_fig
+        File trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch
+        File trim_primers__out_trimmed_bam_bai = TrimPrimers.trimmed_bam_bai
+        File quast_out_quast_txt = Quast.quast_txt
+        File quast_out_quast_tsv = Quast.quast_tsv
+        File align_reads_out_alignments = AlignReads.alignments
+        File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
+        File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
+        File compute_stats_out_output_stats = ComputeStats.output_stats
+        File call_variants_out_variants_ch = CallVariants.variants_ch
+        File zip_outputs_out_output_zip = ZipOutputs.output_zip
     }
 }
 
 # TODO: task to validate input
 
-task removeHost {
+task RemoveHost {
     # TODO: process errors: no reads left
     input {
         String prefix
@@ -196,10 +227,10 @@ task removeHost {
     }
 
     command <<<
-        export CPUS=`nproc --all`
-        minimap2 -t $CPUS -ax sr ~{ref_host} ~{fastqs_0} ~{fastqs_1} | \
-        samtools view -@ $CPUS -b -f 4 | \
-        samtools fastq -@ $CPUS -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
+        export CORES=`nproc --all`
+        minimap2 -t $CORES -ax sr ~{ref_host} ~{fastqs_0} ~{fastqs_1} | \
+        samtools view -@ $CORES -b -f 4 | \
+        samtools fastq -@ $CORES -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
     >>>
 
     output {
@@ -212,7 +243,7 @@ task removeHost {
     }
 }
 
-task quantifyERCCs {
+task QuantifyERCCs {
     input {
         String prefix
         File fastqs_0
@@ -236,7 +267,7 @@ task quantifyERCCs {
     }
 }
 
-task filterReads {
+task FilterReads {
     # TODO: process errors: no reads left
     input {
         String prefix
@@ -253,11 +284,11 @@ task filterReads {
     command <<<
         set -euxo pipefail
         export TMPDIR=${TMPDIR:-/tmp}
-        export CPUS=`nproc --all`
+        export CORES=`nproc --all`
 
-        minimap2 -ax sr -t $CPUS "~{ref_fasta}" ~{fastqs_0} ~{fastqs_1} \
-            | samtools sort -@ $CPUS -n -O bam -o "${TMPDIR}/mapped.bam"
-        samtools fastq -@ $CPUS -G 12 -1 "${TMPDIR}/paired1.fq.gz" -2 "${TMPDIR}/paired2.fq.gz" \
+        minimap2 -ax sr -t $CORES "~{ref_fasta}" ~{fastqs_0} ~{fastqs_1} \
+            | samtools sort -@ $CORES -n -O bam -o "${TMPDIR}/mapped.bam"
+        samtools fastq -@ $CORES -G 12 -1 "${TMPDIR}/paired1.fq.gz" -2 "${TMPDIR}/paired2.fq.gz" \
             -0 /dev/null -s /dev/null -n -c 6 "${TMPDIR}/mapped.bam"
 
         paired1size=$(stat --printf="%s" "${TMPDIR}/paired1.fq.gz")
@@ -265,7 +296,7 @@ task filterReads {
             mkdir "${TMPDIR}/kraken_db"
             tar -xzv -C "${TMPDIR}/kraken_db" -f "~{kraken2_db_tar_gz}"
             kraken2 --db "${TMPDIR}"/kraken_db/* \
-                --threads $CPUS \
+                --threads $CORES \
                 --report "${TMPDIR}/~{prefix}kraken2_report.txt" \
                 --classified-out "${TMPDIR}/~{prefix}classified#.fq" \
                 --output - \
@@ -278,8 +309,8 @@ task filterReads {
             grep --no-group-separator -A3 "kraken:taxid|~{taxid}" \
                 "${TMPDIR}/~{prefix}classified_2.fq" \
                 > "${TMPDIR}/~{prefix}covid_2.fq" || [[ \$? == 1 ]]
-            bgzip -@ $CPUS -c "${TMPDIR}/~{prefix}covid_1.fq" > "~{prefix}covid_1.fq.gz"
-            bgzip -@ $CPUS -c "${TMPDIR}/~{prefix}covid_2.fq" > "~{prefix}covid_2.fq.gz"
+            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}covid_1.fq" > "~{prefix}covid_1.fq.gz"
+            bgzip -@ $CORES -c "${TMPDIR}/~{prefix}covid_2.fq" > "~{prefix}covid_2.fq.gz"
         else
             mv "${TMPDIR}/paired1.fq.gz" "~{prefix}covid_1.fq.gz"
             mv "${TMPDIR}/paired2.fq.gz" "~{prefix}covid_2.fq.gz"
@@ -296,7 +327,7 @@ task filterReads {
     }
 }
 
-task trimReads {
+task TrimReads {
     # TODO: process errors: no reads left
     input {
         File fastqs_0
@@ -319,7 +350,7 @@ task trimReads {
     }
 }
 
-task alignReads {
+task AlignReads {
     # TODO: process errors: no reads left (unlikely)
     input {
         String prefix
@@ -335,6 +366,7 @@ task alignReads {
         set -euxo pipefail
 
         export CORES=`nproc --all`
+        # Sample id included in the bam  files
         minimap2 -ax sr -t $CORES -R '@RG\tID:~{sample}\tSM:~{sample}' "~{ref_fasta}" "~{fastqs_0}" "~{fastqs_1}" \
             | samtools sort -@ $CORES -O bam -o "~{prefix}aligned_reads.bam"
     >>>
@@ -348,7 +380,7 @@ task alignReads {
     }
 }
 
-task trimPrimers {
+task TrimPrimers {
     input {
         String prefix
         File alignments
@@ -378,7 +410,7 @@ task trimPrimers {
 
 }
 
-task intrahostVariants {
+task IntrahostVariants {
     input {
         File bam
         File ref_fasta
@@ -390,10 +422,10 @@ task intrahostVariants {
     }
 
     command <<<
-        export CPUS=`nproc --all`
+        export CORES=`nproc --all`
         ls "~{bam}" | xargs -I % samtools index %
         samtools faidx "~{ref_fasta}"
-        freebayes-parallel <(fasta_generate_regions.py "~{ref_fasta}.fai" 1000) $CPUS \
+        freebayes-parallel <(fasta_generate_regions.py "~{ref_fasta}.fai" 1000) $CORES \
             --ploidy "~{intrahost_ploidy}" \
             --min-alternate-fraction "~{intrahost_min_frac}" \
             -f "~{ref_fasta}" "~{bam}" |
@@ -410,7 +442,7 @@ task intrahostVariants {
     }
 }
 
-task makeConsensus {
+task MakeConsensus {
     input {
         String prefix
         String sample
@@ -429,18 +461,18 @@ task makeConsensus {
         samtools mpileup -A -d "~{mpileupDepth}" -Q0 "~{bam}" | ivar consensus -q "~{ivarQualThreshold}" -t "~{ivarFreqThreshold}" -m "~{minDepth}" -n N -p "~{prefix}primertrimmed.consensus"
         echo ">""~{sample}" > "~{prefix}consensus.fa"
         seqtk seq -l 50 "~{prefix}primertrimmed.consensus.fa" | tail -n +2 >> "~{prefix}consensus.fa"
-
     >>>
 
     output {
         File consensus_fa = "~{prefix}consensus.fa"
     }
+
     runtime {
         docker: docker_image_id
     }
 }
 
-task quast {
+task Quast {
     input {
         String prefix
         File assembly   # same as consensus_fa
@@ -454,27 +486,28 @@ task quast {
         Int threads = 4
 
         String docker_image_id
-
     }
 
     command <<<
-        export CPUS=`nproc --all`
+        export CORES=`nproc --all`
         a=`cat "~{assembly}" | wc -l`
 
         if [ $a -ne 0 ]; then
             if [ ~{no_reads_quast} = true ]; then
-                quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CPUS --ref-bam "~{bam}" "~{assembly}"
+                quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}"
             else
-                quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CPUS --ref-bam "~{bam}" "~{assembly}" -1 "~{fastqs_0}" -2 "~{fastqs_0}"
+                quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}" -1 "~{fastqs_0}" -2 "~{fastqs_1}"
             fi
         else
             mkdir quast
-            echo "quast folder is empty" > "quast/~{prefix}quast.txt"
+            echo "quast folder is empty" > "quast/report.txt"
         fi
     >>>
 
     output {
         Array[File] quast_dir = glob("quast/*")
+        File quast_txt = "quast/report.txt"
+        File? quast_tsv = "quast/report.tsv"
     }
 
     runtime {
@@ -482,7 +515,7 @@ task quast {
     }
 }
 
-task realignConsensus {
+task RealignConsensus {
     input {
         String prefix
         String sample
@@ -507,7 +540,7 @@ task realignConsensus {
     }
 }
 
-task callVariants {
+task CallVariants {
     input {
         String prefix
         File call_variants_bam  # same as primertrimmed_bam produced by realignConsensus
@@ -535,7 +568,7 @@ task callVariants {
     }
 }
 
-task computeStats {
+task ComputeStats {
     input {
         String prefix
         String sample
@@ -672,7 +705,7 @@ task computeStats {
     }
 }
 
-task zipOutputs {
+task ZipOutputs {
     input {
         String prefix
         Array[File] outputFiles
@@ -685,6 +718,6 @@ task zipOutputs {
     >>>
 
     output {
-        File outputs = "~{prefix}outputs.tar.gz"
+        File output_zip = "~{prefix}outputs.tar.gz"
     }
 }

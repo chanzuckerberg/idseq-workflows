@@ -14,6 +14,7 @@ task RunAlignmentRemotely_gsnap_out {
     String index_dir_suffix
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
+	Boolean? use_gsnapl
   }
   command<<<
   set -euxo pipefail
@@ -28,7 +29,7 @@ task RunAlignmentRemotely_gsnap_out {
     --output-files '["gsnap.m8", "gsnap.deduped.m8", "gsnap.hitsummary.tab", "gsnap_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}", "deuterostome_db": "~{if use_deuterostome_filter then '~{deuterostome_db}' else ''}"}' \
-    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist}}'
+    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist}, ~{ if defined(use_gsnapl) then '"use_gsnapl": ~{use_gsnapl}' else '' }'
   >>>
   output {
     File gsnap_m8 = "gsnap.m8"

@@ -14,7 +14,7 @@ task RunAlignmentRemotely_gsnap_out {
     String index_dir_suffix
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
-	Boolean? use_gsnapl
+    Boolean? use_gsnapl
   }
   command<<<
   set -euxo pipefail

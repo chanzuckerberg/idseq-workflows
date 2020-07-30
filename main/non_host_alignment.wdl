@@ -7,6 +7,7 @@ task RunAlignmentRemotely_gsnap_out {
     String s3_wd_uri
     Array[File] host_filter_out_gsnap_filter_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+    File? index
     String lineage_db
     String accession2taxid_db
     String taxon_blacklist
@@ -50,6 +51,7 @@ task RunAlignmentRemotely_rapsearch2_out {
     String s3_wd_uri
     Array[File] host_filter_out_gsnap_filter_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
+    File? index
     String lineage_db
     String accession2taxid_db
     String taxon_blacklist

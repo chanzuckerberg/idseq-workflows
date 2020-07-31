@@ -66,7 +66,7 @@ task RunAlignment_rapsearch2_out {
   fi
   idseq-dag-run-step --workflow-name non_host_alignment \
     --step-module idseq_dag.steps.run_alignment \
-    --step-class PipelineStepRunAlignmentRemotely \
+    --step-class PipelineStepRunAlignment \
     --step-name rapsearch2_out \
     --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["rapsearch2.m8", "rapsearch2.deduped.m8", "rapsearch2.hitsummary.tab", "rapsearch2_counts_with_dcr.json"]' \
@@ -189,7 +189,7 @@ workflow idseq_non_host_alignment {
     Boolean use_taxon_whitelist = false
   }
 
-  call RunAlignmentRemotely_gsnap_out {
+  call RunAlignment_gsnap_out {
     input:
       docker_image_id = docker_image_id,
       dag_branch = dag_branch,
@@ -205,7 +205,7 @@ workflow idseq_non_host_alignment {
       use_taxon_whitelist = use_taxon_whitelist
   }
 
-  call RunAlignmentRemotely_rapsearch2_out {
+  call RunAlignment_rapsearch2_out {
     input:
       docker_image_id = docker_image_id,
       dag_branch = dag_branch,
@@ -224,12 +224,12 @@ workflow idseq_non_host_alignment {
       docker_image_id = docker_image_id,
       dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
-      gsnap_m8 = RunAlignmentRemotely_gsnap_out.gsnap_m8,
-      gsnap_deduped_m8 = RunAlignmentRemotely_gsnap_out.gsnap_deduped_m8,
-      gsnap_hitsummary_tab = RunAlignmentRemotely_gsnap_out.gsnap_hitsummary_tab,
-      gsnap_counts_with_dcr_json = RunAlignmentRemotely_gsnap_out.gsnap_counts_with_dcr_json,
-      rapsearch2_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_m8,
-      rapsearch2_deduped_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_deduped_m8,
+      gsnap_m8 = RunAlignment_gsnap_out.gsnap_m8,
+      gsnap_deduped_m8 = RunAlignment_gsnap_out.gsnap_deduped_m8,
+      gsnap_hitsummary_tab = RunAlignment_gsnap_out.gsnap_hitsummary_tab,
+      gsnap_counts_with_dcr_json = RunAlignment_gsnap_out.gsnap_counts_with_dcr_json,
+      rapsearch2_m8 = RunAlignment_rapsearch2_out.rapsearch2_m8,
+      rapsearch2_deduped_m8 = RunAlignment_rapsearch2_out.rapsearch2_deduped_m8,
       rapsearch2_hitsummary_tab = RunAlignmentRemotely_rapsearch2_out.rapsearch2_hitsummary_tab,
       rapsearch2_counts_with_dcr_json = RunAlignmentRemotely_rapsearch2_out.rapsearch2_counts_with_dcr_json
   }

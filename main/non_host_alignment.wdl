@@ -15,7 +15,7 @@ task RunAlignmentRemotely_gsnap_out {
     String index_dir_suffix
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
-    Boolean? force_gsnapl
+    Boolean? run_locally = false
   }
   command<<<
   set -euxo pipefail
@@ -23,14 +23,14 @@ task RunAlignmentRemotely_gsnap_out {
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   idseq-dag-run-step --workflow-name non_host_alignment \
-    --step-module idseq_dag.steps.run_alignment_remotely \
-    --step-class PipelineStepRunAlignmentRemotely \
+    --step-module idseq_dag.steps.run_alignment \
+    --step-class PipelineStepRunAlignment \
     --step-name gsnap_out \
     --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["gsnap.m8", "gsnap.deduped.m8", "gsnap.hitsummary.tab", "gsnap_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}", "deuterostome_db": "~{if use_deuterostome_filter then '~{deuterostome_db}' else ''}"}' \
-    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist} ~{ if defined(force_gsnapl) then ', "force_gsnapl": true' else '' }'
+    --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}", "deuterostome_db": "~{if use_deuterostome_filter then '~{deuterostome_db}' else ''}" ~{if defined(index) then ', "index": "~{index}"' else ''} }' \
+    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist}, "run_locally": ~{run_locally} }'
   >>>
   output {
     File gsnap_m8 = "gsnap.m8"

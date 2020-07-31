@@ -230,8 +230,8 @@ workflow idseq_non_host_alignment {
       gsnap_counts_with_dcr_json = RunAlignment_gsnap_out.gsnap_counts_with_dcr_json,
       rapsearch2_m8 = RunAlignment_rapsearch2_out.rapsearch2_m8,
       rapsearch2_deduped_m8 = RunAlignment_rapsearch2_out.rapsearch2_deduped_m8,
-      rapsearch2_hitsummary_tab = RunAlignmentRemotely_rapsearch2_out.rapsearch2_hitsummary_tab,
-      rapsearch2_counts_with_dcr_json = RunAlignmentRemotely_rapsearch2_out.rapsearch2_counts_with_dcr_json
+      rapsearch2_hitsummary_tab = RunAlignment_rapsearch2_out.rapsearch2_hitsummary_tab,
+      rapsearch2_counts_with_dcr_json = RunAlignment_rapsearch2_out.rapsearch2_counts_with_dcr_json
   }
 
   call GenerateAnnotatedFasta {
@@ -240,30 +240,30 @@ workflow idseq_non_host_alignment {
       dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       host_filter_out_gsnap_filter_fa = select_all([host_filter_out_gsnap_filter_1_fa, host_filter_out_gsnap_filter_2_fa, host_filter_out_gsnap_filter_merged_fa]),
-      gsnap_m8 = RunAlignmentRemotely_gsnap_out.gsnap_m8,
-      gsnap_deduped_m8 = RunAlignmentRemotely_gsnap_out.gsnap_deduped_m8,
-      gsnap_hitsummary_tab = RunAlignmentRemotely_gsnap_out.gsnap_hitsummary_tab,
-      gsnap_counts_with_dcr_json = RunAlignmentRemotely_gsnap_out.gsnap_counts_with_dcr_json,
-      rapsearch2_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_m8,
-      rapsearch2_deduped_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_deduped_m8,
-      rapsearch2_hitsummary_tab = RunAlignmentRemotely_rapsearch2_out.rapsearch2_hitsummary_tab,
-      rapsearch2_counts_with_dcr_json = RunAlignmentRemotely_rapsearch2_out.rapsearch2_counts_with_dcr_json,
+      gsnap_m8 = RunAlignment_gsnap_out.gsnap_m8,
+      gsnap_deduped_m8 = RunAlignment_gsnap_out.gsnap_deduped_m8,
+      gsnap_hitsummary_tab = RunAlignment_gsnap_out.gsnap_hitsummary_tab,
+      gsnap_counts_with_dcr_json = RunAlignment_gsnap_out.gsnap_counts_with_dcr_json,
+      rapsearch2_m8 = RunAlignment_rapsearch2_out.rapsearch2_m8,
+      rapsearch2_deduped_m8 = RunAlignment_rapsearch2_out.rapsearch2_deduped_m8,
+      rapsearch2_hitsummary_tab = RunAlignment_rapsearch2_out.rapsearch2_hitsummary_tab,
+      rapsearch2_counts_with_dcr_json = RunAlignment_rapsearch2_out.rapsearch2_counts_with_dcr_json,
       cdhitdup_out_dedup1_fa_clstr = cdhitdup_out_dedup1_fa_clstr,
       cdhitdup_out_dedup1_fa = cdhitdup_out_dedup1_fa,
       cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
   }
 
   output {
-    File gsnap_out_gsnap_m8 = RunAlignmentRemotely_gsnap_out.gsnap_m8
-    File gsnap_out_gsnap_deduped_m8 = RunAlignmentRemotely_gsnap_out.gsnap_deduped_m8
-    File gsnap_out_gsnap_hitsummary_tab = RunAlignmentRemotely_gsnap_out.gsnap_hitsummary_tab
-    File gsnap_out_gsnap_counts_with_dcr_json = RunAlignmentRemotely_gsnap_out.gsnap_counts_with_dcr_json
-    File? gsnap_out_count = RunAlignmentRemotely_gsnap_out.output_read_count
-    File rapsearch2_out_rapsearch2_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_m8
-    File rapsearch2_out_rapsearch2_deduped_m8 = RunAlignmentRemotely_rapsearch2_out.rapsearch2_deduped_m8
-    File rapsearch2_out_rapsearch2_hitsummary_tab = RunAlignmentRemotely_rapsearch2_out.rapsearch2_hitsummary_tab
-    File rapsearch2_out_rapsearch2_counts_with_dcr_json = RunAlignmentRemotely_rapsearch2_out.rapsearch2_counts_with_dcr_json
-    File? rapsearch2_out_count = RunAlignmentRemotely_rapsearch2_out.output_read_count
+    File gsnap_out_gsnap_m8 = RunAlignment_gsnap_out.gsnap_m8
+    File gsnap_out_gsnap_deduped_m8 = RunAlignment_gsnap_out.gsnap_deduped_m8
+    File gsnap_out_gsnap_hitsummary_tab = RunAlignment_gsnap_out.gsnap_hitsummary_tab
+    File gsnap_out_gsnap_counts_with_dcr_json = RunAlignment_gsnap_out.gsnap_counts_with_dcr_json
+    File? gsnap_out_count = RunAlignment_gsnap_out.output_read_count
+    File rapsearch2_out_rapsearch2_m8 = RunAlignment_rapsearch2_out.rapsearch2_m8
+    File rapsearch2_out_rapsearch2_deduped_m8 = RunAlignment_rapsearch2_out.rapsearch2_deduped_m8
+    File rapsearch2_out_rapsearch2_hitsummary_tab = RunAlignment_rapsearch2_out.rapsearch2_hitsummary_tab
+    File rapsearch2_out_rapsearch2_counts_with_dcr_json = RunAlignment_rapsearch2_out.rapsearch2_counts_with_dcr_json
+    File? rapsearch2_out_count = RunAlignment_rapsearch2_out.output_read_count
     File taxon_count_out_taxon_counts_with_dcr_json = CombineTaxonCounts.taxon_counts_with_dcr_json
     File? taxon_count_out_count = CombineTaxonCounts.output_read_count
     File annotated_out_annotated_merged_fa = GenerateAnnotatedFasta.annotated_merged_fa

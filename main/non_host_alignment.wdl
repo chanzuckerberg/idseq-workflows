@@ -1,6 +1,6 @@
 version 1.0
 
-task RunAlignmentRemotely_gsnap_out {
+task RunAlignment_gsnap_out {
   input {
     String docker_image_id
     String dag_branch
@@ -44,7 +44,7 @@ task RunAlignmentRemotely_gsnap_out {
   }
 }
 
-task RunAlignmentRemotely_rapsearch2_out {
+task RunAlignment_rapsearch2_out {
   input {
     String docker_image_id
     String dag_branch
@@ -57,6 +57,7 @@ task RunAlignmentRemotely_rapsearch2_out {
     File? index
     String index_dir_suffix
     Boolean use_taxon_whitelist
+	Boolean? run_locally = false
   }
   command<<<
   set -euxo pipefail
@@ -64,7 +65,7 @@ task RunAlignmentRemotely_rapsearch2_out {
     pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
   fi
   idseq-dag-run-step --workflow-name non_host_alignment \
-    --step-module idseq_dag.steps.run_alignment_remotely \
+    --step-module idseq_dag.steps.run_alignment \
     --step-class PipelineStepRunAlignmentRemotely \
     --step-name rapsearch2_out \
     --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \

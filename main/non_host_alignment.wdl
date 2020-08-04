@@ -57,7 +57,7 @@ task RunAlignment_rapsearch2_out {
     File? index
     String index_dir_suffix
     Boolean use_taxon_whitelist
-	Boolean? run_locally = false
+	  Boolean? run_locally = false
   }
   command<<<
   set -euxo pipefail

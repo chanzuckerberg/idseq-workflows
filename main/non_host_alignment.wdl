@@ -5,6 +5,7 @@ task RunAlignment_gsnap_out {
     String docker_image_id
     String dag_branch
     String s3_wd_uri
+    String? genome_name
     Array[File] host_filter_out_gsnap_filter_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File? index
@@ -30,7 +31,7 @@ task RunAlignment_gsnap_out {
     --output-files '["gsnap.m8", "gsnap.deduped.m8", "gsnap.hitsummary.tab", "gsnap_counts_with_dcr.json"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{"lineage_db": "~{lineage_db}", "accession2taxid_db": "~{accession2taxid_db}", "taxon_blacklist": "~{taxon_blacklist}", "deuterostome_db": "~{if use_deuterostome_filter then '~{deuterostome_db}' else ''}" ~{if defined(index) then ', "index": "~{index}"' else ''} }' \
-    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist}, "run_locally": ~{run_locally} }'
+    --additional-attributes '{"alignment_algorithm": "gsnap", "index_dir_suffix": "~{index_dir_suffix}", "use_taxon_whitelist": ~{use_taxon_whitelist}, "run_locally": ~{run_locally} ~{if defined(genome_name) then ' , "genome_name": "~{genome_name}"' else ''} }'
   >>>
   output {
     File gsnap_m8 = "gsnap.m8"

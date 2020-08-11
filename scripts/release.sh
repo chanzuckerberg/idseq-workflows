@@ -16,16 +16,21 @@ if ! [[ -d "$(dirname $0)/../$WORKFLOW_NAME" ]]; then
     exit 1
 fi
 
+OLD_TAG=$(git describe --tags --match "${WORKFLOW_NAME}-*")
 if [[ $RELEASE_TYPE == major ]]; then
-    TAG=$(git describe --tags --match "${WORKFLOW_NAME}-*" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-@{[$2+1]}.0.0"')
+    TAG=$(echo "$OLD_TAG" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-@{[$2+1]}.0.0"')
 elif [[ $RELEASE_TYPE == minor ]]; then
-    TAG=$(git describe --tags --match "${WORKFLOW_NAME}-*" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-$2.@{[$3+1]}.0"')
+    TAG=$(echo "$OLD_TAG" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-$2.@{[$3+1]}.0"')
 elif [[ $RELEASE_TYPE == patch ]]; then
-    TAG=$(git describe --tags --match "${WORKFLOW_NAME}-*" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-$2.$3.@{[$4+1]}"')
+    TAG=$(echo "$OLD_TAG" | perl -ne '/(.+)-(\d+)\.(\d+)\.(\d+)/; print "$1-$2.$3.@{[$4+1]}"')
 else
     echo "RELEASE_TYPE should be one of major, minor, patch" 1>&2
     exit 1
 fi
 
-git tag "$TAG"
+TAG_MSG=$(mktemp)
+echo "# Changes for ${TAG} ($(date +%Y-%m-%d))" > $TAG_MSG
+echo "$RELEASE_NOTES" >> $TAG_MSG
+git log --pretty=format:%s ${OLD_TAG}..HEAD >> $TAG_MSG
+git tag --annotate --file $TAG_MSG "$TAG"
 git push origin "$TAG"

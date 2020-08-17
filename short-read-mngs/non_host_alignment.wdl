@@ -188,6 +188,8 @@ workflow idseq_non_host_alignment {
     String deuterostome_db = "s3://~{idseq_db_bucket}/taxonomy/~{index_version}/deuterostome_taxids.txt"
     Boolean use_deuterostome_filter = true
     Boolean use_taxon_whitelist = false
+    File? local_gsnap_index
+    File? local_rapsearch2_index
   }
 
   call RunAlignment_gsnap_out {
@@ -203,7 +205,9 @@ workflow idseq_non_host_alignment {
       deuterostome_db = deuterostome_db,
       index_dir_suffix = index_dir_suffix,
       use_deuterostome_filter = use_deuterostome_filter,
-      use_taxon_whitelist = use_taxon_whitelist
+      use_taxon_whitelist = use_taxon_whitelist,
+      run_locally = defined(local_gsnap_index),
+      index = local_gsnap_index
   }
 
   call RunAlignment_rapsearch2_out {
@@ -217,7 +221,9 @@ workflow idseq_non_host_alignment {
       accession2taxid_db = accession2taxid_db,
       taxon_blacklist = taxon_blacklist,
       index_dir_suffix = index_dir_suffix,
-      use_taxon_whitelist = use_taxon_whitelist
+      use_taxon_whitelist = use_taxon_whitelist,
+      run_locally = defined(local_rapsearch2_index),
+      index = local_rapsearch2_index
   }
 
   call CombineTaxonCounts {

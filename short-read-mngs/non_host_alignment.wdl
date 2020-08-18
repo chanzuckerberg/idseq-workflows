@@ -189,6 +189,7 @@ workflow idseq_non_host_alignment {
     Boolean use_deuterostome_filter = true
     Boolean use_taxon_whitelist = false
     File? local_gsnap_index
+    String? local_gsnap_genome_name
     File? local_rapsearch2_index
   }
 
@@ -207,7 +208,8 @@ workflow idseq_non_host_alignment {
       use_deuterostome_filter = use_deuterostome_filter,
       use_taxon_whitelist = use_taxon_whitelist,
       run_locally = defined(local_gsnap_index),
-      index = local_gsnap_index
+      index = local_gsnap_index,
+      genome_name = local_gsnap_genome_name
   }
 
   call RunAlignment_rapsearch2_out {

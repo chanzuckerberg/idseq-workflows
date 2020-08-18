@@ -136,7 +136,6 @@ class PipelineStepRunAlignment(PipelineStep):
         self.chunks_in_flight_semaphore = threading.Semaphore(MAX_CHUNKS_IN_FLIGHT)
         self.chunks_result_dir_local = os.path.join(self.output_dir_local, "chunks")
         self.chunks_result_dir_s3 = os.path.join(self.output_dir_s3, "chunks")
-        self.batch_job_desc_bucket = get_batch_job_desc_bucket()
         self.is_local_run = bool(self.additional_attributes.get("run_locally"))
         self.genome_name = self.additional_attributes.get("genome_name", "nt_k16")
         self.index = self.additional_files.get("index")
@@ -145,6 +144,7 @@ class PipelineStepRunAlignment(PipelineStep):
         else:
             assert not self.index, "passing in an index is not supported for remote runs"
             command.make_dirs(self.chunks_result_dir_local)
+            self.batch_job_desc_bucket = get_batch_job_desc_bucket()
 
     def count_reads(self):
         pass

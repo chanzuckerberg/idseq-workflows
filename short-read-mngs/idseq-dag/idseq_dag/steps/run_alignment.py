@@ -199,13 +199,13 @@ class PipelineStepRunAlignment(PipelineStep):
         if self.alignment_algorithm == "gsnap":
             # Hack to determine gsnap vs gsnapl
             error_message = run(
-                ['gsnapl-2018-10-26', '-D', index_path, '-d', self.genome_name],
+                ['gsnapl.avx2-2018-10-26', '-D', index_path, '-d', self.genome_name],
                 input='>'.encode('utf-8'),
                 stderr=PIPE,
                 stdout=PIPE
             ).stderr
             # note, alignment uses a pinned version of gmap/gsnap
-            gsnap_command = "gsnap-2018-10-26" if 'please run gsnap instead' in error_message.decode('utf-8') else "gsnapl-2018-10-26"
+            gsnap_command = "gsnap.avx2-2018-10-26" if 'please run gsnap instead' in error_message.decode('utf-8') else "gsnapl.avx2-2018-10-26"
         else:
             gsnap_command = None
 

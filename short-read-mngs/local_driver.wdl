@@ -70,6 +70,8 @@ workflow idseq_short_read_mngs {
         fastqs_1 = fastqs_1,
         nonhost_fasta_refined_taxid_annot_fasta = postprocess.refined_taxid_fasta_out_assembly_refined_taxid_annot_fasta,
         cdhitdup_clusters_dedup1_fa_clstr = host_filter.cdhitdup_out_dedup1_fa_clstr,
-        deduped_fasta_dedup1_fa = host_filter.cdhitdup_out_dedup1_fa
+        deduped_fasta_dedup1_fa = host_filter.cdhitdup_out_dedup1_fa,
+        docker_image_id = docker_image_id,
+        s3_wd_uri = s3_wd_uri
     }
 }

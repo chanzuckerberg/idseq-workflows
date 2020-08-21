@@ -131,6 +131,8 @@ task RunSRST2 {
     String s3_wd_uri
     Array[File] fastqs
     String file_ext
+    File resist_genome_db = "s3://idseq-public-references/amr/ARGannot_r2.fasta"
+    File resist_genome_bed = "s3://idseq-public-references/amr/argannot_genome.bed"
   }
   command<<<
   set -euxo pipefail
@@ -144,7 +146,7 @@ task RunSRST2 {
     --input-files '[["~{sep='","' fastqs}"]]' \
     --output-files '["out.log", "out__genes__ARGannot_r2__results.txt", "out__fullgenes__ARGannot_r2__results.txt", "amr_processed_results.csv", "amr_summary_results.csv", "output__.ARGannot_r2.sorted.bam"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"resist_gene_db": "s3://idseq-public-references/amr/ARGannot_r2.fasta", "resist_genome_bed": "s3://idseq-public-references/amr/argannot_genome.bed"}' \
+    --additional-files '{"resist_gene_db": "~{resist_genome_db}"", "resist_genome_bed": "~{resist_genome_bed}"}' \
     --additional-attributes '{"min_cov": 0, "n_threads": 16, "file_ext": "~{file_ext}"}'
   >>>
   output {

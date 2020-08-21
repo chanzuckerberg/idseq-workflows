@@ -96,8 +96,8 @@ task GenerateAlignmentViz {
     File taxid_annot_sorted_family_nr_fasta
     File taxid_locations_family_nr_json
     File taxid_locations_combined_json
-    String nt_db
-    String nt_loc_db
+    File nt_db
+    File nt_loc_db
   }
   command<<<
   set -euxo pipefail

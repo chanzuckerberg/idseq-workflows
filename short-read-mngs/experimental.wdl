@@ -173,7 +173,7 @@ task GenerateCoverageViz {
     File contig_in_contig_stats_json
     File contig_in_contigs_fasta
     File gsnap_m8_gsnap_deduped_m8
-    String nt_info_db
+    File nt_info_db
   }
   command<<<
   set -euxo pipefail

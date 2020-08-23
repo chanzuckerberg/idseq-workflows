@@ -259,11 +259,10 @@ workflow idseq_experimental {
     File cdhitdup_clusters_dedup1_fa_clstr
     File deduped_fasta_dedup1_fa
     String file_ext = "fastq"
-    String idseq_db_bucket = "idseq-public-references"
     String index_version = "2020-04-20"
-    String nt_db = "s3://~{idseq_db_bucket}/ncbi-sources/~{index_version}/nt"
-    String nt_loc_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_loc.db"
-    String nt_info_db = "s3://~{idseq_db_bucket}/alignment_data/~{index_version}/nt_info.db"
+    File nt_db = "s3://idseq-public-references/ncbi-sources/2020-04-20/nt"
+    File nt_loc_db = "s3://idseq-public-references/alignment_data/2020-04-20/nt_loc.db"
+    File nt_info_db = "s3://idseq-public-references/alignment_data/2020-04-20/nt_info.db"
     File lineage_db = "s3://idseq-public-references/taxonomy/2020-02-10/taxid-lineages.db"
     # non-public databases:
     File? resist_genome_db #= "s3://idseq-public-references/amr/ARGannot_r2.fasta"

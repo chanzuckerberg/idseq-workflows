@@ -3,7 +3,6 @@ version 1.0
 task GenerateTaxidFasta {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     File taxid_fasta_in_annotated_merged_fa
     File taxid_fasta_in_gsnap_hitsummary_tab
@@ -12,9 +11,6 @@ task GenerateTaxidFasta {
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.generate_taxid_fasta \
     --step-class PipelineStepGenerateTaxidFasta \
@@ -37,15 +33,11 @@ task GenerateTaxidFasta {
 task GenerateTaxidLocator {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     File taxid_annot_fasta
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.generate_taxid_locator \
     --step-class PipelineStepGenerateTaxidLocator \
@@ -80,7 +72,6 @@ task GenerateTaxidLocator {
 task GenerateAlignmentViz {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     File gsnap_m8_gsnap_deduped_m8
     File taxid_annot_sorted_nt_fasta
@@ -101,9 +92,6 @@ task GenerateAlignmentViz {
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.generate_alignment_viz \
     --step-class PipelineStepGenerateAlignmentViz \
@@ -127,16 +115,12 @@ task GenerateAlignmentViz {
 task RunSRST2 {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     Array[File] fastqs
     String file_ext
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.run_srst2 \
     --step-class PipelineStepRunSRST2 \
@@ -164,7 +148,6 @@ task RunSRST2 {
 task GenerateCoverageViz {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     File refined_gsnap_in_gsnap_reassigned_m8
     File refined_gsnap_in_gsnap_hitsummary2_tab
@@ -177,9 +160,6 @@ task GenerateCoverageViz {
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.generate_coverage_viz \
     --step-class PipelineStepGenerateCoverageViz \
@@ -203,7 +183,6 @@ task GenerateCoverageViz {
 task NonhostFastq {
   input {
     String docker_image_id
-    String dag_branch
     String s3_wd_uri
     Array[File] fastqs
     File nonhost_fasta_refined_taxid_annot_fasta
@@ -213,9 +192,6 @@ task NonhostFastq {
   }
   command<<<
   set -euxo pipefail
-  if [[ -n "~{dag_branch}" ]]; then
-    pip3 install --upgrade https://github.com/chanzuckerberg/idseq-dag/archive/~{dag_branch}.tar.gz
-  fi
   idseq-dag-run-step --workflow-name experimental \
     --step-module idseq_dag.steps.nonhost_fastq \
     --step-class PipelineStepNonhostFastq \
@@ -239,7 +215,6 @@ task NonhostFastq {
 workflow idseq_experimental {
   input {
     String docker_image_id
-    String dag_branch = ""
     String s3_wd_uri
     File taxid_fasta_in_annotated_merged_fa
     File taxid_fasta_in_gsnap_hitsummary_tab
@@ -269,7 +244,6 @@ workflow idseq_experimental {
   call GenerateTaxidFasta {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       taxid_fasta_in_annotated_merged_fa = taxid_fasta_in_annotated_merged_fa,
       taxid_fasta_in_gsnap_hitsummary_tab = taxid_fasta_in_gsnap_hitsummary_tab,
@@ -280,7 +254,6 @@ workflow idseq_experimental {
   call GenerateTaxidLocator {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       taxid_annot_fasta = GenerateTaxidFasta.taxid_annot_fasta
   }
@@ -288,7 +261,6 @@ workflow idseq_experimental {
   call GenerateAlignmentViz {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       gsnap_m8_gsnap_deduped_m8 = gsnap_m8_gsnap_deduped_m8,
       taxid_annot_sorted_nt_fasta = GenerateTaxidLocator.taxid_annot_sorted_nt_fasta,
@@ -311,7 +283,6 @@ workflow idseq_experimental {
   call RunSRST2 {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       fastqs = select_all([fastqs_0, fastqs_1]),
       file_ext = file_ext
@@ -320,7 +291,6 @@ workflow idseq_experimental {
   call GenerateCoverageViz {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       refined_gsnap_in_gsnap_reassigned_m8 = refined_gsnap_in_gsnap_reassigned_m8,
       refined_gsnap_in_gsnap_hitsummary2_tab = refined_gsnap_in_gsnap_hitsummary2_tab,
@@ -335,7 +305,6 @@ workflow idseq_experimental {
   call NonhostFastq {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       fastqs = select_all([fastqs_0, fastqs_1]),
       nonhost_fasta_refined_taxid_annot_fasta = nonhost_fasta_refined_taxid_annot_fasta,

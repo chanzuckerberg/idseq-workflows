@@ -286,7 +286,6 @@ workflow idseq_experimental {
   call RunSRST2 {
     input:
       docker_image_id = docker_image_id,
-      dag_branch = dag_branch,
       s3_wd_uri = s3_wd_uri,
       fastqs = select_all([fastqs_0, fastqs_1]),
       file_ext = file_ext,

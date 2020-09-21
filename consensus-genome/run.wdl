@@ -39,7 +39,6 @@ workflow consensus_genome {
 
         # Dummy values - required by SFN interface
         String s3_wd_uri
-        String dag_branch
     }
 
     call RemoveHost {

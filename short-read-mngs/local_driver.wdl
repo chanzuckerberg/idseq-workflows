@@ -32,7 +32,6 @@ workflow idseq_short_read_mngs {
         host_filter_out_gsnap_filter_merged_fa = host_filter.gsnap_filter_out_gsnap_filter_merged_fa,
         cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = host_filter.cdhitdup_out_cdhitdup_cluster_sizes_tsv,
         cdhitdup_out_dedup1_fa_clstr = host_filter.cdhitdup_out_dedup1_fa_clstr,
-        cdhitdup_out_dedup1_fa = host_filter.cdhitdup_out_dedup1_fa,
         local_gsnap_index = non_host_gsnap_index,
         local_gsnap_genome_name = non_host_gsnap_genome_name,
         local_rapsearch2_index = non_host_rapsearch2_index,
@@ -46,7 +45,6 @@ workflow idseq_short_read_mngs {
         host_filter_out_gsnap_filter_merged_fa = host_filter.gsnap_filter_out_gsnap_filter_merged_fa,
         cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = host_filter.cdhitdup_out_cdhitdup_cluster_sizes_tsv,
         cdhitdup_out_dedup1_fa_clstr = host_filter.cdhitdup_out_dedup1_fa_clstr,
-        cdhitdup_out_dedup1_fa = host_filter.cdhitdup_out_dedup1_fa,
         gsnap_out_gsnap_m8 = non_host_alignment.gsnap_out_gsnap_m8,
         gsnap_out_gsnap_deduped_m8 = non_host_alignment.gsnap_out_gsnap_deduped_m8,
         gsnap_out_gsnap_hitsummary_tab = non_host_alignment.gsnap_out_gsnap_hitsummary_tab,
@@ -74,7 +72,6 @@ workflow idseq_short_read_mngs {
         fastqs_1 = fastqs_1,
         nonhost_fasta_refined_taxid_annot_fasta = postprocess.refined_taxid_fasta_out_assembly_refined_taxid_annot_fasta,
         cdhitdup_clusters_dedup1_fa_clstr = host_filter.cdhitdup_out_dedup1_fa_clstr,
-        deduped_fasta_dedup1_fa = host_filter.cdhitdup_out_dedup1_fa,
         docker_image_id = docker_image_id,
         s3_wd_uri = s3_wd_uri
     }

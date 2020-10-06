@@ -133,8 +133,8 @@ task RunCDHitDup {
   command<<<
   set -euxo pipefail
   idseq-dag-run-step --workflow-name host_filter \
-    --step-module idseq_dag.steps.run_cdhitdup \
-    --step-class PipelineStepRunCDHitDup \
+    --step-module idseq_dag.steps.run_idseq_dedup \
+    --step-class PipelineStepRunIDSeqDedup \
     --step-name cdhitdup_out \
     --input-files '[["~{sep='","' priceseq_fa}"]]' \
     --output-files '[~{if length(priceseq_fa) == 2 then '"dedup1.fa", "dedup2.fa"' else '"dedup1.fa"'}, "dedup1.fa.clstr", "cdhitdup_cluster_sizes.tsv"]' \

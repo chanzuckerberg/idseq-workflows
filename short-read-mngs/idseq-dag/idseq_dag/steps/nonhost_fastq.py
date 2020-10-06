@@ -18,10 +18,7 @@ class PipelineStepNonhostFastq(PipelineStep):
         if READ_COUNTING_MODE == ReadCountingMode.COUNT_ALL:
             # NOTE: this will load the set of all original read headers, which
             # could be several GBs in the worst case.
-            clusters_dict = parse_clusters_file(
-                self.input_files_local[2][0],
-                self.input_files_local[3][0]
-            )
+            clusters_dict = parse_clusters_file(self.input_files_local[2][0])
 
         self.run_with_tax_ids(None, None, clusters_dict)
         # TODO: (gdingle): Generate taxon-specific downloads in idseq-web at

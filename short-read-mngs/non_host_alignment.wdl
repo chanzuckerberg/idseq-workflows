@@ -127,7 +127,6 @@ task GenerateAnnotatedFasta {
     File rapsearch2_hitsummary_tab
     File rapsearch2_counts_with_dcr_json
     File cdhitdup_out_dedup1_fa_clstr
-    File cdhitdup_out_dedup1_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
   }
   command<<<
@@ -136,7 +135,7 @@ task GenerateAnnotatedFasta {
     --step-module idseq_dag.steps.generate_annotated_fasta \
     --step-class PipelineStepGenerateAnnotatedFasta \
     --step-name annotated_out \
-    --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{gsnap_m8}", "~{gsnap_deduped_m8}", "~{gsnap_hitsummary_tab}", "~{gsnap_counts_with_dcr_json}"], ["~{rapsearch2_m8}", "~{rapsearch2_deduped_m8}", "~{rapsearch2_hitsummary_tab}", "~{rapsearch2_counts_with_dcr_json}"], ["~{cdhitdup_out_dedup1_fa_clstr}", "~{cdhitdup_out_dedup1_fa}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
+    --input-files '[["~{sep='","' host_filter_out_gsnap_filter_fa}"], ["~{gsnap_m8}", "~{gsnap_deduped_m8}", "~{gsnap_hitsummary_tab}", "~{gsnap_counts_with_dcr_json}"], ["~{rapsearch2_m8}", "~{rapsearch2_deduped_m8}", "~{rapsearch2_hitsummary_tab}", "~{rapsearch2_counts_with_dcr_json}"], ["~{cdhitdup_out_dedup1_fa_clstr}"], ["~{cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv}"]]' \
     --output-files '["annotated_merged.fa", "unidentified.fa"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{}' \
@@ -161,7 +160,6 @@ workflow idseq_non_host_alignment {
     File? host_filter_out_gsnap_filter_merged_fa
     File cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
     File cdhitdup_out_dedup1_fa_clstr
-    File cdhitdup_out_dedup1_fa
     String index_version = "2020-04-20"
     File lineage_db = "s3://idseq-public-references/taxonomy/2020-04-20/taxid-lineages.db"
     File accession2taxid_db = "s3://idseq-public-references/alignment_data/2020-04-20/accession2taxid.db"
@@ -236,7 +234,6 @@ workflow idseq_non_host_alignment {
       rapsearch2_hitsummary_tab = RunAlignment_rapsearch2_out.rapsearch2_hitsummary_tab,
       rapsearch2_counts_with_dcr_json = RunAlignment_rapsearch2_out.rapsearch2_counts_with_dcr_json,
       cdhitdup_out_dedup1_fa_clstr = cdhitdup_out_dedup1_fa_clstr,
-      cdhitdup_out_dedup1_fa = cdhitdup_out_dedup1_fa,
       cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv = cdhitdup_cluster_sizes_cdhitdup_cluster_sizes_tsv
   }
 

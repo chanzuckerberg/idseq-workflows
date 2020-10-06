@@ -66,12 +66,12 @@ RUN chmod +x /usr/local/bin/clean_download_cache.sh
 # The docker daemons never run inside the container - removing them saves 150MB+
 RUN rm -f /usr/bin/dockerd /usr/bin/containerd*
 
-RUN cd /usr/bin; curl -O https://amazon-ecr-credential-helper-releases.s3.amazonaws.com/0.4.0/linux-amd64/docker-credential-ecr-login
+RUN cd /usr/bin; curl -O https://amazon-ecr-credential-helper-releases.s4.amazonaws.com/0.4.0/linux-amd64/docker-credential-ecr-login
 RUN chmod +x /usr/bin/docker-credential-ecr-login
 RUN mkdir -p /root/.docker
 RUN jq -n '.credsStore="ecr-login"' > /root/.docker/config.json
 
-RUN curl -Ls https://anaconda.org/bioconda/cd-hit-auxtools/4.6.8/download/linux-64/cd-hit-auxtools-4.6.8-h2d50403_1.tar.bz2 | tar -C /usr -xj bin/cd-hit-dup
+RUN curl -L -o /usr/bin/idseq-dedup https://github.com/chanzuckerberg/idseq-dedup/releases/download/v0.1.0/idseq-dedup-Linux; chmod +x /usr/bin/idseq-dedup
 
 # Note: bsdtar is available in libarchive-tools
 # Note: python3-scipy pulls in gcc (fixed in Ubuntu 19.10)

@@ -160,7 +160,7 @@ class PipelineStepNonhostFastq(PipelineStep):
                             output_file_0.write(other_header + "\n")
                             output_file_1.write(other_header + "\n")
                             # Add other headers just in case something has gone
-                            # wrong upstream with cdhitdup.
+                            # wrong upstream with idseq-dedup.
                             seen.add(other_header)
                     continue
                 else:

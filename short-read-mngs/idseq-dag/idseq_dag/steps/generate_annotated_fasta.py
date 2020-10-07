@@ -35,10 +35,10 @@ class PipelineStepGenerateAnnotatedFasta(PipelineCountingStep):
         # See app/lib/dags/postprocess.json.jbuilder in idseq-web
         if len(self.input_files_local) == 5:
             assert READ_COUNTING_MODE == ReadCountingMode.COUNT_ALL
-            cdhitdup_clusters = self.input_files_local[3][0]
+            idseq_dedup_clusters = self.input_files_local[3][0]
             # NOTE: this will load the set of all original read headers, which
             # could be several GBs in the worst case.
-            clusters_dict = parse_clusters_file(cdhitdup_clusters)
+            clusters_dict = parse_clusters_file(idseq_dedup_clusters)
         else:
             clusters_dict = None
 
@@ -109,7 +109,7 @@ class PipelineStepGenerateAnnotatedFasta(PipelineCountingStep):
     ):
         """
         Generates files with all unmapped reads. If COUNT_ALL, which was added
-        in v4, then include non-unique reads extracted upstream by cdhitdup.
+        in v4, then include non-unique reads extracted upstream by idseq-dedup.
 
         unique_output_fa exists primarily for counting. See count_reads above.
         """

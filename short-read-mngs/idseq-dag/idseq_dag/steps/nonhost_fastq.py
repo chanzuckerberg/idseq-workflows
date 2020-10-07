@@ -6,7 +6,7 @@ import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns
 
 from idseq_dag.engine.pipeline_step import PipelineStep
-from idseq_dag.util.cdhit_clusters import parse_clusters_file
+from idseq_dag.util.idseq_dedup_clusters import parse_clusters_file
 from idseq_dag.util.count import READ_COUNTING_MODE, ReadCountingMode
 
 

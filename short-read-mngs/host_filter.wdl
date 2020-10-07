@@ -137,7 +137,7 @@ task RunCDHitDup {
     --step-class PipelineStepRunIDSeqDedup \
     --step-name cdhitdup_out \
     --input-files '[["~{sep='","' priceseq_fa}"]]' \
-    --output-files '[~{if length(priceseq_fa) == 2 then '"dedup1.fa", "dedup2.fa"' else '"dedup1.fa"'}, "dedup1.fa.clstr", "cdhitdup_cluster_sizes.tsv"]' \
+    --output-files '[~{if length(priceseq_fa) == 2 then '"dedup1.fa", "dedup2.fa"' else '"dedup1.fa"'}, "clusters.csv", "cdhitdup_cluster_sizes.tsv"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{}' \
     --additional-attributes '{}'
@@ -145,7 +145,7 @@ task RunCDHitDup {
   output {
     File dedup1_fa = "dedup1.fa"
     File? dedup2_fa = "dedup2.fa"
-    File dedup1_fa_clstr = "dedup1.fa.clstr"
+    File dedup1_fa_clstr = "clusters.csv"
     File cdhitdup_cluster_sizes_tsv = "cdhitdup_cluster_sizes.tsv"
     File? output_read_count = "cdhitdup_out.count"
   }

@@ -25,12 +25,13 @@ class PipelineStepRunIDSeqDedup(PipelineStep):  # Deliberately not PipelineCount
         duplicate_cluster_sizes_path = output_files[-1]
         assert duplicate_cluster_sizes_path.endswith(".tsv"), str(output_files)
         duplicate_clusters_path = output_files[-2]
-        assert duplicate_clusters_path.endswith(".clstr"), str(output_files)
+        assert duplicate_clusters_path.endswith(".csv"), str(output_files)
 
         # See docstring above for explanation of these options.
         idseq_dedup_params = [
             '-i', input_fas[0], '-o', output_fas[0],
-            '-l', '70'
+            '-l', '70',
+            '-c', duplicate_clusters_path,
         ]
         if len(input_fas) == 2:
             idseq_dedup_params += ['-i', input_fas[1], '-o', output_fas[1]]

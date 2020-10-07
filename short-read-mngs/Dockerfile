@@ -66,7 +66,7 @@ RUN chmod +x /usr/local/bin/clean_download_cache.sh
 # The docker daemons never run inside the container - removing them saves 150MB+
 RUN rm -f /usr/bin/dockerd /usr/bin/containerd*
 
-RUN cd /usr/bin; curl -O https://amazon-ecr-credential-helper-releases.s4.amazonaws.com/0.4.0/linux-amd64/docker-credential-ecr-login
+RUN cd /usr/bin; curl -O https://amazon-ecr-credential-helper-releases.s3.amazonaws.com/0.4.0/linux-amd64/docker-credential-ecr-login
 RUN chmod +x /usr/bin/docker-credential-ecr-login
 RUN mkdir -p /root/.docker
 RUN jq -n '.credsStore="ecr-login"' > /root/.docker/config.json

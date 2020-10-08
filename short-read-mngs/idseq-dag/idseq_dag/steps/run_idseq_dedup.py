@@ -10,8 +10,25 @@ from idseq_dag.util.count import save_duplicate_cluster_sizes
 
 
 class PipelineStepRunIDSeqDedup(PipelineStep):  # Deliberately not PipelineCountingStep
-    # TODO: add description
-    """"""
+    """Identifies duplicate reads.
+
+    ```
+    idseq-dedup
+    -i {input_fasta}
+    -o {output_fasta}
+    -l 70
+    ```
+
+    Require exact match on first 70 nucleotides (`-l 70`) to deem fragments identical.
+    Only 70, because sequencer errors increase toward the end of a read.
+    For an illustration of this effect, look [here](https://insilicoseq.readthedocs.io/en/latest/iss/model.html).
+
+    Per the idseq-dedup Documentation, available [here](https://github.com/chanzuckerberg/idseq-dedup),
+    the idseq-dedup command above will output two or three non-empty files.
+    The first output is named exactly as directed via the “-o” option, and contains all representative cluster read IDs.
+    The second output with extension “.csv” relates each read ID to its representative cluster read ID.
+    For paired end reads, a third output lists the cluster representatives for R2 reads.
+    """
 
     def validate_input_files(self):
         if not count.files_have_min_reads(self.input_files_local[0], 2):

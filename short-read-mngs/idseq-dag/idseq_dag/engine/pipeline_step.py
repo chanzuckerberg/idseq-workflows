@@ -317,7 +317,7 @@ class PipelineStep(object):
 class PipelineCountingStep(PipelineStep):
 
     """PipelineStep that counts nonunique reads based on back-calculation from cluster sizes
-TSV file emitted by `PipelineStepRunIDSeqDedup`. Only steps that follow cd-hit-dup are eligible
+TSV file emitted by `PipelineStepRunIDSeqDedup`. Only steps that follow idseq-dedup are eligible
 for this, and not all of them (not all steps count their outputs)."""
 
     def input_cluster_sizes_path(self):
@@ -327,7 +327,7 @@ for this, and not all of them (not all steps count their outputs)."""
         return tsv
 
     def _count_reads_work(self, cluster_key, counter_name, fasta_files):
-        # Count reads including duplicates (expanding cd-hit-dup clusters).
+        # Count reads including duplicates (expanding duplicate clusters).
         self.should_count_reads = True
         self.counts_dict[counter_name] = count.reads_in_group(
             file_group=fasta_files,

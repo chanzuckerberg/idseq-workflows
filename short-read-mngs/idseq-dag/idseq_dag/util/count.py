@@ -145,12 +145,12 @@ def reads_in_group(file_group, max_fragments=None, cluster_sizes=None, cluster_k
     If the input is single, then 1 fragment == 1 read.
     If the input is paired, then 1 fragment == 2 reads.
 
-    The term "cluster" refers to the output of the pipeline step cd-hit-dup, which
+    The term "cluster" refers to the output of the pipeline step idseq-dedup, which
     identifies and groups together duplicate fragments into clusters.  Duplicates
     typically result from PCR or other amplificaiton.  It is cost effective for the
     pipeline to operate on a single representative fragment from each cluster, then
     infer back the original fragment count using the cluster sizes information
-    emitted by the cd-hit-dup step.  The caller should load that information via
+    emitted by the idseq-dedup step.  The caller should load that information via
     m8.load_cluster_sizes() before passing it to this function.
 
     RESTRICTIONS

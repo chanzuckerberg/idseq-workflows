@@ -88,7 +88,7 @@ _localize_lock = threading.Lock()
 
 def run_local_sample(sample, docker_image_id, dir, references, verbose):
     local_driver_wdl = str(
-        Path(__file__).parent.parent.parent / "short-read-mngs" / "local_driver.wdl"
+        Path(__file__).parent.parent.parent.parent / "short-read-mngs" / "local_driver.wdl"
     )
 
     # formulate input by merging selected dicts from BENCHMARK_YML

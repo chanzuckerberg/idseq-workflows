@@ -60,7 +60,9 @@ def run_local(samples, docker_image_id, dir, references, verbose):
 
     # parallelize runs on a thread pool; miniwdl itself may further restrict concurrency
     failure = None
-    with concurrent.futures.ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max(4, multiprocessing.cpu_count())
+    ) as executor:
         futures = {
             executor.submit(
                 run_local_sample, sample_i, docker_image_id, dir, references, verbose

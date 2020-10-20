@@ -12,7 +12,7 @@ samples:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/atcc_staggered_R1.fastq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/atcc_staggered_R2.fastq.gz
-  unambiguouslymapped_ds_get:
+  unambiguouslymapped_ds_gut:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/UnAmbiguouslyMapped_ds.gut.fq.gz
 references:

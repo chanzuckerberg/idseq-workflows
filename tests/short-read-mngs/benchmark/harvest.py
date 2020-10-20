@@ -98,6 +98,8 @@ def harvest_sample(sample, outputs_json):
         outputs_json, "postprocess.refined_annotated_out_count"
     )["unidentified_fasta"]
 
+    ans.update(contigs_summary(outputs_json))
+
     # collect NR/NT taxon counts
     ans = {"read_counts": ans, "taxon_counts": {}}
     ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(sample, outputs_json, "NT")
@@ -161,6 +163,32 @@ def read_output_jsonfile(outputs_json, key):
     filename = outputs_json["idseq_short_read_mngs." + key]
     with open(filename) as infile:
         return json.load(infile)
+
+
+def contigs_summary(outputs_json):
+    fasta = outputs_json["idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_fasta"]
+    lengths = []
+    with open(fasta) as lines:
+        cur = None
+        for line in lines:
+            if line.startswith(">"):
+                if cur is not None:
+                    lengths.append(cur)
+                cur = 0
+            else:
+                cur += len(line.strip())
+        if cur is not None:
+            lengths.append(cur)
+    lengths.sort(reverse=True)
+    total_nt = sum(lengths)
+    cur = 0
+    for i, length_i in enumerate(lengths):
+        if cur + length_i > total_nt / 2:
+            N50 = length_i
+            break
+        cur += length_i
+    assert N50
+    return {"contigs_count": len(lengths), "contigs_total_nt": total_nt, "contigs_N50": N50}
 
 
 if __name__ == "__main__":

@@ -107,14 +107,29 @@ def harvest_sample(sample, outputs_json, taxadb):
 
     ans.update(contigs_summary(outputs_json))
 
+    contig_summary = read_output_jsonfile(
+        outputs_json, "postprocess.contig_summary_out_assembly_combined_contig_summary_json"
+    )
+    contig_summary = {(elt["count_type"], elt["taxid"]): elt for elt in contig_summary}
+    contigs_mapped = set()
+    for elt in contig_summary.values():
+        for key in elt["contig_counts"]:
+            if key != "*":
+                contigs_mapped.add(key)
+    ans["contigs_mapped"] = len(contigs_mapped)
+
     # collect NR/NT taxon counts
     ans = {"read_counts": ans, "taxon_counts": {}}
-    ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(sample, outputs_json, "NT", taxadb)
-    ans["taxon_counts"]["NR"] = harvest_sample_taxon_counts(sample, outputs_json, "NR", taxadb)
+    ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(
+        sample, outputs_json, contig_summary, "NT", taxadb
+    )
+    ans["taxon_counts"]["NR"] = harvest_sample_taxon_counts(
+        sample, outputs_json, contig_summary, "NR", taxadb
+    )
     return ans
 
 
-def harvest_sample_taxon_counts(sample, outputs_json, dbtype, taxadb):
+def harvest_sample_taxon_counts(sample, outputs_json, contig_summary, dbtype, taxadb):
     assert dbtype in ("NR", "NT")
 
     # read in the taxon counts & contig summary JSON files
@@ -122,10 +137,6 @@ def harvest_sample_taxon_counts(sample, outputs_json, dbtype, taxadb):
         outputs_json,
         "postprocess.refined_taxon_count_out_assembly_refined_taxon_counts_with_dcr_json",
     )["pipeline_output"]["taxon_counts_attributes"]
-    contig_summary = read_output_jsonfile(
-        outputs_json, "postprocess.contig_summary_out_assembly_combined_contig_summary_json"
-    )
-    contig_summary = {(elt["count_type"], elt["taxid"]): elt for elt in contig_summary}
 
     # for each species in the taxon counts (excluding genus/family for now)
     ans = {}

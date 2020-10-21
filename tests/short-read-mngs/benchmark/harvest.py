@@ -92,7 +92,7 @@ def harvest_sample(sample, outputs_json, taxadb):
         "subsampled",
         "gsnap_filter",
     ]:
-        ans[step + "_out_reads"] = read_output_jsonfile(
+        ans[step + "_reads"] = read_output_jsonfile(
             outputs_json, "host_filter." + step + "_out_count"
         )[step + "_out"]
 
@@ -115,22 +115,25 @@ def harvest_sample(sample, outputs_json, taxadb):
             if key != "*":
                 contigs_mapped.add(key)
 
-    ans.update(contigs_stats(outputs_json))
-    for key, value in contigs_stats(outputs_json, contigs_mapped).items():
+    contig_lengths = load_contig_lengths(outputs_json)
+    ans.update(contigs_stats(contig_lengths))
+    for key, value in contigs_stats(contig_lengths, contigs_mapped).items():
         ans["mapped_" + key] = value
 
     # collect NR/NT taxon counts
     ans = {"counts": ans, "taxa": {}}
     ans["taxa"]["NT"] = harvest_sample_taxon_counts(
-        sample, outputs_json, contig_summary, "NT", taxadb
+        sample, outputs_json, contig_summary, contig_lengths, "NT", taxadb
     )
     ans["taxa"]["NR"] = harvest_sample_taxon_counts(
-        sample, outputs_json, contig_summary, "NR", taxadb
+        sample, outputs_json, contig_summary, contig_lengths, "NR", taxadb
     )
     return ans
 
 
-def harvest_sample_taxon_counts(sample, outputs_json, contig_summary, dbtype, taxadb):
+def harvest_sample_taxon_counts(
+    sample, outputs_json, contig_summary, contig_lengths, dbtype, taxadb
+):
     assert dbtype in ("NR", "NT")
 
     # read in the taxon counts & contig summary JSON files
@@ -148,7 +151,7 @@ def harvest_sample_taxon_counts(sample, outputs_json, contig_summary, dbtype, ta
             if contig_summary_key in contig_summary:
                 rslt_contigs = contig_summary[contig_summary_key]["contig_counts"]
             else:
-                rslt_contigs = None
+                rslt_contigs = {}
             assert rslt["tax_id"] not in ans
 
             # combine info
@@ -156,23 +159,19 @@ def harvest_sample_taxon_counts(sample, outputs_json, contig_summary, dbtype, ta
                 "tax_level": rslt["tax_level"],
                 "reads": rslt["nonunique_count"],
                 "reads_dedup": rslt["unique_count"],
-                "contigs": sum(1 for k in rslt_contigs if k != "*") if rslt_contigs else 0,
-                "contigs_reads": sum(rslt_contigs[k] for k in rslt_contigs if k != "*")
-                if rslt_contigs
-                else 0,
                 "avg_aln_len": rslt["alignment_length"],
-                "avg_pct_id": rslt["percent_identity"],
-                "avg_log10_E": rslt["e_value"],
             }
+            info.update(contigs_stats(contig_lengths, (k for k in rslt_contigs if k != "*")))
+            info["contigs_reads"] = sum(rslt_contigs[k] for k in rslt_contigs if k != "*")
             if taxadb:
                 info["tax_name"] = taxadb.sci_name(int(rslt["tax_id"]))
             ans[rslt["tax_id"]] = info
 
-    # sort by abundance, then E
+    # sort by abundance
     return {
         k: v
         for k, v in sorted(
-            ans.items(), key=lambda kv: (0 - kv[1]["reads_dedup"], kv[1]["avg_log10_E"])
+            ans.items(), key=lambda kv: (kv[1]["reads_dedup"], kv[1]["avg_aln_len"]), reverse=True
         )
     }
 
@@ -186,30 +185,40 @@ def read_output_jsonfile(outputs_json, key):
         return json.load(infile)
 
 
-def contigs_stats(outputs_json, ids=None):
+def load_contig_lengths(outputs_json):
+    """
+    Generate dict contig id -> length
+    """
     fasta = outputs_json["idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_fasta"]
-    lengths = []
+    lengths = {}
     with open(fasta) as lines:
         cur = None
         for line in lines:
             if line.startswith(">"):
-                if cur is not None and (not ids or line[1:].strip() in ids):
-                    lengths.append(cur)
-                cur = 0
+                if cur is not None:
+                    lengths[cur[0]] = cur[1]
+                cur = (line[1:].strip(), 0)
             else:
-                cur += len(line.strip())
+                cur = (cur[0], cur[1] + len(line.strip()))
         if cur is not None:
-            lengths.append(cur)
+            lengths[cur[0]] = cur[1]
+    return lengths
+
+
+def contigs_stats(contig_lengths, ids=None):
+    lengths = []
+    for id in ids if ids else contig_lengths.keys():
+        lengths.append(contig_lengths[id])
     lengths.sort(reverse=True)
     total_nt = sum(lengths)
-    cur = 0
+    cumlen = 0
+    N50 = 0
     for i, length_i in enumerate(lengths):
-        if cur + length_i > total_nt / 2:
+        if cumlen + length_i >= total_nt / 2:
             N50 = length_i
             break
-        cur += length_i
-    assert N50
-    return {"contigs_count": len(lengths), "contigs_total_nt": total_nt, "contigs_N50": N50}
+        cumlen += length_i
+    return {"contigs": len(lengths), "contigs_nt": total_nt, "contigs_N50": N50}
 
 
 if __name__ == "__main__":

@@ -105,8 +105,6 @@ def harvest_sample(sample, outputs_json, taxadb):
         outputs_json, "postprocess.refined_annotated_out_count"
     )["unidentified_fasta"]
 
-    ans.update(contigs_summary(outputs_json))
-
     contig_summary = read_output_jsonfile(
         outputs_json, "postprocess.contig_summary_out_assembly_combined_contig_summary_json"
     )
@@ -116,7 +114,11 @@ def harvest_sample(sample, outputs_json, taxadb):
         for key in elt["contig_counts"]:
             if key != "*":
                 contigs_mapped.add(key)
-    ans["contigs_mapped"] = len(contigs_mapped)
+    ans["mapped_contigs"] = len(contigs_mapped)
+
+    ans.update(contigs_stats(outputs_json))
+    for key, value in contigs_stats(outputs_json, contigs_mapped).items():
+        ans["mapped_" + key] = value
 
     # collect NR/NT taxon counts
     ans = {"read_counts": ans, "taxon_counts": {}}
@@ -185,14 +187,14 @@ def read_output_jsonfile(outputs_json, key):
         return json.load(infile)
 
 
-def contigs_summary(outputs_json):
+def contigs_stats(outputs_json, ids=None):
     fasta = outputs_json["idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_fasta"]
     lengths = []
     with open(fasta) as lines:
         cur = None
         for line in lines:
             if line.startswith(">"):
-                if cur is not None:
+                if cur is not None and (not ids or line[1:].strip() in ids):
                     lengths.append(cur)
                 cur = 0
             else:

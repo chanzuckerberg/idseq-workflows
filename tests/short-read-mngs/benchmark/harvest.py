@@ -77,10 +77,10 @@ def harvest_sample(sample, outputs_json, taxadb):
     ans = {}
 
     # collect read counts at various pipeline steps
-    paired = "fastqs_1" in BENCHMARKS["samples"][sample]["inputs"]
-    ans["input_read_pairs" if paired else "input_reads"] = read_output_jsonfile(
-        outputs_json, "host_filter.input_read_count"
-    )["fastqs"]
+    ans["paired"] = "fastqs_1" in BENCHMARKS["samples"][sample]["inputs"]
+    ans["input_reads"] = read_output_jsonfile(outputs_json, "host_filter.input_read_count")[
+        "fastqs"
+    ]
     for step in [
         "validate_input",
         "star",
@@ -92,7 +92,7 @@ def harvest_sample(sample, outputs_json, taxadb):
         "subsampled",
         "gsnap_filter",
     ]:
-        ans[step + ("_out_read_pairs" if paired else "_out_reads")] = read_output_jsonfile(
+        ans[step + "_out_reads"] = read_output_jsonfile(
             outputs_json, "host_filter." + step + "_out_count"
         )[step + "_out"]
 
@@ -120,11 +120,11 @@ def harvest_sample(sample, outputs_json, taxadb):
         ans["mapped_" + key] = value
 
     # collect NR/NT taxon counts
-    ans = {"read_counts": ans, "taxon_counts": {}}
-    ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(
+    ans = {"counts": ans, "taxa": {}}
+    ans["taxa"]["NT"] = harvest_sample_taxon_counts(
         sample, outputs_json, contig_summary, "NT", taxadb
     )
-    ans["taxon_counts"]["NR"] = harvest_sample_taxon_counts(
+    ans["taxa"]["NR"] = harvest_sample_taxon_counts(
         sample, outputs_json, contig_summary, "NR", taxadb
     )
     return ans

@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from _util import load_benchmarks_yml
+from taxadb.taxid import TaxID
 
 BENCHMARKS = load_benchmarks_yml()
 
@@ -28,12 +29,15 @@ def main():
         required=True,
         help="output JSON file",
     )
+    parser.add_argument(
+        "--taxadb", metavar="FILENAME", type=str, help="taxadb SQLite file, if available"
+    )
 
     args = parser.parse_args(sys.argv[1:])
     harvest(**vars(args))
 
 
-def harvest(outputs, outfilename):
+def harvest(outputs, outfilename, taxadb):
     queue = []
 
     # process command line args
@@ -54,19 +58,22 @@ def harvest(outputs, outfilename):
         assert (rundir / "outputs.json").is_file(), f"couldn't find outputs.json in {rundir}"
         queue.append((sample, rundir))
 
+    if taxadb:
+        taxadb = TaxID(dbtype="sqlite", dbname=taxadb)
+
     # harvest each supplied sample
     rslt = {}
     for sample, rundir in queue:
         assert sample not in rslt, f"repeated sample {sample}"
         with open(rundir / "outputs.json") as infile:
             outputs_json = json.load(infile)
-        rslt[sample] = harvest_sample(sample, outputs_json)
+        rslt[sample] = harvest_sample(sample, outputs_json, taxadb)
 
     with open(outfilename, mode="w") as outfile:
         print(json.dumps(rslt, indent=2), file=outfile)
 
 
-def harvest_sample(sample, outputs_json):
+def harvest_sample(sample, outputs_json, taxadb):
     ans = {}
 
     # collect read counts at various pipeline steps
@@ -102,12 +109,12 @@ def harvest_sample(sample, outputs_json):
 
     # collect NR/NT taxon counts
     ans = {"read_counts": ans, "taxon_counts": {}}
-    ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(sample, outputs_json, "NT")
-    ans["taxon_counts"]["NR"] = harvest_sample_taxon_counts(sample, outputs_json, "NR")
+    ans["taxon_counts"]["NT"] = harvest_sample_taxon_counts(sample, outputs_json, "NT", taxadb)
+    ans["taxon_counts"]["NR"] = harvest_sample_taxon_counts(sample, outputs_json, "NR", taxadb)
     return ans
 
 
-def harvest_sample_taxon_counts(sample, outputs_json, dbtype):
+def harvest_sample_taxon_counts(sample, outputs_json, dbtype, taxadb):
     assert dbtype in ("NR", "NT")
 
     # read in the taxon counts & contig summary JSON files
@@ -133,7 +140,7 @@ def harvest_sample_taxon_counts(sample, outputs_json, dbtype):
             assert rslt["tax_id"] not in ans
 
             # combine info
-            ans[rslt["tax_id"]] = {
+            info = {
                 "tax_level": rslt["tax_level"],
                 "reads": rslt["nonunique_count"],
                 "reads_dedup": rslt["unique_count"],
@@ -145,7 +152,9 @@ def harvest_sample_taxon_counts(sample, outputs_json, dbtype):
                 "avg_pct_id": rslt["percent_identity"],
                 "avg_log10_E": rslt["e_value"],
             }
-            # TODO: get taxon name?
+            if taxadb:
+                info["tax_name"] = taxadb.sci_name(int(rslt["tax_id"]))
+            ans[rslt["tax_id"]] = info
 
     # sort by abundance, then E
     return {

@@ -114,7 +114,6 @@ def harvest_sample(sample, outputs_json, taxadb):
         for key in elt["contig_counts"]:
             if key != "*":
                 contigs_mapped.add(key)
-    ans["mapped_contigs"] = len(contigs_mapped)
 
     ans.update(contigs_stats(outputs_json))
     for key, value in contigs_stats(outputs_json, contigs_mapped).items():

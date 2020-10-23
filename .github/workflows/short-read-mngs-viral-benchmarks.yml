@@ -39,7 +39,10 @@ jobs:
           # running out of space
           export MINIWDL__FILE_IO__OUTPUT_HARDLINKS=true
           export MINIWDL__FILE_IO__DELETE_WORK=success
-          export AWS_EC2_METADATA_DISABLED=true  # https://github.com/aws/aws-cli/issues/5234#issuecomment-705831465
+          # explicitly block EC2 IMDS endpoint to work around awscli issue:
+          # https://github.com/aws/aws-cli/issues/5234#issuecomment-635459464
+          # https://github.com/aws/aws-cli/issues/5262
+          sudo ip route add blackhole 169.254.169.254
 
           tests/short-read-mngs/benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
             --settings ${{ matrix.settings }} ${{ matrix.sample }}

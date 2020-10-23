@@ -355,7 +355,7 @@ task TrimReads {
     >>>
 
     output {
-        Array[File]+ trimmed_fastqs = glob("*_val_1.fq.gz")
+        Array[File]+ trimmed_fastqs = glob("*_val_*.fq.gz")
     }
 
     runtime {

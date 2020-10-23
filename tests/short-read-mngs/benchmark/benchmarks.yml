@@ -1,25 +1,21 @@
 ---
-samples:
-  idseq_bench:
-    inputs:
-      fastqs_0: s3://idseq-bench/datasets/fastqs/norg_13__nacc_35__uniform_weight_per_organism__hiseq_reads__v10__R1.fastq.gz
-      fastqs_1: s3://idseq-bench/datasets/fastqs/norg_13__nacc_35__uniform_weight_per_organism__hiseq_reads__v10__R2.fastq.gz
-  idseq_bench_github:
-    inputs:
-      fastqs_0: https://github.com/chanzuckerberg/idseq-workflows/raw/main/tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R1.fastq.gz
-      fastqs_1: https://github.com/chanzuckerberg/idseq-workflows/raw/main/tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R2.fastq.gz
-  atcc_staggered:
-    inputs:
-      fastqs_0: s3://idseq-bench/datasets/fastqs/atcc_even_R1.fastq.gz
-      fastqs_1: s3://idseq-bench/datasets/fastqs/atcc_even_R2.fastq.gz
-  atcc_even:
-    inputs:
-      fastqs_0: s3://idseq-bench/datasets/fastqs/atcc_staggered_R1.fastq.gz
-      fastqs_1: s3://idseq-bench/datasets/fastqs/atcc_staggered_R2.fastq.gz
-  unambiguouslymapped_ds_gut:
-    inputs:
-      fastqs_0: s3://idseq-bench/datasets/fastqs/UnAmbiguouslyMapped_ds.gut.fq.gz
-references:
+
+# short-read-mngs benchmark specs
+#
+# Each test run of the workflow has inputs formulated by merging three dicts: (i) basic preset
+# settings, (ii) database paths, (iii) sample-specific inputs. The operator launching the
+# benchmarks chooses each of these three from the respective "library" below.
+
+settings:
+  default:
+    host_filter.file_ext: fastq
+    host_filter.nucleotide_type: DNA
+    host_filter.host_genome: human
+    host_filter.adapter_fasta: https://raw.githubusercontent.com/broadinstitute/viral-pipelines/master/test/input/clipDb.fasta
+    host_filter.max_input_fragments: 75000000
+    host_filter.max_subsample_fragments: 1000000
+
+databases:
   viral:
     host_filter.star_genome: s3://idseq-public-references/host_filter/ercc/2018-02-15-utc-1518652800-unixtime__2018-02-15-utc-1518652800-unixtime/STAR_genome.tar
     host_filter.bowtie2_genome: s3://idseq-public-references/host_filter/ercc/2018-02-15-utc-1518652800-unixtime__2018-02-15-utc-1518652800-unixtime/bowtie2_genome.tar
@@ -46,11 +42,24 @@ references:
     non_host_rapsearch2_index: s3://idseq-database/alignment_indexes/2020-04-20/nr.tar.gz
     non_host_gsnap_index: s3://idseq-database/alignment_indexes/2020-04-20/nt.tar.gz
     non_host_gsnap_genome_name: nt_k16
-common_inputs:
-  default:
-    host_filter.file_ext: fastq
-    host_filter.nucleotide_type: DNA
-    host_filter.host_genome: human
-    host_filter.adapter_fasta: https://raw.githubusercontent.com/broadinstitute/viral-pipelines/master/test/input/clipDb.fasta
-    host_filter.max_input_fragments: 75000000
-    host_filter.max_subsample_fragments: 1000000
+
+samples:
+  idseq_bench_3:
+    inputs:
+      fastqs_0: https://github.com/chanzuckerberg/idseq-workflows/raw/main/tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R1.fastq.gz
+      fastqs_1: https://github.com/chanzuckerberg/idseq-workflows/raw/main/tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R2.fastq.gz
+  idseq_bench_5:
+    inputs:
+      fastqs_0: https://github.com/chanzuckerberg/idseq-workflows/raw/mlin-benchmarking-driver/tests/short-read-mngs/norg_13__nacc_35__uniform_weight_per_organism__hiseq_reads__v10__R1.fastq.gz
+      fastqs_1: https://github.com/chanzuckerberg/idseq-workflows/raw/mlin-benchmarking-driver/tests/short-read-mngs/norg_13__nacc_35__uniform_weight_per_organism__hiseq_reads__v10__R2.fastq.gz
+  atcc_staggered:
+    inputs:
+      fastqs_0: s3://idseq-bench/datasets/fastqs/atcc_even_R1.fastq.gz
+      fastqs_1: s3://idseq-bench/datasets/fastqs/atcc_even_R2.fastq.gz
+  atcc_even:
+    inputs:
+      fastqs_0: s3://idseq-bench/datasets/fastqs/atcc_staggered_R1.fastq.gz
+      fastqs_1: s3://idseq-bench/datasets/fastqs/atcc_staggered_R2.fastq.gz
+  unambiguouslymapped_ds_gut:
+    inputs:
+      fastqs_0: s3://idseq-bench/datasets/fastqs/UnAmbiguouslyMapped_ds.gut.fq.gz

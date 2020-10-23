@@ -33,11 +33,18 @@ def main():
         help="directory under which to perform runs (mustn't already exist)",
     )
     parser.add_argument(
-        "--references",
+        "--databases",
         metavar="ID",
         type=str,
         default="viral",
-        help="reference database set; any of: " + ",".join(BENCHMARKS["references"].keys()),
+        help="database set; default viral, any of: " + ",".join(BENCHMARKS["databases"].keys()),
+    )
+    parser.add_argument(
+        "--settings",
+        metavar="ID",
+        type=str,
+        default="default",
+        help="settings presets; any of: "+",".join(BENCHMARKS["settings"].keys())
     )
     parser.add_argument(
         "--verbose", action="store_true", default=False, help="run miniwidl --verbose"
@@ -47,7 +54,7 @@ def main():
     run_local(**vars(args))
 
 
-def run_local(samples, docker_image_id, dir, references, verbose):
+def run_local(samples, docker_image_id, dir, databases, settings, verbose):
     """
     run the samples by invoking miniwdl locally on the current WDL revision
     """
@@ -65,7 +72,7 @@ def run_local(samples, docker_image_id, dir, references, verbose):
     ) as executor:
         futures = {
             executor.submit(
-                run_local_sample, sample_i, docker_image_id, dir, references, verbose
+                run_local_sample, sample_i, docker_image_id, dir, databases, settings, verbose
             ): sample_i
             for sample_i in samples
         }
@@ -88,15 +95,15 @@ def run_local(samples, docker_image_id, dir, references, verbose):
 _localize_lock = threading.Lock()
 
 
-def run_local_sample(sample, docker_image_id, dir, references, verbose):
+def run_local_sample(sample, docker_image_id, dir, databases, settings, verbose):
     local_driver_wdl = str(
         Path(__file__).parent.parent.parent.parent / "short-read-mngs" / "local_driver.wdl"
     )
 
     # formulate input by merging selected dicts from BENCHMARK_YML
     wdl_input = {
-        **BENCHMARKS["common_inputs"]["default"],
-        **BENCHMARKS["references"][references],
+        **BENCHMARKS["settings"][settings],
+        **BENCHMARKS["databases"][databases],
         **BENCHMARKS["samples"][sample]["inputs"],
         **{"docker_image_id": docker_image_id},
     }

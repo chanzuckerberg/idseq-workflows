@@ -22,14 +22,6 @@ def main():
         help="sample identifier & path to completed run directory",
     )
     parser.add_argument(
-        "-o",
-        metavar="FILENAME",
-        dest="outfilename",
-        type=str,
-        required=True,
-        help="output JSON file",
-    )
-    parser.add_argument(
         "--taxadb", metavar="FILENAME", type=str, help="taxadb SQLite file, if available"
     )
 
@@ -37,7 +29,7 @@ def main():
     harvest(**vars(args))
 
 
-def harvest(outputs, outfilename, taxadb):
+def harvest(outputs, taxadb):
     queue = []
 
     # process command line args
@@ -68,9 +60,10 @@ def harvest(outputs, outfilename, taxadb):
         with open(rundir / "outputs.json") as infile:
             outputs_json = json.load(infile)
         rslt[sample] = harvest_sample(sample, outputs_json, taxadb)
+        with open(rundir / "inputs.json") as infile:
+            rslt[sample]["inputs"] = json.load(infile)
 
-    with open(outfilename, mode="w") as outfile:
-        print(json.dumps(rslt, indent=2), file=outfile)
+    print(json.dumps(rslt, indent=2))
 
 
 def harvest_sample(sample, outputs_json, taxadb):
@@ -128,6 +121,7 @@ def harvest_sample(sample, outputs_json, taxadb):
     ans["taxa"]["NR"] = harvest_sample_taxon_counts(
         sample, outputs_json, contig_summary, contig_lengths, "NR", taxadb
     )
+
     return ans
 
 

@@ -1,0 +1,51 @@
+name: short-read-mngs viral benchmarks
+
+on:
+  push
+
+env:
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  run-samples:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        sample: [idseq_bench_3, idseq_bench_5]
+        settings: [default]
+    steps:
+      - uses: actions/checkout@v2
+      - name: docker build
+        run: docker build short-read-mngs --tag idseq-short-read-mngs
+      - name: run sample
+        run: |
+          # configure miniwdl to auto-delete task working directories, to reduce chance of worker
+          # running out of space
+          export MINIWDL__FILE_IO__OUTPUT_HARDLINKS=true
+          export MINIWDL__FILE_IO__DELETE_WORK=success
+          export MINIWDL__DOWNLOAD_CACHE__GET=true
+          export MINIWDL__DOWNLOAD_CACHE__PUT=true
+          export MINIWDL__DOWNLOAD_CACHE__DIR="$(mktemp -d --tmpdir miniwdl_download_cache_XXXXXX)"
+
+          source /etc/profile
+          sudo apt-get -qq update
+          sudo apt-get -qq install --yes jq moreutils make virtualenv zip unzip httpie git shellcheck
+          virtualenv --python=python3.6 .venv
+          source .venv/bin/activate
+          pip install -r requirements-dev.txt
+
+          tests/short-read-mngs/benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
+            --settings ${{ matrix.settings }} ${{ matrix.sample }}
+      - name: harvest output statistics
+        run: |
+          TAG=$(git describe --long --tags --always --dirty)
+          taxadb download -o taxadb --type taxa
+          taxadb create -i taxadb --dbname taxadb.sqlite
+          tests/short-read-mngs/benchmark/harvest.py "${{ matrix.sample }}=testrun/${{ matrix.sample }}" \
+            -o "${{ matrix.sample }}.${{ settings }}_viral.json" --taxadb taxadb.sqlite
+     - uses: actions/upload-artifact@v2
+       with:
+        name: ${{ matrix.sample }}.${{ settings }}_viral.json
+        path: ${{ matrix.sample }}.${{ settings }}_viral.json

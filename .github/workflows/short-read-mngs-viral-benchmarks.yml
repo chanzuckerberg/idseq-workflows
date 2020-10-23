@@ -21,6 +21,8 @@ jobs:
         run: docker build short-read-mngs --tag idseq-short-read-mngs
       - name: run sample
         run: |
+          pip install -r requirements-dev.txt
+
           # configure miniwdl to auto-delete task working directories, to reduce chance of worker
           # running out of space
           export MINIWDL__FILE_IO__OUTPUT_HARDLINKS=true
@@ -28,13 +30,6 @@ jobs:
           export MINIWDL__DOWNLOAD_CACHE__GET=true
           export MINIWDL__DOWNLOAD_CACHE__PUT=true
           export MINIWDL__DOWNLOAD_CACHE__DIR="$(mktemp -d --tmpdir miniwdl_download_cache_XXXXXX)"
-
-          source /etc/profile
-          sudo apt-get -qq update
-          sudo apt-get -qq install --yes jq moreutils make virtualenv zip unzip httpie git shellcheck
-          virtualenv --python=python3.6 .venv
-          source .venv/bin/activate
-          pip install -r requirements-dev.txt
 
           tests/short-read-mngs/benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
             --settings ${{ matrix.settings }} ${{ matrix.sample }}

@@ -18,7 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: docker build
-        run: docker build short-read-mngs --tag idseq-short-read-mngs
+        run: |
+            echo "${{ secrets.GITHUB_TOKEN }}" \
+                | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin
+            CACHE_FROM=""; docker pull "$IMAGE_URI" && CACHE_FROM="--cache-from $IMAGE_URI"
+            docker build short-read-mngs --tag idseq-short-read-mngs $CACHE_FROM \
+                || docker build short-read-mngs --tag idseq-short-read-mngs
       - name: run sample
         run: |
           pip install -r requirements-dev.txt
@@ -31,6 +36,11 @@ jobs:
           # running out of space
           export MINIWDL__FILE_IO__OUTPUT_HARDLINKS=true
           export MINIWDL__FILE_IO__DELETE_WORK=success
+
+          # explicitly block EC2 IMDS endpoint to work around awscli issue:
+          # https://github.com/aws/aws-cli/issues/5234#issuecomment-635459464
+          # https://github.com/aws/aws-cli/issues/5262
+          sudo ip route add blackhole 169.254.169.254
 
           tests/short-read-mngs/benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
             --settings ${{ matrix.settings }} ${{ matrix.sample }}

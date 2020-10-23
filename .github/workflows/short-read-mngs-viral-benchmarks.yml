@@ -78,11 +78,13 @@ jobs:
         run: |
           TAG=$(git describe --long --tags --always --dirty)
           export TAG=$TAG >> $GITHUB_ENV
+          cp *_viral.json tests/short-read-mngs/benchmark  # notebook wd
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
             --env RUN_NAME=$TAG \
             --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \
-            --env REF_LIB=tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral \
-            jupyter/scipy-notebook:latest jupyter nbconvert --to html --execute tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
+            --env REF_LIB=/home/jovyan/work/tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral \
+            jupyter/scipy-notebook:latest jupyter nbconvert --to html --output-dir . --execute \
+                tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           mv short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${TAG}.html
       - uses: actions/upload-artifact@v2
         with:

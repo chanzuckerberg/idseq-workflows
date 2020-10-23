@@ -43,9 +43,9 @@ jobs:
           TAG=$(git describe --long --tags --always --dirty)
           taxadb download -o taxadb --type taxa
           taxadb create -i taxadb --dbname taxadb.sqlite
-          tests/short-read-mngs/benchmark/harvest.py "${{ matrix.sample }}=testrun/${{ matrix.sample }}" \
-            -o "${{ matrix.sample }}.${{ settings }}_viral.json" --taxadb taxadb.sqlite
+          tests/short-read-mngs/benchmark/harvest.py ${{ matrix.sample }}=testrun/${{ matrix.sample }} \
+            --taxadb taxadb.sqlite > ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
      - uses: actions/upload-artifact@v2
        with:
-        name: ${{ matrix.sample }}.${{ settings }}_viral.json
-        path: ${{ matrix.sample }}.${{ settings }}_viral.json
+        name: ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
+        path: ${{ matrix.sample }}.${{ matrix.settings }}_viral.json

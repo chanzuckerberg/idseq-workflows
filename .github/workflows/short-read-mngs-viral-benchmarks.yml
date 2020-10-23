@@ -22,6 +22,7 @@ jobs:
       - name: run sample
         run: |
           pip install -r requirements-dev.txt
+          source /etc/profile
 
           # configure miniwdl to auto-delete task working directories, to reduce chance of worker
           # running out of space

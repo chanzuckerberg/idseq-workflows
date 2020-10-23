@@ -79,6 +79,7 @@ jobs:
           TAG=$(git describe --long --tags --always --dirty)
           export TAG=$TAG >> $GITHUB_ENV
           cp *_viral.json tests/short-read-mngs/benchmark  # notebook wd
+          chmod -R 777 tests/short-read-mngs/benchmark
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
             --env RUN_NAME=$TAG \
             --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \

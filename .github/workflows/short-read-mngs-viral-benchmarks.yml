@@ -50,7 +50,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/.local/bin
           taxadb download -o taxadb --type taxa
-          taxadb create -i taxadb --dbname taxadb.sqlite
+          taxadb create -i taxadb --dbname taxadb.sqlite || true  # exits nonzero w/o accessions
           tests/short-read-mngs/benchmark/harvest.py ${{ matrix.sample }}=testrun/${{ matrix.sample }} \
             --taxadb taxadb.sqlite > ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
       - uses: actions/upload-artifact@v2

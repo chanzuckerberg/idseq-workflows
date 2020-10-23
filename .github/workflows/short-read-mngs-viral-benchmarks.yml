@@ -57,3 +57,33 @@ jobs:
         with:
           name: ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
           path: ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
+
+  notebook:
+    runs-on: ubuntu-20.04
+    needs: run-samples
+    strategy:
+      matrix:
+        settings: [default]
+    steps:
+      - uses: actions/checkout@v2
+      - name: fetch idseq_bench_3
+        uses: actions/download-artifact@v2
+        with:
+          name: idseq_bench_3.${{ matrix.settings }}_viral.json
+      - name: fetch idseq_bench_5
+        uses: actions/download-artifact@v2
+        with:
+          name: idseq_bench_5.${{ matrix.settings }}_viral.json
+      - name: run notebook
+        run: |
+          TAG=$(git describe --long --tags --always --dirty)
+          export TAG=$TAG >> $GITHUB_ENV
+          docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
+            --env RUN_NAME=$TAG \
+            --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \
+            --env REF_LIB=tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral \
+            jupyter/scipy-notebook:latest jupyter nbconvert --to html --execute tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
+          mv short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${TAG}.html
+      - uses: actions/upload-artifact@v2
+        with:
+          name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${{ env.TAG }}.html

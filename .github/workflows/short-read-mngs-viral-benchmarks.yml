@@ -77,7 +77,6 @@ jobs:
       - name: run notebook
         run: |
           TAG=$(git describe --long --tags --always --dirty)
-          export TAG=$TAG >> $GITHUB_ENV
           cp *_viral.json tests/short-read-mngs/benchmark  # notebook wd
           chmod -R 777 tests/short-read-mngs/benchmark
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
@@ -87,7 +86,7 @@ jobs:
             --env CHOWN_HOME=yes \
             jupyter/scipy-notebook:latest jupyter nbconvert --user 0 --to html --execute \
                 tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
-          mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${TAG}.html
+          mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
       - uses: actions/upload-artifact@v2
         with:
-          path: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${{ env.TAG }}.html
+          path: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html

@@ -90,4 +90,4 @@ jobs:
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${TAG}.html
       - uses: actions/upload-artifact@v2
         with:
-          name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${{ env.TAG }}.html
+          path: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.${{ env.TAG }}.html

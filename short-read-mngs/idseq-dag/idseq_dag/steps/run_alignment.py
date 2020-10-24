@@ -8,6 +8,7 @@ import time
 import traceback
 import json
 import re
+import tempfile
 from subprocess import run, PIPE
 from urllib.parse import urlparse
 from botocore.exceptions import ClientError
@@ -171,14 +172,13 @@ class PipelineStepRunAlignment(PipelineStep):
                         deduped_output_m8, output_hitsummary, min_alignment_length)
 
         db_type = 'NT' if self.alignment_algorithm == 'gsnap' else 'NR'
-        evalue_type = 'log10' if self.alignment_algorithm == 'rapsearch2' else 'raw'
 
         deuterostome_db = None
         if self.additional_files.get("deuterostome_db"):
             deuterostome_db = fetch_reference(self.additional_files["deuterostome_db"],
                                               self.ref_dir_local, allow_s3mi=True)
 
-        blacklist_s3_file = self.additional_attributes.get('taxon_blacklist', DEFAULT_BLACKLIST_S3)
+        blacklist_s3_file = self.additional_files.get('taxon_blacklist', DEFAULT_BLACKLIST_S3)
         taxon_blacklist = fetch_reference(blacklist_s3_file, self.ref_dir_local)
 
         taxon_whitelist = None
@@ -187,43 +187,44 @@ class PipelineStepRunAlignment(PipelineStep):
                                               self.ref_dir_local)
 
         m8.generate_taxon_count_json_from_m8(
-            deduped_output_m8, output_hitsummary, evalue_type, db_type,
+            deduped_output_m8, output_hitsummary, db_type,
             lineage_db, deuterostome_db, taxon_whitelist, taxon_blacklist, duplicate_cluster_sizes_path,
             output_counts_with_dcr_json)
 
     def run_locally(self, input_fas, output_m8):
-        index_path = os.path.join(os.path.dirname(output_m8), "reference")
-        os.mkdir(index_path)
-        run(["tar", "-xzvf", self.index, "-C", index_path], check=True)
+        with tempfile.TemporaryDirectory(prefix=self.alignment_algorithm) as tmpdir:
+            index_path = os.path.join(tmpdir, "reference")
+            os.mkdir(index_path)
+            run(["tar", "-xzvf", self.index, "-C", index_path], check=True)
 
-        if self.alignment_algorithm == "gsnap":
-            # Hack to determine gsnap vs gsnapl
-            error_message = run(
-                ['gsnapl.avx2-2018-10-26', '-D', index_path, '-d', self.genome_name],
-                input='>'.encode('utf-8'),
-                stderr=PIPE,
-                stdout=PIPE
-            ).stderr
-            # note, alignment uses a pinned version of gmap/gsnap
-            gsnap_command = "gsnap.avx2-2018-10-26" if 'please run gsnap instead' in error_message.decode('utf-8') else "gsnapl.avx2-2018-10-26"
-        else:
-            gsnap_command = None
+            if self.alignment_algorithm == "gsnap":
+                # Hack to determine gsnap vs gsnapl
+                error_message = run(
+                    ['gsnapl.avx2-2018-10-26', '-D', index_path, '-d', self.genome_name],
+                    input='>'.encode('utf-8'),
+                    stderr=PIPE,
+                    stdout=PIPE
+                ).stderr
+                # note, alignment uses a pinned version of gmap/gsnap
+                gsnap_command = "gsnap.avx2-2018-10-26" if 'please run gsnap instead' in error_message.decode('utf-8') else "gsnapl.avx2-2018-10-26"
+            else:
+                gsnap_command = None
 
-        # rapsearch2 expects the filename of the primary file, but still depends on the .info file being a sibbling
-        if self.alignment_algorithm == "rapsearch2":
-            for filename in os.listdir(index_path):
-                if not filename.endswith(".info"):
-                    index_path = os.path.join(index_path, filename)
+            # rapsearch2 expects the filename of the primary file, but still depends on the .info file being a sibbling
+            if self.alignment_algorithm == "rapsearch2":
+                for filename in os.listdir(index_path):
+                    if not filename.endswith(".info"):
+                        index_path = os.path.join(index_path, filename)
 
-        cmd = self._get_command(
-            index_path,
-            input_fas,
-            output_m8,
-            threads=multiprocessing.cpu_count(),
-            gsnap_command=gsnap_command
-        )
-        log.write(f"running command {cmd}")
-        run(cmd, check=True)
+            cmd = self._get_command(
+                index_path,
+                input_fas,
+                output_m8,
+                threads=multiprocessing.cpu_count(),
+                gsnap_command=gsnap_command
+            )
+            log.write(f"running command {cmd}")
+            run(cmd, check=True)
 
     def run_remotely(self, input_fas, output_m8):
         # Split files into chunks for performance
@@ -638,6 +639,7 @@ class PipelineStepRunAlignment(PipelineStep):
                 -l 10
                 -a T
                 -b 0
+                -s f
                 -v 50
                 -z 24
                 -q {remote_input_files}

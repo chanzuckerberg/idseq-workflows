@@ -95,7 +95,7 @@ jobs:
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.with_code.html
           # make HTML without code
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
-                jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input &&
+                jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input \
                     tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
       - uses: actions/upload-artifact@v2

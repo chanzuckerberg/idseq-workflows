@@ -79,6 +79,7 @@ jobs:
           TAG=$(git describe --long --tags --always --dirty)
           cp *_viral.json tests/short-read-mngs/benchmark  # notebook wd
           chmod -R 777 tests/short-read-mngs/benchmark
+          # execute notebook
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
             --env "RUN_NAME=${{ matrix.settings }}_viral_$TAG" \
             --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \
@@ -87,13 +88,15 @@ jobs:
                 jupyter/scipy-notebook:latest jupyter nbconvert --to notebook --execute --inplace \
                     tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           cp tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
+          # make HTML with code
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
                 jupyter/scipy-notebook:latest jupyter nbconvert --to html \
                     tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.with_code.html
+          # make HTML without code
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
                 jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input &&
-                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb'
+                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
       - uses: actions/upload-artifact@v2
         with:

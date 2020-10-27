@@ -100,9 +100,9 @@ jobs:
           name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
           path: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
       - uses: actions/upload-artifact@v2
-          with:
-            name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
-            path: |
-                short-read-mngs-benchmarks.${{ matrix.settings }}_viral.*
-                *.${{ matrix.settings }}_viral.json
-                tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral
+        with:
+          name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
+          path: |
+              short-read-mngs-benchmarks.${{ matrix.settings }}_viral.*
+              *.${{ matrix.settings }}_viral.json
+              tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral

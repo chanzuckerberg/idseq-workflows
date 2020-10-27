@@ -98,6 +98,8 @@ jobs:
                 jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input \
                     tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
+          mkdir ref_libs
+          cp -r tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral ref_libs/
       - uses: actions/upload-artifact@v2
         with:
           name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
@@ -108,4 +110,4 @@ jobs:
           path: |
               short-read-mngs-benchmarks.${{ matrix.settings }}_viral.*
               *.${{ matrix.settings }}_viral.json
-              tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral
+              ref_libs/

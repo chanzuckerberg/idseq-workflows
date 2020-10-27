@@ -84,10 +84,25 @@ jobs:
             --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \
             --env REF_LIB=/home/jovyan/work/tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral \
             --env CHOWN_HOME=yes \
-            jupyter/scipy-notebook:latest jupyter nbconvert --user 0 --to html --execute \
-                tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
+                jupyter/scipy-notebook:latest jupyter nbconvert --to notebook --execute --inplace \
+                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
+          cp tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
+          docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
+                jupyter/scipy-notebook:latest jupyter nbconvert --to html \
+                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
+          mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.with_code.html
+          docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
+                jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input &&
+                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb'
           mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
       - uses: actions/upload-artifact@v2
         with:
           name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
           path: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
+      - uses: actions/upload-artifact@v2
+          with:
+            name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
+            path: |
+                short-read-mngs-benchmarks.${{ matrix.settings }}_viral.*
+                *.${{ matrix.settings }}_viral.json
+                tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral

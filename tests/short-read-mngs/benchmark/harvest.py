@@ -71,6 +71,7 @@ def harvest(outputs, taxadb):
         assert sample not in rslt, f"repeated sample {sample}"
         outputs_json = read_outputs_json(rundir)
         rslt[sample] = harvest_sample(sample, outputs_json, taxadb)
+        rslt[sample]["outputs"] = outputs_json
 
     print(json.dumps(rslt, indent=2))
 

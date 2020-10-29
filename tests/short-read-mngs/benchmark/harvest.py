@@ -185,7 +185,7 @@ def harvest_sample_taxon_counts(
 def read_outputs_json(rundir):
     if not rundir.startswith("s3:"):
         # local miniwdl run directory
-        return read_json(Path(rundir) / "outputs.json")
+        return read_json(str(Path(rundir) / "outputs.json"))
 
     # read SFN-WDL output JSONs from S3, reshape them to resemble the local outputs.json
     items = itertools.chain(

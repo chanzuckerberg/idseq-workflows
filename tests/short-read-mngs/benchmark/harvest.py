@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 import sys
+import os
 import argparse
 import json
+import itertools
+import boto3
 from pathlib import Path
+from contextlib import ExitStack
+from urllib.parse import urlparse
 from _util import load_benchmarks_yml
 from taxadb.taxid import TaxID
 
@@ -38,16 +43,23 @@ def harvest(outputs, taxadb):
         if outputs[i].endswith("="):
             assert i + 1 < len(outputs), f"missing path after {outputs[i]}"
             sample = outputs[i][:-1]
-            rundir = Path(outputs[i + 1])
+            rundir = outputs[i + 1]
             i += 2
         else:
             parts = outputs[i].split("=")
             assert len(parts) == 2, f"invalid SAMPLE_ID=RUNDIR pair: {outputs[i]}"
             sample = parts[0]
-            rundir = Path(parts[1])
+            rundir = parts[1]
             i += 1
         assert sample in BENCHMARKS["samples"], f"unknown sample {sample}"
-        assert (rundir / "outputs.json").is_file(), f"couldn't find outputs.json in {rundir}"
+        if rundir.startswith("s3:"):
+            assert os.environ.get(
+                "AWS_PROFILE", False
+            ), f"set environment AWS_PROFILE to read from {rundir}"
+        else:
+            assert (
+                Path(rundir) / "outputs.json"
+            ).is_file(), f"couldn't find outputs.json in {rundir}"
         queue.append((sample, rundir))
 
     if taxadb:
@@ -57,11 +69,8 @@ def harvest(outputs, taxadb):
     rslt = {}
     for sample, rundir in queue:
         assert sample not in rslt, f"repeated sample {sample}"
-        with open(rundir / "outputs.json") as infile:
-            outputs_json = json.load(infile)
+        outputs_json = read_outputs_json(rundir)
         rslt[sample] = harvest_sample(sample, outputs_json, taxadb)
-        with open(rundir / "inputs.json") as infile:
-            rslt[sample]["inputs"] = json.load(infile)
 
     print(json.dumps(rslt, indent=2))
 
@@ -70,7 +79,10 @@ def harvest_sample(sample, outputs_json, taxadb):
     ans = {}
 
     # collect read counts at various pipeline steps
-    ans["paired"] = "fastqs_1" in BENCHMARKS["samples"][sample]["inputs"]
+    ans["paired"] = (
+        outputs_json["idseq_short_read_mngs.host_filter.validate_input_out_valid_input2_fastq"]
+        is not None
+    )
     ans["input_reads"] = read_output_jsonfile(outputs_json, "host_filter.input_read_count")[
         "fastqs"
     ]
@@ -170,13 +182,46 @@ def harvest_sample_taxon_counts(
     }
 
 
+def read_outputs_json(rundir):
+    if not rundir.startswith("s3:"):
+        # local miniwdl run directory
+        return read_json(Path(rundir) / "outputs.json")
+
+    # read SFN-WDL output JSONs from S3, reshape them to resemble the local outputs.json
+    items = itertools.chain(
+        *(
+            read_json(os.path.join(rundir, stage + "_output.json")).items()
+            for stage in (
+                "host_filter",
+                "non_host_alignment",
+                "postprocess",
+                "experimental",
+            )
+        )
+    )
+    ans = {}
+    for key, value in items:
+        ans["idseq_short_read_mngs." + key[6:]] = value
+    return ans
+
+
+def read_json(path):  # from either local or s3 path
+    if not path.startswith("s3:"):
+        with open(path) as infile:
+            return json.load(infile)
+    return json.load(s3object(path).get()["Body"])
+
+
+def s3object(s3uri):
+    parts = urlparse(s3uri)
+    return boto3.resource("s3").Object(parts.netloc, parts.path.lstrip("/"))
+
+
 def read_output_jsonfile(outputs_json, key):
     """
     From the WDL outputs dict, read the contents of an output JSON file
     """
-    filename = outputs_json["idseq_short_read_mngs." + key]
-    with open(filename) as infile:
-        return json.load(infile)
+    return read_json(outputs_json["idseq_short_read_mngs." + key])
 
 
 def load_contig_lengths(outputs_json):
@@ -185,7 +230,11 @@ def load_contig_lengths(outputs_json):
     """
     fasta = outputs_json["idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_fasta"]
     lengths = {}
-    with open(fasta) as lines:
+    with ExitStack() as cleanup:
+        if fasta.startswith("s3:"):
+            lines = (line.decode("utf-8") for line in s3object(fasta).get()["Body"].iter_lines())
+        else:
+            lines = cleanup.enter_context(open(fasta))
         cur = None
         for line in lines:
             if line.startswith(">"):

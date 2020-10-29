@@ -4,3 +4,4 @@ pytest
 pytest-xdist
 ruamel.yaml
 taxadb
+boto3

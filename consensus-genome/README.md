@@ -26,4 +26,4 @@ Where:
 * `fastqs_0` and `fastqs_1` are the pair of FASTQ files. The ones referred to are small files to run locaaly.
 * `sample` is the name to use where referencing the sample in the output files.
 * `local_test.yml` supplies boilerplate workflow inputs, such as the S3 paths for the reference databases
-  * THe human database for host removal only contains chromosome 1.
+  * The human database for host removal only contains chromosome 1.

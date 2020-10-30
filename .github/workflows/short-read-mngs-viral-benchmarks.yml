@@ -77,8 +77,8 @@ jobs:
       - name: run notebook
         run: |
           TAG=$(git describe --long --tags --always --dirty)
-          cp *_viral.json tests/short-read-mngs/benchmark  # notebook wd
-          chmod -R 777 tests/short-read-mngs/benchmark
+          cp *_viral.json tests/short-read-mngs/auto_benchmark  # notebook wd
+          chmod -R 777 tests/short-read-mngs/auto_benchmark
           # execute notebook
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
             --env "RUN_NAME=${{ matrix.settings }}_viral_$TAG" \

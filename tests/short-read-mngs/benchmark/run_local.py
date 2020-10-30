@@ -104,10 +104,15 @@ def run_local_sample(sample, docker_image_id, dir, databases, settings, verbose)
     )
 
     # formulate input by merging selected dicts from BENCHMARK_YML
+    sample_inputs = **BENCHMARKS["samples"][sample]["inputs"]
+    alt_inputs = set(k for k in sample_inputs if k.startswith("s3_"))
+    if alt_inputs:
+        for k in alt_inputs:
+            del sample_inputs[k]
     wdl_input = {
         **BENCHMARKS["settings"][settings],
         **BENCHMARKS["databases"][databases],
-        **BENCHMARKS["samples"][sample]["inputs"],
+        **sample_inputs,
         **{"docker_image_id": docker_image_id},
     }
 

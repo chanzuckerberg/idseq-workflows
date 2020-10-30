@@ -44,14 +44,14 @@ jobs:
           # https://github.com/aws/aws-cli/issues/5262
           sudo ip route add blackhole 169.254.169.254
 
-          tests/short-read-mngs/benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
+          tests/short-read-mngs/auto_benchmark/run_local.py --dir testrun/ --docker-image-id idseq-short-read-mngs \
             --settings ${{ matrix.settings }} ${{ matrix.sample }}
       - name: harvest output statistics
         run: |
           export PATH=$PATH:$HOME/.local/bin
           taxadb download -o taxadb --type taxa
           taxadb create -i taxadb --dbname taxadb.sqlite || true  # exits nonzero w/o accessions
-          tests/short-read-mngs/benchmark/harvest.py ${{ matrix.sample }}=testrun/${{ matrix.sample }} \
+          tests/short-read-mngs/auto_benchmark/harvest.py ${{ matrix.sample }}=testrun/${{ matrix.sample }} \
             --taxadb taxadb.sqlite > ${{ matrix.sample }}.${{ matrix.settings }}_viral.json
       - uses: actions/upload-artifact@v2
         with:
@@ -83,23 +83,23 @@ jobs:
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
             --env "RUN_NAME=${{ matrix.settings }}_viral_$TAG" \
             --env HARVEST_DATA=$(ls -1 *_viral.json | tr '\n' ':') \
-            --env REF_LIB=/home/jovyan/work/tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral \
+            --env REF_LIB=/home/jovyan/work/tests/short-read-mngs/auto_benchmark/ref_libs/${{ matrix.settings }}_viral \
             --env CHOWN_HOME=yes \
                 jupyter/scipy-notebook:latest jupyter nbconvert --to notebook --execute --inplace \
-                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
-          cp tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
+                    tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.ipynb
+          cp tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.ipynb short-read-mngs-benchmarks.${{ matrix.settings }}_viral.ipynb
           # make HTML with code
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
                 jupyter/scipy-notebook:latest jupyter nbconvert --to html \
-                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
-          mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.with_code.html
+                    tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.ipynb
+          mv tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.with_code.html
           # make HTML without code
           docker run -v $(pwd):/home/jovyan/work --workdir /home/jovyan/work \
                 jupyter/scipy-notebook:latest jupyter nbconvert --to html --no-input \
-                    tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.ipynb
-          mv tests/short-read-mngs/benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
+                    tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.ipynb
+          mv tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.html short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html
           mkdir ref_libs
-          cp -r tests/short-read-mngs/benchmark/ref_libs/${{ matrix.settings }}_viral ref_libs/
+          cp -r tests/short-read-mngs/auto_benchmark/ref_libs/${{ matrix.settings }}_viral ref_libs/
       - uses: actions/upload-artifact@v2
         with:
           name: short-read-mngs-benchmarks.${{ matrix.settings }}_viral.html

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Harvest results of benchmarks.yml sample runs (by either run_local.py or run_dev.py) into JSON
+input for short-read-mngs-benchmarks.ipynb
+
+Uses taxadb.sqlite to resolve species names. That can be generated in a minute or two like so:
+    taxadb download -o taxadb --type taxa
+    taxadb create -i taxadb --dbname taxadb.sqlite
+"""
 import sys
 import os
 import argparse

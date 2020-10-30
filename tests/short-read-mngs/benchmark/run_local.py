@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Run benchmark.yml samples locally using `miniwdl run` on the current checkout of the WDL code.
+"""
 import sys
 import os
 import argparse

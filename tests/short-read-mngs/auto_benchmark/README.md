@@ -7,7 +7,7 @@ This subdirectory has scripts and reference materials for "drift detection" in s
 3. **run_dev.py**: submit one or more of the scenarios to the idseq-dev SFN-WDL backend, with a specified point version of the pipeline (requires the invoking session preconfigured with an appropriate AWS profile)
 4. **harvest.py**: consolidate results of either runner script into a JSON file
 5. **ref_libs/**: library of "reference" (expected) results
-6. **short-read-mngs-benchmarks.ipynb**: Jupyter notebook template which generates comparison tables of given & reference results
+6. **short-read-mngs-benchmarks.ipynb**: Jupyter notebook template which generates comparison tables of harvested & reference results
 
 A GitHub Actions workflow runs limited tests on every code push (two small samples & viral reference databases), automatically generating the notebook as a build artifact.
 

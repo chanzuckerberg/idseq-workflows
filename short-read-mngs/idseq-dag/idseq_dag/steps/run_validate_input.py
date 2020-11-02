@@ -6,7 +6,6 @@ from idseq_dag.exceptions import InvalidFileFormatError, InsufficientReadsError
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns
 import idseq_dag.util.count as count
-import idseq_dag.util.log as log
 import idseq_dag.util.validate_constants as vc
 import idseq_dag.util.s3 as s3
 
@@ -98,7 +97,6 @@ class PipelineStepRunValidateInput(PipelineStep):
                 self.quick_check_file(input_files[0], is_fastq) and \
                 (num_inputs == 1 or self.quick_check_file(input_files[1], is_fastq))
 
-            log.write(f"quick_check_passed: {quick_check_passed}")
             all_fragments = []
 
             for infile, outfile in zip(input_files, output_files):

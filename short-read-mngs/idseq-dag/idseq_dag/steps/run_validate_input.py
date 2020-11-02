@@ -292,4 +292,4 @@ class PipelineStepRunValidateInput(PipelineStep):
 
     def count_reads(self):
         self.should_count_reads = True
-        self.count_dict[self.name] = self.total_output_reads
+        self.counts_dict[self.name] = self.total_output_reads

@@ -1,6 +1,6 @@
 import os
 
-from typing import Dict, Optional, Sequence, Set, List
+from typing import Dict, Optional, Sequence, Set, List, Tuple
 
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns

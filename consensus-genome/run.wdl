@@ -445,6 +445,12 @@ task MakeConsensus {
         samtools mpileup -A -d 0 -Q0 "~{bam}" | ivar consensus -q "~{ivarQualThreshold}" -t "~{ivarFreqThreshold}" -m "~{minDepth}" -n N -p "~{prefix}primertrimmed.consensus"
         echo ">""~{sample}" > "~{prefix}consensus.fa"
         seqtk seq -l 50 "~{prefix}primertrimmed.consensus.fa" | tail -n +2 >> "~{prefix}consensus.fa"
+
+        if [[ $(wc -l "~{prefix}consensus.fa" | cut -d' ' -f1) == 1 ]]; then
+            set +x
+            >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after MakeConsensus\"}"
+            exit 1
+        fi
     >>>
 
     output {

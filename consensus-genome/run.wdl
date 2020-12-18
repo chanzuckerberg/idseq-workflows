@@ -1,5 +1,5 @@
 # The following pipeline was initially based on previous work at: https://github.com/czbiohub/sc2-illumina-pipeline
-# workflow version: consensus-genomes-1.4.1
+# workflow version: consensus-genomes-1.5.1
 version 1.0
 
 workflow consensus_genome {

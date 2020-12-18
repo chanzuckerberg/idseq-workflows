@@ -446,6 +446,7 @@ task MakeConsensus {
         echo ">""~{sample}" > "~{prefix}consensus.fa"
         seqtk seq -l 50 "~{prefix}primertrimmed.consensus.fa" | tail -n +2 >> "~{prefix}consensus.fa"
 
+        # One-line file means just the fasta header with no reads
         if [[ $(wc -l "~{prefix}consensus.fa" | cut -d' ' -f1) == 1 ]]; then
             set +x
             >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after MakeConsensus\"}"

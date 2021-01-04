@@ -308,7 +308,7 @@ class PipelineStepGenerateCoverageViz(PipelineStep):  # pylint: disable=abstract
             return hits
 
         with open(blastn_6_path) as blastn_6_f:
-            for hit in BlastnOutput6Reader(blastn_6_f):
+            for hit in BlastnOutput6Reader(blastn_6_f): # 2 (14)
 
                 if hit["qseqid"] in valid_hits:
                     # Blast output is per HSP, yet the hit represents a set of HSPs,

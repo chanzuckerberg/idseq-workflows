@@ -38,21 +38,21 @@ class ComputeMergedTaxonCounts(PipelineStep):
             # (1) if processing time bottleneck, load all the data to memory
             # (2) if memory bottleneck, going through nt first, since that will save us from storing
             #     results in memory for all the reads that get their hit from NT contigs
-            for nr_hit_dict in HitSummaryReader(nr_hit_summary_f):
+            for nr_hit_dict in HitSummaryReader(nr_hit_summary_f): # 1 (7)
                 nr_alignment_per_read[nr_hit_dict["read_id"]] = SpeciesAlignmentResults(
                     contig=nr_hit_dict.get("contig_species_taxid"),
                     read=nr_hit_dict.get("species_taxid"),
                 )
 
         with open(self.outputs.merged_m8_filename, "w") as output_blastn_6_f, open(self.outputs.merged_hit_filename, "w") as output_hit_summary_f:
-            output_blastn_6_writer = BlastnOutput6Writer(output_blastn_6_f)
-            output_hit_summary_writer = HitSummaryWriter(output_hit_summary_f)
+            output_blastn_6_writer = BlastnOutput6Writer(output_blastn_6_f)  # 1 (12)
+            output_hit_summary_writer = HitSummaryWriter(output_hit_summary_f) # 4 (14)
 
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # first pass for NR and output to m8 files if assignment should come from NT
                 for nt_hit_dict, nt_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f),
-                    BlastnOutput6Reader(input_nt_blastn_6_f),
+                    HitSummaryReader(input_nt_hit_summary_f), # 1 (7)
+                    BlastnOutput6Reader(input_nt_blastn_6_f), # 1 (12)
                 ):
                     # assert files match
                     assert nt_hit_dict['read_id'] == nt_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for nt [{nt_hit_dict['read_id']} != {nt_m8_dict['qseqid']}]"
@@ -80,8 +80,8 @@ class ComputeMergedTaxonCounts(PipelineStep):
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # dump remaining reads from NR
                 for nr_hit_dict, nr_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f),
-                    BlastnOutput6Reader(input_nt_blastn_6_f),
+                    HitSummaryReader(input_nt_hit_summary_f), # 1 (7)
+                    BlastnOutput6Reader(input_nt_blastn_6_f), # 1 (12)
                 ):
                     # assert files match
                     assert nr_hit_dict['read_id'] == nr_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for NR [{nr_hit_dict['read_id']} {nr_m8_dict['qseqid']}]."
@@ -149,7 +149,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
         taxon_blacklist = fetch_reference(blacklist_s3_file, self.ref_dir_local)
         cdhit_cluster_sizes_path = self.inputs.cluster_sizes_filename
 
-        generate_taxon_count_json_from_m8(
+        generate_taxon_count_json_from_m8( # 1 (12) 4 (14)
             self.outputs.merged_m8_filename,
             self.outputs.merged_hit_filename,
             count_type,

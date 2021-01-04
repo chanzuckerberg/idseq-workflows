@@ -188,7 +188,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
             command.write_text_to_file('[]', contig_summary_json)
             return  # return in the middle of the function
 
-        (read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary)
+        (read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary)  # 1 (7)
         PipelineStepBlastContigs.run_blast(db_type, blast_m8, assembled_contig, reference_fasta, blast_top_m8)
         read2contig = {}
         PipelineStepRunAssembly.generate_info_from_sam(bowtie_sam, read2contig, duplicate_cluster_sizes_path)
@@ -220,7 +220,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         with TraceLock("PipelineStepBlastContigs-CYA", PipelineStepBlastContigs.cya_lock, debug=False):
             with log.log_context("PipelineStepBlastContigs", {"substep": "generate_taxon_count_json_from_m8", "db_type": db_type, "refined_counts": refined_counts_with_dcr}):
-                m8.generate_taxon_count_json_from_m8(refined_m8, refined_hit_summary, db_type.upper(),
+                m8.generate_taxon_count_json_from_m8(refined_m8, refined_hit_summary, db_type.upper(), # 1 (12) 1 (7)
                                                      lineage_db, deuterostome_db, taxon_whitelist, taxon_blacklist,
                                                      duplicate_cluster_sizes_path, refined_counts_with_dcr)
 
@@ -341,16 +341,16 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         # Generate new hit summary
         new_read_ids = added_reads.keys()
         with open(hit_summary_path) as hit_summary_f, open(refined_hit_summary_path, "w") as refined_hit_summary_f:
-            refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f)
-            for read in HitSummaryReader(hit_summary_f):
+            refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f) # 1 (7)
+            for read in HitSummaryReader(hit_summary_f): #1 (7)
                 refined_hit_summary_writer.write(consolidated_dict[read["read_id"]])
             # add the reads that are newly blasted
             for read_id in new_read_ids:
                 refined_hit_summary_writer.write(added_reads[read_id])
         # Generate new M8
         with open(deduped_blastn_6_path) as deduped_blastn_6_f, open(refined_blastn_6_path, "w") as refined_blastn_6_f:
-            refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f)
-            for row in BlastnOutput6Reader(deduped_blastn_6_f):
+            refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f) # 1 (12)
+            for row in BlastnOutput6Reader(deduped_blastn_6_f): # 1 (12)
                 new_row = read2blastm8.get(row["qseqid"], row)
                 new_row["qseqid"] = row["qseqid"]
                 refined_blastn_6_writer.write(new_row)
@@ -370,7 +370,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         added_reads = {}
 
         with open(blast_top_blastn_6_path) as blast_top_blastn_6_f:
-            for row in BlastnOutput6Reader(blast_top_blastn_6_f):
+            for row in BlastnOutput6Reader(blast_top_blastn_6_f): # nt - 2 (14) nr - 1 (12)
                 contig_id = row["qseqid"]
                 accession_id = row["sseqid"]
                 contig2accession[contig_id] = (accession_id, row)
@@ -502,7 +502,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
     def get_top_m8_nr(blast_output, blast_top_blastn_6_path, max_evalue):
         ''' Get top m8 file entry for each contig from blast_output and output to blast_top_m8 '''
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(
+            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(  # 1 (12)
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nr(blast_output, max_evalue)
             )
 
@@ -513,7 +513,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         with open(blast_output_path) as blastn_6_f:
             # For each contig, get the alignments that have the best total score (may be multiple if there are ties).
-            for alignment in BlastnOutput6Reader(blastn_6_f):
+            for alignment in BlastnOutput6Reader(blastn_6_f): # 1 (12)
                 if alignment["evalue"] > max_evalue:
                     continue
                 query = alignment["qseqid"]
@@ -550,7 +550,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         previously_seen_queries = set()
         with open(blast_output_path) as blastn_6_f:
             # Please see comments explaining the definition of "hsp" elsewhere in this file.
-            for hsp in BlastnOutput6Reader(blastn_6_f):
+            for hsp in BlastnOutput6Reader(blastn_6_f): # nt - 2 (14) nr - 1 (12)
                 # filter local alignment HSPs based on minimum length and sequence similarity
                 if hsp["length"] < min_alignment_length:
                     continue
@@ -631,6 +631,6 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         # Output the optimal hit for each query.
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(
+            BlastnOutput6Writer(blast_top_blastn_6_f).write_all( # 2 (14)
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nt(blast_output, min_alignment_length, min_pident, max_evalue)
             )

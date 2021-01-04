@@ -103,7 +103,7 @@ class _TSVWithSchemaWriter(_TSVWithSchmaBase, ABC):
     def write(self, row: Dict[str, Any]) -> None:
         self._writer.writerow(self._dict_row_to_list(row))
 
-
+# 1 (12)
 # blastn output format 6 as documented in
 # http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
 # it's also the format of our GSNAP and RAPSEARCH2 output
@@ -122,14 +122,14 @@ _BLAST_OUTPUT_SCHEMA = [
     ("bitscore", float),
 ]
 
-
+# 2 (14)
 # Additional blastn output columns.
 _BLAST_OUTPUT_NT_SCHEMA = [
     ("qlen", int),      # query sequence length, helpful for computing qcov
     ("slen", int),      # subject sequence length, so far unused in IDseq
 ]
 
-
+# 3 (16)
 # Re-ranked output of blastn.  One row per query.  Two additional columns.
 _RERANKED_BLAST_OUTPUT_NT_SCHEMA = [
     ("qcov", float),     # fraction of query covered by the optimal set of HSPs
@@ -181,7 +181,7 @@ class BlastnOutput6Reader(_BlastnOutput6Base, _TSVWithSchemaReader):
 class BlastnOutput6Writer(_BlastnOutput6Base, _TSVWithSchemaWriter):
     pass
 
-
+# 1 (7)
 _HIT_SUMMARY_SCHEMA = [
     ("read_id", str),
     ("level", int),
@@ -192,6 +192,7 @@ _HIT_SUMMARY_SCHEMA = [
     ("family_taxid", int),
 ]
 
+# 2 (12)
 _HIT_SUMMARY_CONTIG_SCHEMA = [
     ("contig_id", str),
     ("contig_accession_id", str),
@@ -200,10 +201,12 @@ _HIT_SUMMARY_CONTIG_SCHEMA = [
     ("contig_family_taxid", int),
 ]
 
+# 3 (13)
 _HIT_SUMMARY_ASSEMBLY_SOURCE_SCHEMA = [
     ("from_assembly", str),
 ]
 
+# 4 (14)
 _HIT_SUMMARY_MERGED_SCHEMA = [
     ("source_count_type", str),
 ]

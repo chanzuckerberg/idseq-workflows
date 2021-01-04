@@ -502,7 +502,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
     def get_top_m8_nr(blast_output, blast_top_blastn_6_path, max_evalue):
         ''' Get top m8 file entry for each contig from blast_output and output to blast_top_m8 '''
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(
+            BlastnOutput6Writer(blast_top_blastn_6_f).writerows(
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nr(blast_output, max_evalue)
             )
 
@@ -631,6 +631,6 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         # Output the optimal hit for each query.
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6NTRerankedWriter(blast_top_blastn_6_f).write_all(
+            BlastnOutput6NTRerankedWriter(blast_top_blastn_6_f).writerows(
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nt(blast_output, min_alignment_length, min_pident, max_evalue)
             )

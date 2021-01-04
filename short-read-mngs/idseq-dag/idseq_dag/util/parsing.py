@@ -1,6 +1,6 @@
 
 from csv import DictReader, DictWriter
-from typing import TextIO
+from typing import Any, Iterable, Optional, Sequence, Text, TextIO, Tuple
 
 # Alignments with e-values greater than 1 are low-quality alignments and associated with
 # a high rate of false-positives. These should be filtered at all alignment steps.
@@ -30,6 +30,9 @@ _BLASTN_OUTPUT_6_NT_SCHEMA = _BLASTN_OUTPUT_6_SCHEMA + [
     ("slen", int),      # subject sequence length, so far unused in IDseq
 ]
 
+# This is needed to pass the output fields to blastn on NT (idseq-dag/idseq_dag/steps/blast_contigs.py:441)
+BLASTN_OUTPUT_6_NT_FIELDS = [field for field, _ in _BLASTN_OUTPUT_6_NT_SCHEMA]
+
 # Re-ranked output of blastn.  One row per query.  Two additional columns.
 _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA = _BLASTN_OUTPUT_6_NT_SCHEMA + [
     ("qcov", float),     # fraction of query covered by the optimal set of HSPs
@@ -37,40 +40,90 @@ _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA = _BLASTN_OUTPUT_6_NT_SCHEMA + [
 ]
 
 
-class BlastnOutput6Reader(DictReader):
+class _TypedDictReader(DictReader):
+    def __init__(self, f: Iterable[Text], schema: Sequence[Tuple[str]], restkey: Optional[str], restval: Optional[str], dialect: Any, *args: Any, **kwds: Any) -> None:
+        fieldnames = [field for field, _ in schema]
+        self._types = {field: _type for field, _type in schema}
+        super().__init__(f, fieldnames=fieldnames, restkey=restkey, restval=restval, dialect=dialect, *args, **kwds)
+
+    def __next__(self):
+        row = super().__next__()
+        for key, value in row.items():
+            if value:
+                row[key] = self._types[key](value)
+        return row
+
+
+class _TypedDictWriter(DictWriter):
+    def __init__(self, f: Any, schema: Sequence[Tuple[str]], restval: Optional[Any], extrasaction: str, dialect: Any, *args: Any, **kwds: Any) -> None:
+        fieldnames = [field for field, _ in schema]
+        super().__init__(f, fieldnames, restval=restval, extrasaction=extrasaction, dialect=dialect, *args, **kwds)
+
+
+class BlastnOutput6Reader(_TypedDictReader):
+    def __init__(self, f: TextIO, filter_invalid: bool = False, min_alignment_length: int = 0):
+        self._filter_invalid = filter_invalid
+        self.min_alignment_length = min_alignment_length
+
+        # The output of rapsearch2 contains comments that start with '#', these should be skipped
+        filtered_stream = (line for line in f if not line.startswith("#"))
+        super().__init__(filtered_stream, _BLASTN_OUTPUT_6_SCHEMA, delimiter="\t")
+
+    def __next__(self):
+        if not self._filter_invalid:
+            return super().__next__()
+        row = super().__next__()
+        while row and not self._row_is_valid(row):
+            row = super().__next__()
+        return row
+
+    def _row_is_valid(self, row) -> bool:
+        # GSNAP outputs bogus alignments (non-positive length /
+        # impossible percent identity / NaN e-value) sometimes,
+        # and usually they are not the only assignment, so rather than
+        # killing the job, we just skip them. If we don't filter these
+        # killing the job, we just skip them. If we don't filter these
+        # out here, they will override the good data when computing min(
+        # evalue), pollute averages computed in the json, and cause the
+        # webapp loader to crash as the Rails JSON parser cannot handle
+        # NaNs. Test if e_value != e_value to test if e_value is NaN
+        # because NaN != NaN.
+        # *** E-value Filter ***
+        # Alignments with e-value > 1 are low-quality and associated with false-positives in
+        # all alignments steps (NT and NR). When the e-value is greater than 1, ignore the
+        # alignment
+        ###
+        return all([
+            row["length"] >= self._min_alignment_length,
+            -0.25 < row["pident"] < 100.25,
+            row["evalue"] == row["evalue"],
+            row["evalue"] <= MAX_EVALUE_THRESHOLD,
+        ])
+
+
+class BlastnOutput6Writer(_TypedDictWriter):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA, delimiter="\t")
 
 
-class BlastnOutput6Writer(DictWriter):
+class BlastnOutput6NTReader(_TypedDictReader):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, delimiter="\t")
 
 
-class BlastnOutput6NTReader(DictReader):
+class BlastnOutput6NTWriter(_TypedDictWriter):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_NT_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, delimiter="\t")
 
 
-class BlastnOutput6NTWriter(DictWriter):
+class BlastnOutput6NTRerankedReader(_TypedDictReader):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_NT_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, delimiter="\t")
 
 
-class BlastnOutput6NTRerankedReader(DictReader):
+class BlastnOutput6NTRerankedWriter(_TypedDictWriter):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
-
-
-class BlastnOutput6NTRerankedWriter(DictWriter):
-    def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, delimiter="\t")
 
 
 _HIT_SUMMARY_SCHEMA = [
@@ -95,25 +148,21 @@ _HIT_SUMMARY_MERGED_SCHEMA = _HIT_SUMMARY_SCHEMA + [
 ]
 
 
-class HitSummaryReader(DictReader):
+class HitSummaryReader(_TypedDictReader):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _HIT_SUMMARY_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_SCHEMA, delimiter="\t")
 
 
-class HitSummaryWriter(DictWriter):
+class HitSummaryWriter(_TypedDictWriter):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _HIT_SUMMARY_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_SCHEMA, delimiter="\t")
 
 
-class HitSummaryMergedReader(DictReader):
+class HitSummaryMergedReader(_TypedDictReader):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _HIT_SUMMARY_MERGED_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA, delimiter="\t")
 
 
-class HitSummaryMergedWriter(DictWriter):
+class HitSummaryMergedWriter(_TypedDictWriter):
     def __init__(self, f: TextIO) -> None:
-        fieldnames = [name for name, _ in _HIT_SUMMARY_MERGED_SCHEMA]
-        super().__init__(f, fieldnames, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA, delimiter="\t")

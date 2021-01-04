@@ -30,8 +30,8 @@ class PipelineStepGenerateTaxidFasta(PipelineStep):
             allow_s3mi=True)
 
         with open(nt_hit_summary_path) as nt_hit_summary_f, open(nr_hit_summary_path) as nr_hit_summary_f:
-            nr_hits_by_read_id = {row["read_id"]: (row["taxid"], row["level"]) for row in HitSummaryReader(nr_hit_summary_f)} # 1 (7)
-            nt_hits_by_read_id = {row["read_id"]: (row["taxid"], row["level"]) for row in HitSummaryReader(nt_hit_summary_f)} # 1 (7)
+            nr_hits_by_read_id = {row["read_id"]: (row["taxid"], row["level"]) for row in HitSummaryReader(nr_hit_summary_f)}
+            nt_hits_by_read_id = {row["read_id"]: (row["taxid"], row["level"]) for row in HitSummaryReader(nt_hit_summary_f)}
 
         with open(self.output_files_local()[0], "w") as output_fa, \
              open_file_db_by_extension(lineage_db) as lineage_map:  # noqa

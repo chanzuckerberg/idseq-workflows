@@ -15,7 +15,7 @@ from idseq_dag.steps.run_assembly import PipelineStepRunAssembly
 from idseq_dag.util.count import READ_COUNTING_MODE, ReadCountingMode, get_read_cluster_size, load_duplicate_cluster_sizes
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE, NT_MIN_ALIGNMENT_LEN
-from idseq_dag.util.parsing import HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, MAX_EVALUE_THRESHOLD
+from idseq_dag.util.parsing import HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedWriter, MAX_EVALUE_THRESHOLD
 
 
 MIN_REF_FASTA_SIZE = 25
@@ -188,7 +188,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
             command.write_text_to_file('[]', contig_summary_json)
             return  # return in the middle of the function
 
-        (read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary)  # 1 (7)
+        (read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary)
         PipelineStepBlastContigs.run_blast(db_type, blast_m8, assembled_contig, reference_fasta, blast_top_m8)
         read2contig = {}
         PipelineStepRunAssembly.generate_info_from_sam(bowtie_sam, read2contig, duplicate_cluster_sizes_path)
@@ -341,16 +341,16 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         # Generate new hit summary
         new_read_ids = added_reads.keys()
         with open(hit_summary_path) as hit_summary_f, open(refined_hit_summary_path, "w") as refined_hit_summary_f:
-            refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f) # 1 (7)
-            for read in HitSummaryReader(hit_summary_f): #1 (7)
+            refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f)
+            for read in HitSummaryReader(hit_summary_f):
                 refined_hit_summary_writer.write(consolidated_dict[read["read_id"]])
             # add the reads that are newly blasted
             for read_id in new_read_ids:
                 refined_hit_summary_writer.write(added_reads[read_id])
         # Generate new M8
         with open(deduped_blastn_6_path) as deduped_blastn_6_f, open(refined_blastn_6_path, "w") as refined_blastn_6_f:
-            refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f) # 1 (12)
-            for row in BlastnOutput6Reader(deduped_blastn_6_f): # 1 (12)
+            refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f)
+            for row in BlastnOutput6Reader(deduped_blastn_6_f):
                 new_row = read2blastm8.get(row["qseqid"], row)
                 new_row["qseqid"] = row["qseqid"]
                 refined_blastn_6_writer.write(new_row)
@@ -502,7 +502,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
     def get_top_m8_nr(blast_output, blast_top_blastn_6_path, max_evalue):
         ''' Get top m8 file entry for each contig from blast_output and output to blast_top_m8 '''
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(  # 1 (12)
+            BlastnOutput6Writer(blast_top_blastn_6_f).write_all(
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nr(blast_output, max_evalue)
             )
 
@@ -513,7 +513,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         with open(blast_output_path) as blastn_6_f:
             # For each contig, get the alignments that have the best total score (may be multiple if there are ties).
-            for alignment in BlastnOutput6Reader(blastn_6_f): # 1 (12)
+            for alignment in BlastnOutput6Reader(blastn_6_f):
                 if alignment["evalue"] > max_evalue:
                     continue
                 query = alignment["qseqid"]
@@ -631,6 +631,6 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         # Output the optimal hit for each query.
         with open(blast_top_blastn_6_path, "w") as blast_top_blastn_6_f:
-            BlastnOutput6Writer(blast_top_blastn_6_f).write_all( # 2 (14)
+            BlastnOutput6NTRerankedWriter(blast_top_blastn_6_f).write_all(
                 PipelineStepBlastContigs.optimal_hit_for_each_query_nt(blast_output, min_alignment_length, min_pident, max_evalue)
             )

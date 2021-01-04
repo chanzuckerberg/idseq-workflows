@@ -8,7 +8,7 @@ import idseq_dag.util.log as log
 from idseq_dag.engine.pipeline_step import PipelineStep
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import generate_taxon_count_json_from_m8
-from idseq_dag.util.parsing import HitSummaryWriter, BlastnOutput6Writer, HitSummaryReader, BlastnOutput6Reader
+from idseq_dag.util.parsing import HitSummaryMergedWriter, BlastnOutput6Writer, HitSummaryReader, BlastnOutput6Reader
 from idseq_dag.util.s3 import fetch_reference
 
 
@@ -38,21 +38,21 @@ class ComputeMergedTaxonCounts(PipelineStep):
             # (1) if processing time bottleneck, load all the data to memory
             # (2) if memory bottleneck, going through nt first, since that will save us from storing
             #     results in memory for all the reads that get their hit from NT contigs
-            for nr_hit_dict in HitSummaryReader(nr_hit_summary_f): # 1 (7)
+            for nr_hit_dict in HitSummaryReader(nr_hit_summary_f):
                 nr_alignment_per_read[nr_hit_dict["read_id"]] = SpeciesAlignmentResults(
                     contig=nr_hit_dict.get("contig_species_taxid"),
                     read=nr_hit_dict.get("species_taxid"),
                 )
 
         with open(self.outputs.merged_m8_filename, "w") as output_blastn_6_f, open(self.outputs.merged_hit_filename, "w") as output_hit_summary_f:
-            output_blastn_6_writer = BlastnOutput6Writer(output_blastn_6_f)  # 1 (12)
-            output_hit_summary_writer = HitSummaryWriter(output_hit_summary_f) # 4 (14)
+            output_blastn_6_writer = BlastnOutput6Writer(output_blastn_6_f)
+            output_hit_summary_writer = HitSummaryMergedWriter(output_hit_summary_f)
 
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # first pass for NR and output to m8 files if assignment should come from NT
                 for nt_hit_dict, nt_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f), # 1 (7)
-                    BlastnOutput6Reader(input_nt_blastn_6_f), # 1 (12)
+                    HitSummaryReader(input_nt_hit_summary_f),
+                    BlastnOutput6Reader(input_nt_blastn_6_f),
                 ):
                     # assert files match
                     assert nt_hit_dict['read_id'] == nt_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for nt [{nt_hit_dict['read_id']} != {nt_m8_dict['qseqid']}]"
@@ -80,8 +80,8 @@ class ComputeMergedTaxonCounts(PipelineStep):
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # dump remaining reads from NR
                 for nr_hit_dict, nr_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f), # 1 (7)
-                    BlastnOutput6Reader(input_nt_blastn_6_f), # 1 (12)
+                    HitSummaryReader(input_nt_hit_summary_f),
+                    BlastnOutput6Reader(input_nt_blastn_6_f),
                 ):
                     # assert files match
                     assert nr_hit_dict['read_id'] == nr_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for NR [{nr_hit_dict['read_id']} {nr_m8_dict['qseqid']}]."

@@ -22,7 +22,7 @@ class PipelineStepDownloadAccessions(PipelineStep):
             allow_s3mi=ALLOW_S3MI)
         db_s3_path = self.additional_attributes["db"]
         # db_type = self.additional_attributes["db_type"]
-        (_read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary) # 1 (7)
+        (_read_dict, accession_dict, _selected_genera) = m8.summarize_hits(hit_summary)
         with open_file_db_by_extension(loc_db) as loc_dict:
             db_path = s3.fetch_reference(
                 db_s3_path,

@@ -33,7 +33,7 @@ def summarize_hits(hit_summary_file_path: str, min_reads_per_genus=0):
     genus_accessions = defaultdict(set)  # genus => list of accessions
     total_reads = 0
     with open(hit_summary_file_path) as hit_summary_f:
-        for read in HitSummaryReader(hit_summary_f): # 1 (7)
+        for read in HitSummaryReader(hit_summary_f):
             read_id = read["read_id"]
             accession_id = read["accession_id"]
             species_taxid = read["species_taxid"]
@@ -206,7 +206,7 @@ def _call_hits_m8_work(input_blastn_6_path, lineage_map, accession2taxid_dict,
     LOG_INCREMENT = 50000
     log.write(f"Starting to summarize hits from {input_blastn_6_path}.")
     with open(input_blastn_6_path) as input_blastn_6_f:
-        for row in BlastnOutput6Reader(input_blastn_6_f, filter_invalid=True, min_alignment_length=min_alignment_length): # 1 (12)
+        for row in BlastnOutput6Reader(input_blastn_6_f, filter_invalid=True, min_alignment_length=min_alignment_length):
             read_id, accession_id, e_value = row["qseqid"], row["sseqid"], row["evalue"]
             # The Expect value (E) is a parameter that describes the number of
             # hits one can 'expect' to see by chance when searching a database of
@@ -234,8 +234,8 @@ def _call_hits_m8_work(input_blastn_6_path, lineage_map, accession2taxid_dict,
     # the summary level info.
     emitted = set()
     with open(output_blastn_6_path, "w") as blastn_6_out_f, open(output_summary, "w") as hit_summary_out_f, open(input_blastn_6_path) as input_blastn_6_f:
-        blastn_6_writer = BlastnOutput6Writer(blastn_6_out_f) # 1 (12)
-        hit_summary_writer = HitSummaryWriter(hit_summary_out_f) # 1 (7)
+        blastn_6_writer = BlastnOutput6Writer(blastn_6_out_f)
+        hit_summary_writer = HitSummaryWriter(hit_summary_out_f)
         # Iterator over the lines of the m8 file. Emit the hit with the
         # best value that provides the most specific taxonomy
         # information. If there are multiple hits (also called multiple
@@ -250,7 +250,7 @@ def _call_hits_m8_work(input_blastn_6_path, lineage_map, accession2taxid_dict,
         # TODO: Consider all hits within a fixed margin of the best e-value.
         # This change may need to be accompanied by a change to
         # GSNAP/RAPSearch2 parameters.
-        for row in BlastnOutput6Reader(input_blastn_6_f, filter_invalid=True, min_alignment_length=min_alignment_length):  # 1 (12)
+        for row in BlastnOutput6Reader(input_blastn_6_f, filter_invalid=True, min_alignment_length=min_alignment_length):
             read_id, accession_id, e_value = row["qseqid"], row["sseqid"], row["evalue"]
             if read_id in emitted:
                 continue

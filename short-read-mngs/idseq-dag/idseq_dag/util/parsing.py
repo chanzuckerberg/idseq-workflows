@@ -1,8 +1,6 @@
 
-import csv
 from csv import DictReader, DictWriter
-from abc import ABC, abstractstaticmethod
-from typing import Any, Callable, Dict, Iterable, List, Optional, TextIO, Tuple
+from typing import TextIO
 
 # Alignments with e-values greater than 1 are low-quality alignments and associated with
 # a high rate of false-positives. These should be filtered at all alignment steps.

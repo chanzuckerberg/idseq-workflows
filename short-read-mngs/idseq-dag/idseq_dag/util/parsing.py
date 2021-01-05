@@ -96,7 +96,6 @@ class BlastnOutput6Reader(_TypedDictReader):
         # impossible percent identity / NaN e-value) sometimes,
         # and usually they are not the only assignment, so rather than
         # killing the job, we just skip them. If we don't filter these
-        # killing the job, we just skip them. If we don't filter these
         # out here, they will override the good data when computing min(
         # evalue), pollute averages computed in the json, and cause the
         # webapp loader to crash as the Rails JSON parser cannot handle

@@ -371,7 +371,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         with open(blast_top_blastn_6_path) as blast_top_blastn_6_f:
             blastn_6_reader = BlastnOutput6NTReader(blast_top_blastn_6_f) if db_type == 'nt' else BlastnOutput6Reader(blast_top_blastn_6_f)
-            raise Exception(f"asdasdasasdasd {db_type}")
+            raise Exception(f"asdasdasasdasd {db_type} {blastn_6_reader.__name__}")
             for row in blastn_6_reader:
                 contig_id = row["qseqid"]
                 accession_id = row["sseqid"]

@@ -77,7 +77,7 @@ class BlastnOutput6Reader(_TypedDictReader):
     """
     def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
         self._filter_invalid = filter_invalid
-        self.min_alignment_length = min_alignment_length
+        self._min_alignment_length = min_alignment_length
 
         # The output of rapsearch2 contains comments that start with '#', these should be skipped
         filtered_stream = (line for line in f if not line.startswith("#"))

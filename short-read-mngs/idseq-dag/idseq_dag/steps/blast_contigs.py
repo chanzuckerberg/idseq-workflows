@@ -15,7 +15,7 @@ from idseq_dag.steps.run_assembly import PipelineStepRunAssembly
 from idseq_dag.util.count import READ_COUNTING_MODE, ReadCountingMode, get_read_cluster_size, load_duplicate_cluster_sizes
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE, NT_MIN_ALIGNMENT_LEN
-from idseq_dag.util.parsing import HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedWriter, BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
+from idseq_dag.util.parsing import BlastnOutput6NTReader, HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedWriter, BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
 
 
 MIN_REF_FASTA_SIZE = 25
@@ -220,7 +220,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
 
         with TraceLock("PipelineStepBlastContigs-CYA", PipelineStepBlastContigs.cya_lock, debug=False):
             with log.log_context("PipelineStepBlastContigs", {"substep": "generate_taxon_count_json_from_m8", "db_type": db_type, "refined_counts": refined_counts_with_dcr}):
-                m8.generate_taxon_count_json_from_m8(refined_m8, refined_hit_summary, db_type.upper(), # 1 (12) 1 (7)
+                m8.generate_taxon_count_json_from_m8(refined_m8, refined_hit_summary, db_type.upper(),
                                                      lineage_db, deuterostome_db, taxon_whitelist, taxon_blacklist,
                                                      duplicate_cluster_sizes_path, refined_counts_with_dcr)
 
@@ -362,7 +362,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
                 refined_blastn_6_writer.write(new_row)
 
     @staticmethod
-    def update_read_dict(read2contig, blast_top_blastn_6_path, read_dict, accession_dict):
+    def update_read_dict(read2contig, blast_top_blastn_6_path, read_dict, accession_dict, db_type):
         consolidated_dict = read_dict
         read2blastm8 = {}
         contig2accession = {}
@@ -370,7 +370,8 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         added_reads = {}
 
         with open(blast_top_blastn_6_path) as blast_top_blastn_6_f:
-            for row in BlastnOutput6Reader(blast_top_blastn_6_f): # nt - 2 (14) nr - 1 (12)
+            blastn_6_reader = BlastnOutput6NTReader(blast_top_blastn_6_f) if db_type == 'nt' else BlastnOutput6Reader(blast_top_blastn_6_f)
+            for row in blastn_6_reader:
                 contig_id = row["qseqid"]
                 accession_id = row["sseqid"]
                 contig2accession[contig_id] = (accession_id, row)
@@ -549,7 +550,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         previously_seen_queries = set()
         with open(blast_output_path) as blastn_6_f:
             # Please see comments explaining the definition of "hsp" elsewhere in this file.
-            for hsp in BlastnOutput6Reader(blastn_6_f): # nt - 2 (14) nr - 1 (12)
+            for hsp in BlastnOutput6NTReader(blastn_6_f):
                 # filter local alignment HSPs based on minimum length and sequence similarity
                 if hsp["length"] < min_alignment_length:
                     continue

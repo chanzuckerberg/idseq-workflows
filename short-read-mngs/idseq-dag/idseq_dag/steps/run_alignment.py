@@ -186,7 +186,7 @@ class PipelineStepRunAlignment(PipelineStep):
             taxon_whitelist = fetch_reference(self.additional_files.get("taxon_whitelist", DEFAULT_WHITELIST_S3),
                                               self.ref_dir_local)
 
-        m8.generate_taxon_count_json_from_m8( # 1 (12) 1 (7)
+        m8.generate_taxon_count_json_from_m8(
             deduped_output_m8, output_hitsummary, db_type,
             lineage_db, deuterostome_db, taxon_whitelist, taxon_blacklist, duplicate_cluster_sizes_path,
             output_counts_with_dcr_json)

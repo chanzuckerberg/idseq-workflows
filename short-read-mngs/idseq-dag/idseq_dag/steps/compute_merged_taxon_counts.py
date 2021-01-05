@@ -149,7 +149,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
         taxon_blacklist = fetch_reference(blacklist_s3_file, self.ref_dir_local)
         cdhit_cluster_sizes_path = self.inputs.cluster_sizes_filename
 
-        generate_taxon_count_json_from_m8( # 1 (12) 4 (14)
+        generate_taxon_count_json_from_m8(
             self.outputs.merged_m8_filename,
             self.outputs.merged_hit_filename,
             count_type,

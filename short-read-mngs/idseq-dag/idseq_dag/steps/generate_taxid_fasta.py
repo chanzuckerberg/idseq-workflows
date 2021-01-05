@@ -40,6 +40,7 @@ class PipelineStepGenerateTaxidFasta(PipelineStep):
                 # :12720:8743/2"
                 # Translate the read information into our custom format with fake
                 # taxids at non-specific hit levels.
+                # TODO: (tmorse) fasta parsing
                 annotated_read_id = read.header.lstrip('>')
                 read_id = annotated_read_id.split(":", 4)[-1]
 

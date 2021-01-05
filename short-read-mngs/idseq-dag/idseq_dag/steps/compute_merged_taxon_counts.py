@@ -8,7 +8,7 @@ import idseq_dag.util.log as log
 from idseq_dag.engine.pipeline_step import PipelineStep
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import generate_taxon_count_json_from_m8
-from idseq_dag.util.parsing import HitSummaryMergedReader, HitSummaryMergedWriter, BlastnOutput6Reader, BlastnOutput6Writer
+from idseq_dag.util.parsing import HitSummaryMergedReader, HitSummaryMergedWriter, BlastnOutput6NTRerankedReader, BlastnOutput6Writer
 from idseq_dag.util.s3 import fetch_reference
 
 
@@ -52,7 +52,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
                 # first pass for NR and output to m8 files if assignment should come from NT
                 for nt_hit_dict, nt_m8_dict in zip(
                     HitSummaryMergedReader(input_nt_hit_summary_f),
-                    BlastnOutput6Reader(input_nt_blastn_6_f),
+                    BlastnOutput6NTRerankedReader(input_nt_blastn_6_f),
                 ):
                     # assert files match
                     assert nt_hit_dict['read_id'] == nt_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for nt [{nt_hit_dict['read_id']} != {nt_m8_dict['qseqid']}]"
@@ -81,7 +81,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
                 # dump remaining reads from NR
                 for nr_hit_dict, nr_m8_dict in zip(
                     HitSummaryMergedReader(input_nt_hit_summary_f),
-                    BlastnOutput6Reader(input_nt_blastn_6_f),
+                    BlastnOutput6NTRerankedReader(input_nt_blastn_6_f),
                 ):
                     # assert files match
                     assert nr_hit_dict['read_id'] == nr_m8_dict["qseqid"], f"Mismatched m8 and hit summary files for NR [{nr_hit_dict['read_id']} {nr_m8_dict['qseqid']}]."

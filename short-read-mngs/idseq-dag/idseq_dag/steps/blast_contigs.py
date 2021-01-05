@@ -15,7 +15,7 @@ from idseq_dag.steps.run_assembly import PipelineStepRunAssembly
 from idseq_dag.util.count import READ_COUNTING_MODE, ReadCountingMode, get_read_cluster_size, load_duplicate_cluster_sizes
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE, NT_MIN_ALIGNMENT_LEN
-from idseq_dag.util.parsing import BlastnOutput6NTReader, HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedWriter, BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
+from idseq_dag.util.parsing import BlastnOutput6NTReader, HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedReader, BlastnOutput6NTRerankedWriter, BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
 
 
 MIN_REF_FASTA_SIZE = 25
@@ -370,8 +370,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         added_reads = {}
 
         with open(blast_top_blastn_6_path) as blast_top_blastn_6_f:
-            blastn_6_reader = BlastnOutput6NTReader(blast_top_blastn_6_f) if db_type == 'nt' else BlastnOutput6Reader(blast_top_blastn_6_f)
-            raise Exception(f"asdasdasasdasd {db_type} {blastn_6_reader.__class__.__name__}")
+            blastn_6_reader = BlastnOutput6NTRerankedReader(blast_top_blastn_6_f) if db_type == 'nt' else BlastnOutput6Reader(blast_top_blastn_6_f)
             for row in blastn_6_reader:
                 contig_id = row["qseqid"]
                 accession_id = row["sseqid"]

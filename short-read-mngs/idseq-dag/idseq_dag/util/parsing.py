@@ -6,6 +6,36 @@ from typing import Any, Iterable, Optional, Sequence, Text, TextIO, Tuple
 # a high rate of false-positives. These should be filtered at all alignment steps.
 MAX_EVALUE_THRESHOLD = 1
 
+
+class _TypedDictTSVReader(DictReader):
+    """
+    Similar to DictReader but instead of a sequence of fieldnames it takes a sequence of
+    tuples, the first element being the field name and the second being the field's type.
+    After reading a row, this class will convert each element to it's associated type.
+    """
+    def __init__(self, f: Iterable[Text], schema: Sequence[Tuple[str, type]]) -> None:
+        fieldnames = [field for field, _ in schema]
+        self._types = {field: _type for field, _type in schema}
+        super().__init__(f, fieldnames=fieldnames, delimiter="\t")
+
+    def __next__(self):
+        row = super().__next__()
+        assert len(row) <= len(self._types), f"row {row} contains fields not in schema {self._types}"
+        for key, value in row.items():
+            if value:
+                row[key] = self._types[key](value)
+        return row
+
+
+class _TypedDictTSVWriter(DictWriter):
+    """
+    This is just a convenience class so you don't need to pull out the field names
+    """
+    def __init__(self, f: Any, schema: Sequence[Tuple[str]]) -> None:
+        fieldnames = [field for field, _ in schema]
+        super().__init__(f, fieldnames, delimiter="\t")
+
+
 # blastn output format 6 as documented in
 # http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
 # it's also the format of our GSNAP and RAPSEARCH2 output
@@ -40,49 +70,20 @@ _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA = _BLASTN_OUTPUT_6_NT_SCHEMA + [
 ]
 
 
-class _TypedDictReader(DictReader):
-    """
-    Similar to DictReader but instead of a sequence of fieldnames it takes a sequence of
-    tuples, the first element being the field name and the second being the field's type.
-    After reading a row, this class will convert each element to it's associated type.
-    """
-    def __init__(self, f: Iterable[Text], schema: Sequence[Tuple[str, type]], **kwargs) -> None:
-        fieldnames = [field for field, _ in schema]
-        self._types = {field: _type for field, _type in schema}
-        super().__init__(f, fieldnames=fieldnames, **kwargs)
-
-    def __next__(self):
-        row = super().__next__()
-        assert len(row) <= len(self._types), f"row {row} contains fields not in schema {self._types}"
-        for key, value in row.items():
-            if value:
-                row[key] = self._types[key](value)
-        return row
-
-
-class _TypedDictWriter(DictWriter):
-    """
-    This is just a convenience class so you don't need to pull out the field names
-    """
-    def __init__(self, f: Any, schema: Sequence[Tuple[str]], **kwargs) -> None:
-        fieldnames = [field for field, _ in schema]
-        super().__init__(f, fieldnames, **kwargs)
-
-
-class BlastnOutput6Reader(_TypedDictReader):
+class _BlastnOutput6ReaderBase(_TypedDictTSVReader):
     """
     This class is a bit of an oddball due to some compatibility concerns. In addition
     to the normal parsing stuff it also:
     1. Ignores comments (lines starting with '#') in tsv files, rapsearch2 adds them
     2. Supports filtering rows that we consider invalid
     """
-    def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
+    def __init__(self, f: Iterable[Text], schema: Sequence[Tuple[str, type]], filter_invalid: bool = False, min_alignment_length: int = 0):
         self._filter_invalid = filter_invalid
         self._min_alignment_length = min_alignment_length
 
         # The output of rapsearch2 contains comments that start with '#', these should be skipped
         filtered_stream = (line for line in f if not line.startswith("#"))
-        super().__init__(filtered_stream, _BLASTN_OUTPUT_6_SCHEMA, delimiter="\t")
+        super().__init__(filtered_stream, schema,)
 
     def __next__(self):
         if not self._filter_invalid:
@@ -115,29 +116,40 @@ class BlastnOutput6Reader(_TypedDictReader):
         ])
 
 
-class BlastnOutput6Writer(_TypedDictWriter):
+class BlastnOutput6Reader(_BlastnOutput6ReaderBase):
+    """
+    This class is a bit of an oddball due to some compatibility concerns. In addition
+    to the normal parsing stuff it also:
+    1. Ignores comments (lines starting with '#') in tsv files, rapsearch2 adds them
+    2. Supports filtering rows that we consider invalid
+    """
+    def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
+        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA, filter_invalid, min_alignment_length)
+
+
+class BlastnOutput6Writer(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA)
 
 
-class BlastnOutput6NTReader(_TypedDictReader):
-    def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, delimiter="\t")
+class BlastnOutput6NTReader(_BlastnOutput6ReaderBase):
+    def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, filter_invalid, min_alignment_length)
 
 
-class BlastnOutput6NTWriter(_TypedDictWriter):
+class BlastnOutput6NTWriter(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA)
 
 
-class BlastnOutput6NTRerankedReader(_TypedDictReader):
-    def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, delimiter="\t")
+class BlastnOutput6NTRerankedReader(_BlastnOutput6ReaderBase):
+    def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, filter_invalid, min_alignment_length)
 
 
-class BlastnOutput6NTRerankedWriter(_TypedDictWriter):
+class BlastnOutput6NTRerankedWriter(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, delimiter="\t")
+        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA)
 
 
 _HIT_SUMMARY_SCHEMA = [
@@ -162,21 +174,21 @@ _HIT_SUMMARY_MERGED_SCHEMA = _HIT_SUMMARY_SCHEMA + [
 ]
 
 
-class HitSummaryReader(_TypedDictReader):
+class HitSummaryReader(_TypedDictTSVReader):
     def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _HIT_SUMMARY_SCHEMA, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_SCHEMA)
 
 
-class HitSummaryWriter(_TypedDictWriter):
+class HitSummaryWriter(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _HIT_SUMMARY_SCHEMA, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_SCHEMA)
 
 
-class HitSummaryMergedReader(_TypedDictReader):
+class HitSummaryMergedReader(_TypedDictTSVReader):
     def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA)
 
 
-class HitSummaryMergedWriter(_TypedDictWriter):
+class HitSummaryMergedWriter(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA, delimiter="\t")
+        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA)

@@ -55,7 +55,10 @@ class _TypedDictReader(DictReader):
         row = super().__next__()
         for key, value in row.items():
             if value is not None:
-                row[key] = self._types[key](value)
+                try:
+                    row[key] = self._types[key](value)
+                except:
+                    raise Exception(f"{row} {key} {value} {self._types}")
         return row
 
 

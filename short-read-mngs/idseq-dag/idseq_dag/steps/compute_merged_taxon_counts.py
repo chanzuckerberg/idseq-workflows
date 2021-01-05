@@ -67,9 +67,9 @@ class ComputeMergedTaxonCounts(PipelineStep):
                     has_nt_read_hit = nt_alignment.read
                     has_nr_read_hit = nr_alignment and nr_alignment.read
                     if has_nt_contig_hit or (not has_nr_contig_hit and has_nt_read_hit):
-                        output_blastn_6_writer.write(nt_m8_dict)
+                        output_blastn_6_writer.writerow(nt_m8_dict)
                         nt_hit_dict["source_count_type"] = "NT"
-                        output_hit_summary_writer.write(nt_hit_dict)
+                        output_hit_summary_writer.writerow(nt_hit_dict)
                         if nr_alignment:
                             del nr_alignment_per_read[nt_hit_dict["read_id"]]
                     elif has_nr_contig_hit or has_nr_read_hit:
@@ -89,9 +89,9 @@ class ComputeMergedTaxonCounts(PipelineStep):
                     nr_alignment = nr_alignment_per_read.get(nr_hit_dict["read_id"])
 
                     if nr_alignment:
-                        output_blastn_6_writer.write(nr_m8_dict)
+                        output_blastn_6_writer.writerow(nr_m8_dict)
                         nr_hit_dict["source_count_type"] = "NR"
-                        output_hit_summary_writer.write(nr_hit_dict)
+                        output_hit_summary_writer.writerow(nr_hit_dict)
 
         # Create new merged m8 and hit summary files
         self.create_taxon_count_file()

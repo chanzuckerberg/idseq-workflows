@@ -263,7 +263,7 @@ def _call_hits_m8_work(input_blastn_6_path, lineage_map, accession2taxid_dict,
                 # Read out the hit with the best value that provides the
                 # most specific taxonomy information.
                 emitted.add(read_id)
-                blastn_6_writer.write(row)
+                blastn_6_writer.writerow(row)
                 species_taxid = -1
                 genus_taxid = -1
                 family_taxid = -1
@@ -271,7 +271,7 @@ def _call_hits_m8_work(input_blastn_6_path, lineage_map, accession2taxid_dict,
                     (species_taxid, genus_taxid, family_taxid) = get_lineage(
                         best_accession_id)
 
-                hit_summary_writer.write({
+                hit_summary_writer.writerow({
                     "read_id": read_id,
                     "level": hit_level,
                     "taxid": taxid,

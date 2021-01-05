@@ -343,23 +343,23 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         with open(hit_summary_path) as hit_summary_f, open(refined_hit_summary_path, "w") as refined_hit_summary_f:
             refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f)
             for read in HitSummaryReader(hit_summary_f):
-                refined_hit_summary_writer.write(consolidated_dict[read["read_id"]])
+                refined_hit_summary_writer.writerow(consolidated_dict[read["read_id"]])
             # add the reads that are newly blasted
             for read_id in new_read_ids:
-                refined_hit_summary_writer.write(added_reads[read_id])
+                refined_hit_summary_writer.writerow(added_reads[read_id])
         # Generate new M8
         with open(deduped_blastn_6_path) as deduped_blastn_6_f, open(refined_blastn_6_path, "w") as refined_blastn_6_f:
             refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f)
             for row in BlastnOutput6Reader(deduped_blastn_6_f):
                 new_row = read2blastm8.get(row["qseqid"], row)
                 new_row["qseqid"] = row["qseqid"]
-                refined_blastn_6_writer.write(new_row)
+                refined_blastn_6_writer.writerow(new_row)
 
             # add the reads that are newly blasted
             for read_id in new_read_ids:
                 new_row = read2blastm8.get(read_id)
                 new_row["qseqid"] = read_id
-                refined_blastn_6_writer.write(new_row)
+                refined_blastn_6_writer.writerow(new_row)
 
     @staticmethod
     def update_read_dict(read2contig, blast_top_blastn_6_path, read_dict, accession_dict, db_type):

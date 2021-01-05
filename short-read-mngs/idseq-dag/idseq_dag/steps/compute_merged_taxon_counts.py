@@ -8,7 +8,7 @@ import idseq_dag.util.log as log
 from idseq_dag.engine.pipeline_step import PipelineStep
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import generate_taxon_count_json_from_m8
-from idseq_dag.util.parsing import HitSummaryMergedWriter, BlastnOutput6Writer, HitSummaryReader, BlastnOutput6Reader
+from idseq_dag.util.parsing import HitSummaryMergedReader, HitSummaryMergedWriter, BlastnOutput6Reader, BlastnOutput6Writer
 from idseq_dag.util.s3 import fetch_reference
 
 
@@ -38,7 +38,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
             # (1) if processing time bottleneck, load all the data to memory
             # (2) if memory bottleneck, going through nt first, since that will save us from storing
             #     results in memory for all the reads that get their hit from NT contigs
-            for nr_hit_dict in HitSummaryReader(nr_hit_summary_f):
+            for nr_hit_dict in HitSummaryMergedReader(nr_hit_summary_f):
                 nr_alignment_per_read[nr_hit_dict["read_id"]] = SpeciesAlignmentResults(
                     contig=nr_hit_dict.get("contig_species_taxid"),
                     read=nr_hit_dict.get("species_taxid"),
@@ -51,7 +51,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # first pass for NR and output to m8 files if assignment should come from NT
                 for nt_hit_dict, nt_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f),
+                    HitSummaryMergedReader(input_nt_hit_summary_f),
                     BlastnOutput6Reader(input_nt_blastn_6_f),
                 ):
                     # assert files match
@@ -80,7 +80,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:
                 # dump remaining reads from NR
                 for nr_hit_dict, nr_m8_dict in zip(
-                    HitSummaryReader(input_nt_hit_summary_f),
+                    HitSummaryMergedReader(input_nt_hit_summary_f),
                     BlastnOutput6Reader(input_nt_blastn_6_f),
                 ):
                     # assert files match

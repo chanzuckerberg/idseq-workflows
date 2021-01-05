@@ -55,7 +55,7 @@ class _TypedDictReader(DictReader):
         row = super().__next__()
         assert len(row) <= len(self._types), f"row {row} contains fields not in schema {self._types}"
         for key, value in row.items():
-            if value is not None:
+            if value:
                 row[key] = self._types[key](value)
         return row
 

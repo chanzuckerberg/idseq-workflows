@@ -353,7 +353,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
                 refined_hit_summary_writer.writerow(added_reads[read_id])
         # Generate new M8
         with open(deduped_blastn_6_path) as deduped_blastn_6_f, open(refined_blastn_6_path, "w") as refined_blastn_6_f:
-            refined_blastn_6_writer = BlastnOutput6Writer(refined_blastn_6_f)
+            refined_blastn_6_writer = BlastnOutput6NTRerankedWriter(refined_blastn_6_f)
             for row in BlastnOutput6Reader(deduped_blastn_6_f):
                 new_row = read2blastm8.get(row["qseqid"], row)
                 new_row["qseqid"] = row["qseqid"]

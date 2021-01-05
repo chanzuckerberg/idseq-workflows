@@ -15,7 +15,11 @@ from idseq_dag.steps.run_assembly import PipelineStepRunAssembly
 from idseq_dag.util.count import READ_COUNTING_MODE, ReadCountingMode, get_read_cluster_size, load_duplicate_cluster_sizes
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE, NT_MIN_ALIGNMENT_LEN
-from idseq_dag.util.parsing import BlastnOutput6NTReader, HitSummaryReader, HitSummaryWriter, BlastnOutput6Reader, BlastnOutput6Writer, BlastnOutput6NTRerankedReader, BlastnOutput6NTRerankedWriter, BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
+from idseq_dag.util.parsing import BlastnOutput6Reader, BlastnOutput6Writer
+from idseq_dag.util.parsing import BlastnOutput6NTReader
+from idseq_dag.util.parsing import BlastnOutput6NTRerankedReader, BlastnOutput6NTRerankedWriter
+from idseq_dag.util.parsing import HitSummaryReader, HitSummaryMergedWriter
+from idseq_dag.util.parsing import BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
 
 
 MIN_REF_FASTA_SIZE = 25
@@ -341,7 +345,7 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
         # Generate new hit summary
         new_read_ids = added_reads.keys()
         with open(hit_summary_path) as hit_summary_f, open(refined_hit_summary_path, "w") as refined_hit_summary_f:
-            refined_hit_summary_writer = HitSummaryWriter(refined_hit_summary_f)
+            refined_hit_summary_writer = HitSummaryMergedWriter(refined_hit_summary_f)
             for read in HitSummaryReader(hit_summary_f):
                 refined_hit_summary_writer.writerow(consolidated_dict[read["read_id"]])
             # add the reads that are newly blasted

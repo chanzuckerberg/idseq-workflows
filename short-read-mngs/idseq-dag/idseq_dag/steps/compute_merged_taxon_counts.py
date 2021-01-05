@@ -8,7 +8,7 @@ import idseq_dag.util.log as log
 from idseq_dag.engine.pipeline_step import PipelineStep
 from idseq_dag.util.lineage import DEFAULT_BLACKLIST_S3, DEFAULT_WHITELIST_S3
 from idseq_dag.util.m8 import generate_taxon_count_json_from_m8
-from idseq_dag.util.parsing import HitSummaryMergedReader, HitSummaryMergedWriter, BlastnOutput6NTRerankedReader, BlastnOutput6Writer
+from idseq_dag.util.parsing import HitSummaryMergedReader, HitSummaryMergedWriter, BlastnOutput6NTRerankedReader, BlastnOutput6NTRerankedWriter
 from idseq_dag.util.s3 import fetch_reference
 
 
@@ -45,7 +45,7 @@ class ComputeMergedTaxonCounts(PipelineStep):
                 )
 
         with open(self.outputs.merged_m8_filename, "w") as output_blastn_6_f, open(self.outputs.merged_hit_filename, "w") as output_hit_summary_f:
-            output_blastn_6_writer = BlastnOutput6Writer(output_blastn_6_f)
+            output_blastn_6_writer = BlastnOutput6NTRerankedWriter(output_blastn_6_f)
             output_hit_summary_writer = HitSummaryMergedWriter(output_hit_summary_f)
 
             with open(self.inputs.nt_m8) as input_nt_blastn_6_f, open(self.inputs.nt_hitsummary2_tab) as input_nt_hit_summary_f:

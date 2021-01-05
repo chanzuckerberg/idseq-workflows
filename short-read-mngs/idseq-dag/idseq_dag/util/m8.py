@@ -306,8 +306,7 @@ def generate_taxon_count_json_from_m8(
 
         with log.log_context("generate_taxon_count_json_from_m8", {"substep": "loop_1"}):
             # Lines in m8_file and hit_level_file correspond (same read_id)
-            hit_summary_reader = HitSummaryMergedReader(hit_level_f) if count_type == 'merged_NT_NR' else HitSummaryReader(hit_level_f)
-            for hit_row, blastn_6_row in zip(hit_summary_reader, BlastnOutput6Reader(blastn_6_f)):
+            for hit_row, blastn_6_row in zip(HitSummaryMergedReader(hit_level_f), BlastnOutput6Reader(blastn_6_f)):
                 # Retrieve data values from files
                 read_id = hit_row["read_id"]
                 hit_level = hit_row["level"]

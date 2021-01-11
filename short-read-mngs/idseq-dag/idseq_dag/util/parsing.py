@@ -23,8 +23,6 @@ class _TypedDictTSVReader(DictReader):
         for key, value in row.items():
             if value:
                 row[key] = self._types[key](value)
-            else:
-                row[key] = None
         return row
 
 

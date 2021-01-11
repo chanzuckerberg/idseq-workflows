@@ -22,7 +22,7 @@ class TestBlastnOutput6Reader(unittest.TestCase):
         rows = list(BlastnOutput6Reader(blastn_input_6))
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["pident"], 100.0)
-        self.assertEqual(rows[1]["evalue"], None)
+        self.assertEqual(rows[1]["evalue"], "")
 
     def test_read_error_empty_line(self):
         blastn_input_6 = [""]
@@ -100,7 +100,7 @@ class TestBlastnOutput6NTReader(unittest.TestCase):
         rows = list(BlastnOutput6NTReader(blastn_input_6))
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["qlen"], 11)
-        self.assertEqual(rows[1]["evalue"], None)
+        self.assertEqual(rows[1]["evalue"], "")
 
     def test_read_error_empty_line(self):
         blastn_input_6 = [""]
@@ -179,7 +179,7 @@ class TestBlastnOutput6NTRerankedReader(unittest.TestCase):
         rows = list(BlastnOutput6NTRerankedReader(blastn_input_6))
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["qcov"], 0.1)
-        self.assertEqual(rows[1]["evalue"], None)
+        self.assertEqual(rows[1]["evalue"], "")
 
     def test_read_error_empty_line(self):
         blastn_input_6 = [""]
@@ -259,7 +259,7 @@ class TestHitSummaryReader(unittest.TestCase):
         rows = list(HitSummaryReader(hit_summary_input))
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["level"], 10)
-        self.assertEqual(rows[1]["accession_id"], None)
+        self.assertEqual(rows[1]["accession_id"], "")
 
     def test_read_error_empty_line(self):
         hit_summary_input = [""]
@@ -314,7 +314,7 @@ class TestHitSummaryMergedReader(unittest.TestCase):
         rows = list(HitSummaryMergedReader(hit_summary_input))
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["contig_species_taxid"], 60)
-        self.assertEqual(rows[1]["accession_id"], None)
+        self.assertEqual(rows[1]["accession_id"], "")
 
     def test_read_error_empty_line(self):
         hit_summary_input = [""]

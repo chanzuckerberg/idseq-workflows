@@ -172,7 +172,7 @@ class HitSummaryWriter(_HitSummarySchema, _TypedDictTSVWriter):
 
 
 class _HitSummaryMergedSchema:
-    SCHEMA = [
+    SCHEMA = _HitSummarySchema.SCHEMA + [
         ("contig_id", str),
         ("contig_accession_id", str),
         ("contig_species_taxid", int),

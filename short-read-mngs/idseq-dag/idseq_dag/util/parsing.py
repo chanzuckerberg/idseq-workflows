@@ -35,40 +35,6 @@ class _TypedDictTSVWriter(DictWriter):
         super().__init__(f, fieldnames, delimiter="\t")
 
 
-# blastn output format 6 as documented in
-# http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
-# it's also the format of our GSNAP and RAPSEARCH2 output
-_BLASTN_OUTPUT_6_SCHEMA = [
-    ("qseqid", str),
-    ("sseqid", str),
-    ("pident", float),
-    ("length", int),
-    ("mismatch", int),
-    ("gapopen", int),
-    ("qstart", int),
-    ("qend", int),
-    ("sstart", int),
-    ("send", int),
-    ("evalue", float),
-    ("bitscore", float),
-]
-
-# Additional blastn output columns.
-_BLASTN_OUTPUT_6_NT_SCHEMA = _BLASTN_OUTPUT_6_SCHEMA + [
-    ("qlen", int),      # query sequence length, helpful for computing qcov
-    ("slen", int),      # subject sequence length, so far unused in IDseq
-]
-
-# This is needed to pass the output fields to blastn on NT (idseq-dag/idseq_dag/steps/blast_contigs.py:441)
-BLASTN_OUTPUT_6_NT_FIELDS = [field for field, _ in _BLASTN_OUTPUT_6_NT_SCHEMA]
-
-# Re-ranked output of blastn.  One row per query.  Two additional columns.
-_BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA = _BLASTN_OUTPUT_6_NT_SCHEMA + [
-    ("qcov", float),     # fraction of query covered by the optimal set of HSPs
-    ("hsp_count", int),   # cardihnality of optimal fragment cover;  see BlastCandidate
-]
-
-
 class _BlastnOutput6ReaderBase(_TypedDictTSVReader):
     """
     This class is a bit of an oddball due to some compatibility concerns. In addition
@@ -115,74 +81,110 @@ class _BlastnOutput6ReaderBase(_TypedDictTSVReader):
         ])
 
 
-class BlastnOutput6Reader(_BlastnOutput6ReaderBase):
+class _BlastnOutput6Schema:
+    """
+    blastn output format 6 as documented in
+    http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
+    it's also the format of our GSNAP and RAPSEARCH2 output
+    """
+    SCHEMA = [
+        ("qseqid", str),
+        ("sseqid", str),
+        ("pident", float),
+        ("length", int),
+        ("mismatch", int),
+        ("gapopen", int),
+        ("qstart", int),
+        ("qend", int),
+        ("sstart", int),
+        ("send", int),
+        ("evalue", float),
+        ("bitscore", float),
+    ]
+
+class BlastnOutput6Reader(_BlastnOutput6Schema, _BlastnOutput6ReaderBase):
     def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
-        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA, filter_invalid, min_alignment_length)
+        super().__init__(f, self.SCHEMA, filter_invalid, min_alignment_length)
 
 
-class BlastnOutput6Writer(_TypedDictTSVWriter):
+class BlastnOutput6Writer(_BlastnOutput6Schema, _TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
 
-class BlastnOutput6NTReader(_BlastnOutput6ReaderBase):
+class _BlastnOutput6NTSchema:
+    """
+    Additional blastn output columns.
+    """
+    SCHEMA = _BlastnOutput6Schema.SCHEMA + [
+        ("qlen", int),      # query sequence length, helpful for computing qcov
+        ("slen", int),      # subject sequence length, so far unused in IDseq
+    ]
+
+class BlastnOutput6NTReader(_BlastnOutput6NTSchema, _BlastnOutput6ReaderBase):
     def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA, filter_invalid, min_alignment_length)
+        super().__init__(f, self.SCHEMA, filter_invalid, min_alignment_length)
 
-
-class BlastnOutput6NTWriter(_TypedDictTSVWriter):
+class BlastnOutput6NTWriter(_BlastnOutput6NTSchema, _TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
 
-class BlastnOutput6NTRerankedReader(_BlastnOutput6ReaderBase):
+class _BlastnOutput6NTRerankedSchema:
+    """
+    Re-ranked output of blastn.  One row per query.  Two additional columns.
+    """
+    SCHEMA = _BlastnOutput6NTSchema.SCHEMA + [
+        ("qcov", float),     # fraction of query covered by the optimal set of HSPs
+        ("hsp_count", int),   # cardihnality of optimal fragment cover;  see BlastCandidate
+    ]
+
+class BlastnOutput6NTRerankedReader(_BlastnOutput6NTRerankedSchema, _BlastnOutput6ReaderBase):
     def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA, filter_invalid, min_alignment_length)
+        super().__init__(f, self.SCHEMA, filter_invalid, min_alignment_length)
 
-
-class BlastnOutput6NTRerankedWriter(_TypedDictTSVWriter):
+class BlastnOutput6NTRerankedWriter(_BlastnOutput6NTRerankedSchema, _TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _BLASTN_OUTPUT_6_NT_RERANKED_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
 
-_HIT_SUMMARY_SCHEMA = [
-    ("read_id", str),
-    ("level", int),
-    ("taxid", int),
-    ("accession_id", str),
-    ("species_taxid", int),
-    ("genus_taxid", int),
-    ("family_taxid", int),
-]
+class _HitSummarySchema:
+    SCHEMA = [
+        ("read_id", str),
+        ("level", int),
+        ("taxid", int),
+        ("accession_id", str),
+        ("species_taxid", int),
+        ("genus_taxid", int),
+        ("family_taxid", int),
+    ]
 
-
-_HIT_SUMMARY_MERGED_SCHEMA = _HIT_SUMMARY_SCHEMA + [
-    ("contig_id", str),
-    ("contig_accession_id", str),
-    ("contig_species_taxid", int),
-    ("contig_genus_taxid", int),
-    ("contig_family_taxid", int),
-    ("from_assembly", str),
-    ("source_count_type", str),
-]
-
-
-class HitSummaryReader(_TypedDictTSVReader):
+class HitSummaryReader(_HitSummarySchema, _TypedDictTSVReader):
     def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _HIT_SUMMARY_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
-
-class HitSummaryWriter(_TypedDictTSVWriter):
+class HitSummaryWriter(_HitSummarySchema, _TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _HIT_SUMMARY_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
 
-class HitSummaryMergedReader(_TypedDictTSVReader):
+class _HitSummaryMergedSchema:
+    SCHEMA = [
+        ("contig_id", str),
+        ("contig_accession_id", str),
+        ("contig_species_taxid", int),
+        ("contig_genus_taxid", int),
+        ("contig_family_taxid", int),
+        ("from_assembly", str),
+        ("source_count_type", str),
+    ]
+
+class HitSummaryMergedReader(_HitSummaryMergedSchema, _TypedDictTSVReader):
     def __init__(self, f: Iterable[Text]) -> None:
-        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 
 
-class HitSummaryMergedWriter(_TypedDictTSVWriter):
+class HitSummaryMergedWriter(_HitSummaryMergedSchema, _TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
-        super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA)
+        super().__init__(f, self.SCHEMA)
 

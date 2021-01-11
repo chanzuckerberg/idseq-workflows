@@ -19,7 +19,7 @@ from idseq_dag.util.parsing import BlastnOutput6Reader, BlastnOutput6Writer
 from idseq_dag.util.parsing import BlastnOutput6NTReader
 from idseq_dag.util.parsing import BlastnOutput6NTRerankedReader, BlastnOutput6NTRerankedWriter
 from idseq_dag.util.parsing import HitSummaryReader, HitSummaryMergedWriter
-from idseq_dag.util.parsing import BLASTN_OUTPUT_6_NT_FIELDS, MAX_EVALUE_THRESHOLD
+from idseq_dag.util.parsing import MAX_EVALUE_THRESHOLD
 
 
 MIN_REF_FASTA_SIZE = 25
@@ -443,14 +443,14 @@ class PipelineStepBlastContigs(PipelineStep):  # pylint: disable=abstract-method
                     "-out",
                     blast_m8,
                     "-outfmt",
-                    '6 ' + ' '.join(BLASTN_OUTPUT_6_NT_FIELDS),
+                    '6 ' + ' '.join(field for field, _ in BlastnOutput6NTReader.SCHEMA),
                     '-evalue',
                     1e-10,
                     '-max_target_seqs',
                     5000,
                     "-num_threads",
                     16
-                ],
+                ], # type: ignore
                 # We can only pass BATCH_SIZE as an env var.  The default is 100,000 for blastn;  10,000 for blastp.
                 # Blast concatenates input queries until they exceed this size, then runs them together, for efficiency.
                 # Unfortunately if too many short and low complexity queries are in the input, this can expand too

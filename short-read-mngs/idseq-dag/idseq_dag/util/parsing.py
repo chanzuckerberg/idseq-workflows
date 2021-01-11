@@ -1,12 +1,12 @@
 from csv import DictReader, DictWriter
-from typing import Any, Iterable, Sequence, Text, Tuple
+from typing import Any, Dict, Iterable, Iterator, Sequence, Text, Tuple
 
 # Alignments with e-values greater than 1 are low-quality alignments and associated with
 # a high rate of false-positives. These should be filtered at all alignment steps.
 MAX_EVALUE_THRESHOLD = 1
 
 
-class _TypedDictTSVReader(DictReader):
+class _TypedDictTSVReader(Iterator[Dict[str, Any]]):
     """
     Similar to DictReader but instead of a sequence of fieldnames it takes a sequence of
     tuples, the first element being the field name and the second being the field's type.
@@ -15,16 +15,19 @@ class _TypedDictTSVReader(DictReader):
     def __init__(self, f: Iterable[Text], schema: Sequence[Tuple[str, type]]) -> None:
         fieldnames = [field for field, _ in schema]
         self._types = {field: _type for field, _type in schema}
-        super().__init__(f, fieldnames=fieldnames, delimiter="\t")
+        # This is a class member instead of using  inheritance so we can return Dict[str, Any] instead of Dict[str, str]
+        # Since str is a subtype of Any, if we add the Dict[str, Any] to our __next__ method signatures python will
+        # use the more restrictive str type in place of Any. This makes it impossible to use this class as a
+        # Iterator[Dict[str, Any]] as long as we inherit from DictReader, so it is made a class member instead.
+        self._reader = DictReader(f, fieldnames=fieldnames, delimiter="\t")
 
     def __next__(self):
-        row = super().__next__()
+        row = next(self._reader)
         assert len(row) <= len(self._types), f"row {row} contains fields not in schema {self._types}"
         for key, value in row.items():
             if value:
                 row[key] = self._types[key](value)
         return row
-
 
 class _TypedDictTSVWriter(DictWriter):
     """

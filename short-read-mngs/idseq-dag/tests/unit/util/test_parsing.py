@@ -35,7 +35,8 @@ class TestBlastn6Reader(unittest.TestCase):
     def test_writing_error(self):
         with TemporaryFile("w") as f:
             writer = BlastnOutput6Writer(f)
-            self.assertRaises(Exception, lambda : writer.writerow({"bad key": 1}))
+            with self.assertRaises(Exception):
+                writer.writerow({"bad key": 1})
 
     def test_filtration(self):
         blastn_input_6 = [
@@ -53,4 +54,5 @@ class TestBlastn6Reader(unittest.TestCase):
 
     def test_read_error(self):
         blastn_input_6 = [""]
-        self.assertRaises(Exception, lambda : next(BlastnOutput6Reader(blastn_input_6)))
+        with self.assertRaises(Exception):
+            next(BlastnOutput6Reader(blastn_input_6))

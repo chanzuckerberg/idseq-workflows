@@ -31,7 +31,7 @@ class _TypedDictTSVWriter(DictWriter):
     """
     This is just a convenience class so you don't need to pull out the field names
     """
-    def __init__(self, f: Any, schema: Sequence[Tuple[str]]) -> None:
+    def __init__(self, f: Any, schema: Sequence[Tuple[str, type]]) -> None:
         fieldnames = [field for field, _ in schema]
         super().__init__(f, fieldnames, delimiter="\t")
 
@@ -117,12 +117,6 @@ class _BlastnOutput6ReaderBase(_TypedDictTSVReader):
 
 
 class BlastnOutput6Reader(_BlastnOutput6ReaderBase):
-    """
-    This class is a bit of an oddball due to some compatibility concerns. In addition
-    to the normal parsing stuff it also:
-    1. Ignores comments (lines starting with '#') in tsv files, rapsearch2 adds them
-    2. Supports filtering rows that we consider invalid
-    """
     def __init__(self, f: Iterable[Text], filter_invalid: bool = False, min_alignment_length: int = 0):
         super().__init__(f, _BLASTN_OUTPUT_6_SCHEMA, filter_invalid, min_alignment_length)
 

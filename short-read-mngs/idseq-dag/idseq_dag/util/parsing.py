@@ -1,4 +1,3 @@
-
 from csv import DictReader, DictWriter
 from typing import Any, Iterable, Sequence, Text, Tuple
 
@@ -24,6 +23,8 @@ class _TypedDictTSVReader(DictReader):
         for key, value in row.items():
             if value:
                 row[key] = self._types[key](value)
+            else:
+                row[key] = None
         return row
 
 
@@ -186,3 +187,4 @@ class HitSummaryMergedReader(_TypedDictTSVReader):
 class HitSummaryMergedWriter(_TypedDictTSVWriter):
     def __init__(self, f: Any) -> None:
         super().__init__(f, _HIT_SUMMARY_MERGED_SCHEMA)
+

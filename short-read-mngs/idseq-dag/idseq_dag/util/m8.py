@@ -5,6 +5,7 @@ import random
 
 from collections import Counter
 from collections import defaultdict
+from types import Iterable
 
 import idseq_dag.util.command as command
 import idseq_dag.util.lineage as lineage
@@ -460,13 +461,13 @@ def build_should_keep_filter(
         with log.log_context("generate_taxon_count_json_from_m8", {"substep": "read_whitelist_into_set"}):
             taxids_to_keep = read_file_into_set(taxon_whitelist_path)
 
-    def is_blacklisted(hits):
+    def is_blacklisted(hits: Iterable[str]):
         for taxid in hits:
             if int(taxid) >= 0 and taxid in taxids_to_remove:
                 return True
         return False
 
-    def is_whitelisted(hits):
+    def is_whitelisted(hits: Iterable[str]):
         if not taxon_whitelist_path:
             return True
         for taxid in hits:
@@ -474,7 +475,9 @@ def build_should_keep_filter(
                 return True
         return False
 
-    def should_keep(hits):
+    def should_keep(hits: Iterable[str]):
+        # TODO (tmorse): remove
+        assert all(type(h) == str for h in hits), f"non-string input {hits}"
         return is_whitelisted(hits) and not is_blacklisted(hits)
 
     return should_keep

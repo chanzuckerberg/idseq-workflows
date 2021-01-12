@@ -5,7 +5,7 @@ import random
 
 from collections import Counter
 from collections import defaultdict
-from types import Iterable
+from typing import Iterable
 
 import idseq_dag.util.command as command
 import idseq_dag.util.lineage as lineage

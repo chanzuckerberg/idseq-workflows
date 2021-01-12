@@ -476,8 +476,10 @@ def build_should_keep_filter(
         return False
 
     def should_keep(hits: Iterable[str]):
-        # TODO (tmorse): remove
-        assert all(type(h) == str for h in hits), f"non-string input {hits}"
+        # In some places in the code taxids are ints rather than strings, this would lead
+        # to a silent failure here so it is worth the explicit check.
+        non_strings = [h for h in hits if type(h) != str]
+        assert not non_strings, f"should_keep recieved non-string inputs {non_strings}"
         return is_whitelisted(hits) and not is_blacklisted(hits)
 
     return should_keep

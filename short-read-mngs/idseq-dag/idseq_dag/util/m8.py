@@ -109,7 +109,7 @@ def call_hits_m8(input_m8, lineage_map_path, accession2taxid_dict_path,
         negative ID. The artificial ID is defined based on a negative base (
         INVALID_CALL_BASE_ID), the taxon level (e.g. 2 for genus), and the
         valid parent ID (e.g. genus Escherichia's taxon ID): see helper
-        function cleaned_taxid_lineage for the precise formula.
+        function _cleaned_taxid_lineage for the precise formula.
 
         - Certain entries in NCBI may not have a full lineage classification;
         for example species and family will be defined but genus will be

@@ -1,5 +1,5 @@
 # The following pipeline was initially based on previous work at: https://github.com/czbiohub/sc2-illumina-pipeline
-# workflow version: consensus-genomes-1.5.2
+# workflow version: consensus-genomes-1.5.0
 version 1.0
 
 workflow consensus_genome {
@@ -58,7 +58,7 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    if (filter_reads){
+    if (filter_reads) {
         call FilterReads {
             input:
                 prefix = prefix,

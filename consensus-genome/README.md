@@ -2,11 +2,19 @@
 
 For Consensus Genome workflow we can follow a similar workflow to the `short-read-mngs` presented in wiki: [Running-WDL-workflows-locally](https://github.com/chanzuckerberg/idseq-workflows/wiki/Running-WDL-workflows-locally).
 
-We first build a local image with the consensus genome workflow:
+## Set Up
+
+We first build a local Docker container image with the consensus genome workflow:
 
 ```bash
 docker build -t idseq-consensus-genome idseq-workflows/consensus-genome
 ```
+
+TIPS: For more detailed setup information
+ - for miniwdl - https://github.com/openwdl/learn-wdl/blob/master/6_miniwdl_course/0_setup.md
+ - for this example - https://github.com/openwdl/learn-wdl/blob/master/6_miniwdl_course/5c_cloud_spec_consensus-genome.md 
+
+## Run 
 
 We then use our local sample configuration file that points to IDseq's public references for smaller runs:
 
@@ -28,3 +36,10 @@ Where:
 * `local_test.yml` supplies boilerplate workflow inputs, such as the S3 paths for the reference databases. For local run purposes, we use lighter references:
   * The human database for host removal only contains chromosome 1.
   * The kraken db used locally only has coronavirus sequences.
+
+## More Information
+
+For more information, including a screencast of this example, see the `learn-miniwdl` open source course
+- Screencast at - https://www.youtube.com/watch?v=bnXOoPm_F2I
+- Miniwdl Course at - https://github.com/openwdl/learn-wdl/tree/master/6_miniwdl_course
+- WDL course at - https://github.com/openwdl/learn-wdl

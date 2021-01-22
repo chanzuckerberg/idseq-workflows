@@ -12,7 +12,7 @@ def test_RunValidateInput_invalid(
 
     # run the task with the manipulated inputs, expecting an error exit status
     outp = miniwdl_run(
-        os.path.join(repo_dir, "short-read-mngs/host_filter.wdl"),
+        os.path.join(repo_dir, "short-read-mngs/non_host_alignment.wdl"),
         "--task",
         "RunAlignment_rapsearch2_out",
         "-i",

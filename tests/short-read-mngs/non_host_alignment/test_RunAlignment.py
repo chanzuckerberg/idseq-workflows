@@ -7,7 +7,7 @@ def test_RunValidateInput_invalid(
 ):
     # load the task's inputs from the end-to-end workflow test
     inputs, _ = miniwdl_inputs_outputs(
-        os.path.join(short_read_mngs_bench3_viral_outputs["dir"], "call-non_host_alignment/call-RunAlignment")
+        os.path.join(short_read_mngs_bench3_viral_outputs["dir"], "call-non_host/call-RunAlignment")
     )
 
     # run the task with the manipulated inputs, expecting an error exit status
@@ -17,6 +17,5 @@ def test_RunValidateInput_invalid(
         "RunAlignment",
         "-i",
         json.dumps(inputs),
-        returncode=0,
     )
 

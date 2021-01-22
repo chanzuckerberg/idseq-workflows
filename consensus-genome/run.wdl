@@ -1,7 +1,7 @@
 # The following pipeline was initially based on previous work at: https://github.com/czbiohub/sc2-illumina-pipeline
 # workflow version: consensus-genomes-1.5.0
 
-# this is update version of `run.wdl` - updated to remove `miniwdl check` errors and warnings - see EOF for remaining `miniwdl check` warnings
+# use miniwdl v0.11.2,  via `miniwdl check --suppress NonemptyCoercion` to turn these errors all off
 
 version 1.0
 
@@ -41,8 +41,8 @@ workflow consensus_genome {
         # (this is an overestimate to increase sensitivity)
         Float bcftoolsCallTheta = 0.0006
 
-        # Dummy values - required by SFN interface
-        # String s3_wd_uri = ""
+        #!UnusedDeclaration
+        String s3_wd_uri = ""
     }
 
     call RemoveHost {
@@ -112,7 +112,6 @@ workflow consensus_genome {
 
     call Quast {
         input:
-            #prefix = prefix,
             assembly = MakeConsensus.consensus_fa,
             bam = TrimPrimers.trimmed_bam_ch,
             # use trimReads output if we ran it; otherwise fall back to FilterReads output
@@ -173,17 +172,6 @@ workflow consensus_genome {
         File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out
         Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs
         Array[File]+? trim_reads_out_trimmed_fastqs = TrimReads.trimmed_fastqs
-
-        # File? align_reads_out_alignments = AlignReads.alignments
-        # File? trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch
-        # File? trim_primers_out_trimmed_bam_bai = TrimPrimers.trimmed_bam_bai
-        # File? make_consensus_out_consensus_fa = MakeConsensus.consensus_fa
-        # File? quast_out_quast_txt = Quast.quast_txt
-        # File? quast_out_quast_tsv = Quast.quast_tsv
-        # File? call_variants_out_variants_ch = CallVariants.variants_ch
-        # File? compute_stats_out_depths_fig = ComputeStats.depths_fig
-        # File? compute_stats_out_output_stats = ComputeStats.output_stats
-        # File? compute_stats_out_sam_depths = ComputeStats.sam_depths
 
         File align_reads_out_alignments = AlignReads.alignments
         File trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch
@@ -485,15 +473,12 @@ task MakeConsensus {
 
 task Quast {
     input {
-        ## String prefix
         File assembly   # same as consensus_fa
         File bam
         Array[File]+ fastqs
         File ref_fasta
 
-        String no_reads_quast
-
-        ## Int threads = 4
+        String no_reads_quast  # should this be Boolean? see PR
 
         String docker_image_id
     }
@@ -572,7 +557,6 @@ task ComputeStats {
         File vcf
 
         Array[File]+ fastqs
-        ##File ref_host
 
         String docker_image_id
     }
@@ -740,39 +724,3 @@ task ZipOutputs {
 
 }
 
-# Remaining miniwdl check warnings
-# miniwdl check update-run.wdl 
-# update-run.wdl
-#     workflow consensus_genome
-#         (Ln 38, Col 9) StringCoercion, String no_reads_quast = :Boolean:
-#         call RemoveHost
-#             (Ln 51, Col 22) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         call QuantifyERCCs
-#             (Ln 59, Col 22) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         if
-#             call FilterReads
-#                 (Ln 68, Col 26) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         if
-#             call TrimReads
-#                 (Ln 78, Col 26) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         call AlignReads
-#             (Ln 89, Col 22) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         call TrimPrimers
-#         call MakeConsensus
-#         call Quast
-#         call CallVariants
-#         call ComputeStats
-#             (Ln 143, Col 22) NonemptyCoercion, input Array[File]+ fastqs = :Array[File]:
-#         call ZipOutputs
-#             (Ln 151, Col 38) SelectArray, array of non-optional items passed to select_all
-#     task AlignReads
-#     task CallVariants
-#     task ComputeStats
-#     task FilterReads
-#     task MakeConsensus
-#     task QuantifyERCCs
-#     task Quast
-#     task RemoveHost
-#     task TrimPrimers
-#     task TrimReads
-#     task ZipOutputs

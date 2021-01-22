@@ -14,7 +14,7 @@ def test_RunValidateInput_invalid(
     outp = miniwdl_run(
         os.path.join(repo_dir, "short-read-mngs/host_filter.wdl"),
         "--task",
-        "RunAlignment",
+        "RunAlignment_rapsearch2_out",
         "-i",
         json.dumps(inputs),
     )

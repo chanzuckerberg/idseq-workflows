@@ -19,3 +19,5 @@ def test_RunValidateInput_invalid(
         json.dumps(inputs),
     )
 
+    assert False, outp
+

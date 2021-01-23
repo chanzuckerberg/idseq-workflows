@@ -21,7 +21,7 @@ def test_RunValidateInput_invalid(
         json.dumps(inputs),
     )
 
-    with open(os.path.join(outp["dir"], f"{task_name}.rapsearch2_m8")) as f:
+    with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_m8"])) as f:
         taxids = [row[2] for row in csv.reader(f)]
     assert False, ", ".join(taxids)
 

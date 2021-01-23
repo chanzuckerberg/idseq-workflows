@@ -1,6 +1,5 @@
 import os
 import json
-import csv
 
 
 def test_RunValidateInput_invalid(
@@ -22,6 +21,6 @@ def test_RunValidateInput_invalid(
     )
 
     with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_m8"])) as f:
-        taxids = [row[2] for row in csv.reader(f, delimiter="\t")]
+        taxids = [row for row in f]
     assert False, ", ".join(taxids)
 

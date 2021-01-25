@@ -7,7 +7,7 @@ import tempfile
 def test_RunAlignmentBlacklist(
     repo_dir, short_read_mngs_bench3_viral_outputs, miniwdl_inputs_outputs, miniwdl_run, RunFailed_stderr_msg
 ):
-    task_name = "RunAlignment_rapsearch2_out"
+    task_name = "RunAlignment_gsnap_out"
     # load the task's inputs from the end-to-end workflow test
     inputs, _ = miniwdl_inputs_outputs(
         os.path.join(short_read_mngs_bench3_viral_outputs["dir"], "call-non_host_alignment", f"call-{task_name}")
@@ -21,7 +21,7 @@ def test_RunAlignmentBlacklist(
         json.dumps(inputs),
     )
 
-    with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_hitsummary_tab"])) as f:
+    with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])) as f:
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
@@ -40,8 +40,8 @@ def test_RunAlignmentBlacklist(
             json.dumps(inputs),
         )
 
-        hitsummary = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_hitsummary_tab"])
-        deduped = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_deduped_m8"])
+        hitsummary = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])
+        deduped = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_deduped_m8"])
 
         with open(hitsummary) as f:
             taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
@@ -57,7 +57,7 @@ def test_RunAlignmentBlacklist(
 def test_RunAlignmentDeuterostomeFilter(
     repo_dir, short_read_mngs_bench3_viral_outputs, miniwdl_inputs_outputs, miniwdl_run, RunFailed_stderr_msg
 ):
-    task_name = "RunAlignment_rapsearch2_out"
+    task_name = "RunAlignment_gsnap_out"
     # load the task's inputs from the end-to-end workflow test
     inputs, _ = miniwdl_inputs_outputs(
         os.path.join(short_read_mngs_bench3_viral_outputs["dir"], "call-non_host_alignment", f"call-{task_name}")
@@ -71,7 +71,7 @@ def test_RunAlignmentDeuterostomeFilter(
         json.dumps(inputs),
     )
 
-    with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_hitsummary_tab"])) as f:
+    with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])) as f:
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
@@ -91,8 +91,8 @@ def test_RunAlignmentDeuterostomeFilter(
             json.dumps(inputs),
         )
 
-        hitsummary = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_hitsummary_tab"])
-        deduped = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.rapsearch2_deduped_m8"])
+        hitsummary = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])
+        deduped = os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_deduped_m8"])
 
         with open(hitsummary) as f:
             taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))

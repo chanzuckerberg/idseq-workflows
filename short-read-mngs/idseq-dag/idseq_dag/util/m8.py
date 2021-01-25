@@ -446,9 +446,8 @@ def build_should_keep_filter(
     taxon_blacklist_path
 ):
 
-    # TODO: (tmorse)
     # See also HOMO_SAPIENS_TAX_IDS in idseq-web
-    taxids_to_remove = set(['9605', '9606', "37124", "2169701"])
+    taxids_to_remove = set(['9605', '9606'])
 
     if taxon_blacklist_path:
         with log.log_context("generate_taxon_count_json_from_m8", {"substep": "read_blacklist_into_set"}):

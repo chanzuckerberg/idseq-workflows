@@ -24,16 +24,13 @@ def test_RunAlignmentBlacklist(
     with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])) as f:
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
-    # TODO: (tmorse)
-    # assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
-    # assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
-
-    for path in outp["outputs"].values():
-        if path:
-            os.remove(path)
+    assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
+    assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as blacklist_file:
         blacklist_file.writelines(["37124", "2169701"])
+        blacklist_file.seek(0)
+        blacklist_file.writelines
         inputs["taxon_blacklist"] = blacklist_file.name
 
         outp = miniwdl_run(
@@ -78,16 +75,12 @@ def test_RunAlignmentDeuterostomeFilter(
     with open(os.path.join(outp["dir"], outp["outputs"][f"{task_name}.gsnap_hitsummary_tab"])) as f:
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
-    # TODO: (tmorse)
-    # assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
-    # assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
-
-    for path in outp["outputs"].values():
-        if path:
-            os.remove(path)
+    assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
+    assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as deuterostome_file:
         deuterostome_file.writelines(["37124", "2169701"])
+        deuterostome_file.seek(0)
         inputs["deuterostome_db"] = deuterostome_file.name
         inputs["use_deuterostome_filter"] = True
 

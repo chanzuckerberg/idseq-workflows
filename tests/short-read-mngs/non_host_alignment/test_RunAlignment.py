@@ -30,7 +30,7 @@ def test_RunAlignmentBlacklist(
 
     with tempfile.NamedTemporaryFile("w") as blacklist_file:
         blacklist_file.writelines(["37124", "2169701"])
-        inputs["taxon_blacklist"] = f.name
+        inputs["taxon_blacklist"] = blacklist_file.name
 
         outp = miniwdl_run(
             os.path.join(repo_dir, "short-read-mngs/non_host_alignment.wdl"),

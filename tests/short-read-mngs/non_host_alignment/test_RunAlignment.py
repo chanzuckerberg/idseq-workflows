@@ -25,7 +25,6 @@ def test_RunAlignmentBlacklist(
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
-    assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as blacklist_file:
         blacklist_file.writelines(["37124\n", "2169701\n"])
@@ -76,7 +75,6 @@ def test_RunAlignmentDeuterostomeFilter(
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
-    assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as deuterostome_file:
         deuterostome_file.writelines(["37124\n", "2169701\n"])

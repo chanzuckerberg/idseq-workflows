@@ -25,9 +25,10 @@ def test_RunAlignmentBlacklist(
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
+    assert "1273712" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as blacklist_file:
-        blacklist_file.writelines(["37124\n", "2169701\n"])
+        blacklist_file.writelines(["37124\n", "1273712\n"])
         blacklist_file.seek(0)
         blacklist_file.writelines
         inputs["taxon_blacklist"] = blacklist_file.name
@@ -47,7 +48,7 @@ def test_RunAlignmentBlacklist(
             taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
         assert "37124" not in taxids, "taxid should be filtered out"
-        assert "2169701" not in taxids, "taxid should be filtered out"
+        assert "1273712" not in taxids, "taxid should be filtered out"
 
         with open(hitsummary) as hf, open(deduped) as df:
             rows = zip(csv.reader(hf, delimiter="\t"), csv.reader(df, delimiter="\t"))
@@ -75,9 +76,10 @@ def test_RunAlignmentDeuterostomeFilter(
         taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
+    assert "1273712" in taxids, "taxid should be in hitsummary unless filtered out"
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as deuterostome_file:
-        deuterostome_file.writelines(["37124\n", "2169701\n"])
+        deuterostome_file.writelines(["37124\n", "1273712\n"])
         deuterostome_file.seek(0)
         inputs["deuterostome_db"] = deuterostome_file.name
         inputs["use_deuterostome_filter"] = True
@@ -97,7 +99,7 @@ def test_RunAlignmentDeuterostomeFilter(
             taxids = set(row[2] for row in csv.reader(f, delimiter="\t"))
 
         assert "37124" not in taxids, "taxid should be filtered out"
-        assert "2169701" not in taxids, "taxid should be filtered out"
+        assert "1273712" not in taxids, "taxid should be filtered out"
 
         with open(hitsummary) as hf, open(deduped) as df:
             rows = zip(csv.reader(hf, delimiter="\t"), csv.reader(df, delimiter="\t"))

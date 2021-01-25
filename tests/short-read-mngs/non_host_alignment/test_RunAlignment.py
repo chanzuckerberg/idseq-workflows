@@ -27,6 +27,9 @@ def test_RunAlignmentBlacklist(
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
     assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
+    for path in outp["outputs"].values():
+        if path:
+            os.remove(path)
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as blacklist_file:
         blacklist_file.writelines(["37124", "2169701"])
@@ -77,6 +80,9 @@ def test_RunAlignmentDeuterostomeFilter(
     assert "37124" in taxids, "taxid should be in hitsummary unless filtered out"
     assert "2169701" in taxids, "taxid should be in hitsummary unless filtered out"
 
+    for path in outp["outputs"].values():
+        if path:
+            os.remove(path)
 
     with tempfile.NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as deuterostome_file:
         deuterostome_file.writelines(["37124", "2169701"])

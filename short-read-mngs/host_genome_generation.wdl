@@ -19,7 +19,7 @@ task RunGenerateHostGenome {
     --output-files '["fasta_with_ercc.fa", "gtf_with_ercc.fa", "~{host_name}_STAR_genome.tar", "~{host_name}_bowtie2_genome.tar"]' \
     --output-dir-s3 '~{s3_wd_uri}' \
     --additional-files '{ "ercc_fasta": "~{ercc_fasta}", "ercc_gtf": "~{ercc_gtf}" }' \
-    --additional-attributes '{ "host_name": "~{host_name}", "max_star_part_size": null }'
+    --additional-attributes '{ "host_name": "~{host_name}" }'
   >>>
   output {
     File fasta_with_ercc = "fasta_with_ercc.fa"

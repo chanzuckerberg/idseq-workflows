@@ -46,7 +46,7 @@ workflow idseq_host_filter {
     input:
       docker_image_id = docker_image_id,
       s3_wd_uri = s3_wd_uri,
-      host_name = host_name
+      host_name = host_name,
       host_fasta = host_fasta,
       ercc_fasta = ercc_fasta,
       ercc_gtf = ercc_gtf,

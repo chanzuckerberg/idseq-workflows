@@ -102,39 +102,39 @@ samples:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RL_S001__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RL_S001__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_low_1.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_low_1.profile_TRUTH.txt
   CAMI_med_1:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RM2_S001__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RM2_S001__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_medium_1.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_medium_1.profile_TRUTH.txt
   CAMI_med_2:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RM2_S002__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RM2_S002__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_medium_2.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_medium_2.profile_TRUTH.txt
   CAMI_high_1:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RH_S001__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RH_S001__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_1.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_1.profile_TRUTH.txt
   CAMI_high_2:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RH_S002__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RH_S002__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_2.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_2.profile_TRUTH.txt
   CAMI_high_3:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RH_S003__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RH_S003__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_3.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_3.profile_TRUTH.txt
   CAMI_high_4:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RH_S004__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RH_S004__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_4.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_4.profile_TRUTH.txt
   CAMI_high_5:
     inputs:
       fastqs_0: s3://idseq-bench/datasets/fastqs/RH_S005__insert_270_R1.fq.gz
       fastqs_1: s3://idseq-bench/datasets/fastqs/RH_S005__insert_270_R2.fq.gz
-    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_5.filtered.profile_TRUTH.txt
+    truth: s3://idseq-bench/datasets/truth_files/goldstandard_high_5.profile_TRUTH.txt

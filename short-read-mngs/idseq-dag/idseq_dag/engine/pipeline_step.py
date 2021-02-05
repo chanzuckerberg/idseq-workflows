@@ -123,50 +123,6 @@ class PipelineStep(object):
         for f in self.additional_output_folders_hidden:
             idseq_dag.util.s3.upload_folder_with_retries(f, self.s3_path(f), checksum=self.upload_results_with_checksum)
         self.status = StepStatus.UPLOADED
-        self.update_status_json_file("uploaded")
-
-    def update_status_json_file(self, status):
-        # First, update own status dictionary
-        if "description" not in self.status_dict:
-            self.status_dict["description"] = self.step_description()
-        if "resources" not in self.status_dict:
-            self.status_dict["resources"] = self.step_resources()
-        if "start_time" not in self.status_dict and status == "running":
-            self.status_dict["start_time"] = time.time()  # seconds since epoch
-
-        self.status_dict["status"] = status
-        if self.input_file_error:
-            self.status_dict["error"] = self.input_file_error.name
-        if status == "uploaded":
-            self.status_dict["end_time"] = time.time()
-
-        self.status_dict["additional_output"] = \
-            [self.relative_path(f) for f in self.additional_output_files_visible]
-
-        # Then, update file by reading the json, modifying, and overwriting.
-        with self.step_status_lock:
-            # for the new SFN pipeline:
-            # * this lock is no longer relevant since each step is containerized
-            # * we have a race condition between steps loading and re-writing the file
-            status_file_basename = os.path.basename(self.step_status_local)
-            status_file_s3_path = f"{self.output_dir_s3}/{status_file_basename}"
-            try:
-                stage_status = json.loads(idseq_dag.util.s3.get_s3_object_by_path(status_file_s3_path) or "{}")
-                stage_status.update({self.name: self.status_dict})
-                with open(self.step_status_local, 'w') as status_file:
-                    json.dump(stage_status, status_file)
-                idseq_dag.util.s3.upload_with_retries(self.step_status_local, self.output_dir_s3 + "/")
-            except:
-                # if something fails, we prefer not raising an exception to not affect the rest of the pipeline
-                # these updates are non-critical functions and *should* be replaced by a new event bus soon
-                # so, we only log the message for later debug
-                if not self.step_status_upload_failed:
-                    log.write(
-                        f"Exception uploading status JSON to S3; traceback follows. Subsequent updates for this step may fail silently.\n{traceback.format_exc()}",
-                        warning=True
-                    )
-                    self.step_status_upload_failed = True
-                return
 
     @staticmethod
     def done_file(filename):
@@ -234,25 +190,16 @@ class PipelineStep(object):
             raise RuntimeError("step %s run failed" % self.name)
 
     def wait_until_all_done(self):
-        try:
-            self.wait_until_finished()
-            # run finished
-            self.upload_thread.join()
-        except InvalidInputFileError as e:
-            self.update_status_json_file("user_errored")
-            raise e  # Raise again to be caught in PipelineFlow and stop other steps
-        except Exception as e:
-            self.update_status_json_file("pipeline_errored")
-            raise e  # Raise again to be caught in PipelineFlow and stop other steps
+        self.wait_until_finished()
+        # run finished
+        self.upload_thread.join()
 
         if self.status < StepStatus.UPLOADED:
-            self.update_status_json_file("pipeline_errored")
             raise RuntimeError("step %s uploading failed" % self.name)
 
     def thread_run(self):
         ''' Actually running the step '''
         self.status = StepStatus.STARTED
-        self.update_status_json_file("instantiated")
 
         v = {"step": self.name}
         with log.log_context("dag_step", v):
@@ -265,11 +212,9 @@ class PipelineStep(object):
             if self.input_file_error:
                 log.write("Invalid input detected for step %s" % self.name)
                 self.status = StepStatus.INVALID_INPUT
-                self.update_status_json_file("user_errored")
                 return
 
             with log.log_context("substep_run", v):
-                self.update_status_json_file("running")
                 self.run()
             with log.log_context("substep_validate", v):
                 self.validate()
@@ -280,7 +225,6 @@ class PipelineStep(object):
         self.upload_thread = threading.Thread(target=self.uploading_results)
         self.upload_thread.start()
         self.status = StepStatus.FINISHED
-        self.update_status_json_file("finished_running")
 
     def start(self):
         ''' function to be called after instantiation to start running the step '''

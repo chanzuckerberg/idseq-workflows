@@ -226,10 +226,6 @@ class PipelineStep(object):
         self.upload_thread.start()
         self.status = StepStatus.FINISHED
 
-        # write step_description (which subclasses may generate dynamically) to local file
-        with open(f"{self.name}.description.md", "w") as outfile:
-            print(self.step_description(), file=outfile)
-
     def start(self):
         ''' function to be called after instantiation to start running the step '''
         self.exec_thread = threading.Thread(target=self.thread_run)

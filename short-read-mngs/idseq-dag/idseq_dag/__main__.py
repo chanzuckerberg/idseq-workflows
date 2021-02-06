@@ -106,6 +106,9 @@ def run_step():
                               max_fragments=step_instance.additional_attributes["truncate_fragments_to"])
 
         step_instance.validate_input_files()
+        with open(f"{args.step_name}.description.md", "wb") as outfile:
+            # write step_description (which subclasses may generate dynamically) to local file
+            outfile.write(step_instance.step_description().encode("utf-8"))
         step_instance.run()
         step_instance.count_reads()
         step_instance.save_counts()

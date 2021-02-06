@@ -227,8 +227,7 @@ class PipelineStep(object):
         self.status = StepStatus.FINISHED
 
         # write step_description (which subclasses may generate dynamically) to local file
-        descfile = os.path.join(self.output_dir_local, f"{self.name}.description.md")
-        with open(descfile, "w") as outfile:
+        with open(f"{self.name}.description.md", "w") as outfile:
             print(self.step_description(), file=outfile)
 
     def start(self):

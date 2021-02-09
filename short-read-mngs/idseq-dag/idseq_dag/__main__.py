@@ -105,6 +105,7 @@ def run_step():
             count_input_reads(input_files=step_instance.input_files_local,
                               max_fragments=step_instance.additional_attributes["truncate_fragments_to"])
 
+        step_instance.update_status_json_file("running")
         step_instance.validate_input_files()
         with open(f"{args.step_name}.description.md", "wb") as outfile:
             # write step_description (which subclasses may generate dynamically) to local file
@@ -112,7 +113,14 @@ def run_step():
         step_instance.run()
         step_instance.count_reads()
         step_instance.save_counts()
+        step_instance.update_status_json_file("uploaded")
     except Exception as e:
+        try:
+            # process exception for status reporting
+            s = "user_errored" if isinstance(e, idseq_dag.engine.pipeline_step.InvalidInputFileError) else "pipeline_errored"
+            step_instance.update_status_json_file(s)
+        except Exception:
+            logging.error("Failed to update status to '%s'", s)
         traceback.print_exc()
         exit(json.dumps(dict(wdl_error_message=True, error=type(e).__name__, cause=str(e))))
 

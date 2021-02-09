@@ -124,6 +124,49 @@ class PipelineStep(object):
             idseq_dag.util.s3.upload_folder_with_retries(f, self.s3_path(f), checksum=self.upload_results_with_checksum)
         self.status = StepStatus.UPLOADED
 
+    def update_status_json_file(self, status):
+        # First, update own status dictionary
+        if "description" not in self.status_dict:
+            self.status_dict["description"] = self.step_description()
+        if "resources" not in self.status_dict:
+            self.status_dict["resources"] = self.step_resources()
+        if "start_time" not in self.status_dict and status == "running":
+            self.status_dict["start_time"] = time.time()  # seconds since epoch
+
+        self.status_dict["status"] = status
+        if self.input_file_error:
+            self.status_dict["error"] = self.input_file_error.name
+        if status == "uploaded":
+            self.status_dict["end_time"] = time.time()
+
+        self.status_dict["additional_output"] = \
+            [self.relative_path(f) for f in self.additional_output_files_visible]
+
+        # Then, update file by reading the json, modifying, and overwriting.
+        with self.step_status_lock:
+            # for the new SFN pipeline:
+            # * this lock is no longer relevant since each step is containerized
+            # * we have a race condition between steps loading and re-writing the file
+            status_file_basename = os.path.basename(self.step_status_local)
+            status_file_s3_path = f"{self.output_dir_s3}/{status_file_basename}"
+            try:
+                stage_status = json.loads(idseq_dag.util.s3.get_s3_object_by_path(status_file_s3_path) or "{}")
+                stage_status.update({self.name: self.status_dict})
+                with open(self.step_status_local, 'w') as status_file:
+                    json.dump(stage_status, status_file)
+                idseq_dag.util.s3.upload_with_retries(self.step_status_local, self.output_dir_s3 + "/")
+            except:
+                # if something fails, we prefer not raising an exception to not affect the rest of the pipeline
+                # these updates are non-critical functions and *should* be replaced by a new event bus soon
+                # so, we only log the message for later debug
+                if not self.step_status_upload_failed:
+                    log.write(
+                        f"Exception uploading status JSON to S3; traceback follows. Subsequent updates for this step may fail silently.\n{traceback.format_exc()}",
+                        warning=True
+                    )
+                    self.step_status_upload_failed = True
+                return
+
     @staticmethod
     def done_file(filename):
         ''' get the done file for a particular local file '''

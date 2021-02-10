@@ -122,7 +122,7 @@ def run_step():
         except Exception:
             logging.error("Failed to update status to '%s'", s)
         traceback.print_exc()
-        exit(json.dumps(dict(wdl_error_message=True, error=type(e).__name__, cause=str(e))))
+        exit(json.dumps(dict(wdl_error_message=True, error=type(e).__name__, cause=str(e), step_description_md=step_instance.step_description())))
 
 
 if __name__ == "__main__":

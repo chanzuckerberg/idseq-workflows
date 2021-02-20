@@ -357,7 +357,7 @@ def read_truth_file(path):
         # All current benchmark datasets have truth data on species level only,
         # so we use this as a simplifying assumption downstream
         assert rank == "species"
-        taxon_abundances[int(taxid)] = float(abundance)
+        taxon_abundances[taxid] = float(abundance)
     return taxon_abundances
 
 

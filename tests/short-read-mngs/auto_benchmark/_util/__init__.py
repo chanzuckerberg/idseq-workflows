@@ -35,8 +35,8 @@ def adjusted_aupr(y_true, y_score, force_monotonic=False):
         precision = np.insert(precision, 0, 0)
 
     aupr = auc(recall, precision)
+    # figure which point on the P/R curve maximizes F1
     argmax_f1 = np.argmax((2 * p * r / (p + r) for (p, r) in zip(precision, recall)))
-    # precision & recall at point where their average is maximized
     return {
         k: v
         for k, v in {

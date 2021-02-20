@@ -35,10 +35,18 @@ def adjusted_aupr(y_true, y_score, force_monotonic=False):
         precision = np.insert(precision, 0, 0)
 
     aupr = auc(recall, precision)
-    return {k: v for k, v in {
-        "aupr": aupr,
-        "original_precision": original_precision if force_monotonic else None,
-        "recall": recall,
-        "precision": precision,
-        "thresholds": thresholds,
-    }.items() if v is not None}
+    argmax_f1 = np.argmax((2 * p * r / (p + r) for (p, r) in zip(precision, recall)))
+    # precision & recall at point where their average is maximized
+    return {
+        k: v
+        for k, v in {
+            "aupr": aupr,
+            "original_precision": original_precision if force_monotonic else None,
+            "recall": recall,
+            "precision": precision,
+            "max_f1_recall": recall[argmax_f1],
+            "max_f1_precision": precision[argmax_f1],
+            "thresholds": thresholds,
+        }.items()
+        if v is not None
+    }

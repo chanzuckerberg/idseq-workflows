@@ -149,7 +149,7 @@ def harvest_sample(sample, outputs_json, taxadb):
     )
     ans["truth"] = read_truth_file(BENCHMARKS["samples"][sample]["truth"])
 
-    '''
+    """
     From Ye et al. 2019:
     Precision is the proportion of true positive species identified in the sample divided by the number of total species
     identified.
@@ -191,28 +191,27 @@ def harvest_sample(sample, outputs_json, taxadb):
     the UniFrac distance, which considers both the abundance proportion of component taxa as well as the evolutionary
     distance for incorrectly called taxa. However, using this metric is complicated by the difficulty in assessing
     evolutionary distance between microbial species’ whole genomes.
-x    '''
+    """
 
-    nt_missed_taxa = [
-        tax_id for tax_id in ans["truth"]
-        if tax_id not in ans["taxa"]["NT"]
-    ]
-    nt_correctness_labels = [
-        1 if tax_id in ans["truth"] else 0
-        for tax_id in ans["taxa"]["NT"]
-    ]
+    nt_missed_taxa = [tax_id for tax_id in ans["truth"] if tax_id not in ans["taxa"]["NT"]]
+    nt_correctness_labels = [1 if tax_id in ans["truth"] else 0 for tax_id in ans["taxa"]["NT"]]
     nt_correctness_labels += [1] * len(nt_missed_taxa)
-    total_reads = sum([i["reads_dedup"] for i in ans["taxa"]["NT"].values()])
+    total_reads = ans["counts"]["subsampled_reads"] * (2 if ans["counts"]["paired"] else 1)
     # Using raw abundances as proxies for confidence score per Ye2009 methodology
     # https://www.cell.com/cell/fulltext/S0092-8674(19)30775-5#fig2
     nt_confidence_scores = [i["reads_dedup"] / total_reads for i in ans["taxa"]["NT"].values()]
-    # TODO: what's the correct placeholder value here? Setting it to 0 causes AUPR to blow out to 0.
     nt_confidence_scores += [1e-100] * len(nt_missed_taxa)
-    ans["aupr"] = adjusted_aupr(nt_correctness_labels, nt_confidence_scores, force_monotonic=False)["aupr"]
+    aupr_results = adjusted_aupr(nt_correctness_labels, nt_confidence_scores, force_monotonic=False)
+    ans["aupr"] = aupr_results["aupr"]
+    ans["max_f1_precision"] = aupr_results["max_f1_precision"]
+    ans["max_f1_recall"] = aupr_results["max_f1_recall"]
+
+    # TODO: use nr too
 
     truth_sum = sum(ans["truth"].values())
     relative_abundances_diff = [
-        ans["truth"][taxon]/truth_sum - ans["taxa"]["NT"].get(taxon, {}).get("reads_dedup", 1e-100)/total_reads
+        ans["truth"][taxon] / truth_sum
+        - ans["taxa"]["NT"].get(taxon, {}).get("reads_dedup", 1e-100) / total_reads
         for taxon in ans["truth"]
     ]
 
@@ -350,8 +349,10 @@ def contigs_stats(contig_lengths, ids=None):
 def read_truth_file(path):
     taxon_abundances = {}
     s3url = urlparse(path)
-    s3 = boto3.resource('s3', config=BotocoreConfig(signature_version=BOTOCORE_UNSIGNED))
-    for line in s3.Object(s3url.netloc, s3url.path.lstrip("/")).get()["Body"].read().decode().splitlines():
+    s3 = boto3.resource("s3", config=BotocoreConfig(signature_version=BOTOCORE_UNSIGNED))
+    for line in (
+        s3.Object(s3url.netloc, s3url.path.lstrip("/")).get()["Body"].read().decode().splitlines()
+    ):
         taxid, _, abundance, rank, species_name = line.split("\t")[:5]
         # All current benchmark datasets have truth data on species level only,
         # so we use this as a simplifying assumption downstream

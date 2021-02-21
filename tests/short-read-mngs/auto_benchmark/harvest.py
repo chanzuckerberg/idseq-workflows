@@ -155,14 +155,14 @@ def harvest_sample(sample, outputs_json, taxadb):
 
     nt_aupr = truth_aupr(ans["taxa"]["NT"], ans["truth"], total_reads)
     ans["NT_aupr"] = nt_aupr["aupr"]
-    ans["NT_max_f1_precision"] = nt_aupr["max_f1_precision"]
-    ans["NT_max_f1_recall"] = nt_aupr["max_f1_recall"]
+    ans["NT_precision"] = list(nt_aupr["precision"])
+    ans["NT_recall"] = list(nt_aupr["recall"])
     ans["NT_l2_norm"] = truth_l2_norm(ans["taxa"]["NT"], ans["truth"], total_reads)
 
     nr_aupr = truth_aupr(ans["taxa"]["NR"], ans["truth"], total_reads)
     ans["NR_aupr"] = nr_aupr["aupr"]
-    ans["NR_max_f1_precision"] = nr_aupr["max_f1_precision"]
-    ans["NR_max_f1_recall"] = nr_aupr["max_f1_recall"]
+    ans["NR_precision"] = list(nr_aupr["precision"])
+    ans["NR_recall"] = list(nr_aupr["recall"])
     ans["NR_l2_norm"] = truth_l2_norm(ans["taxa"]["NR"], ans["truth"], total_reads)
 
     return ans

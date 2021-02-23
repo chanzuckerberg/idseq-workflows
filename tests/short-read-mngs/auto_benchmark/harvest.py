@@ -365,7 +365,7 @@ def truth_aupr(classified_taxa, truth_taxa, total_reads):
     # Using raw abundances as proxies for confidence score per Ye2009 methodology
     # https://www.cell.com/cell/fulltext/S0092-8674(19)30775-5#fig2
     confidence_scores = [i["reads_dedup"] / total_reads for i in classified_taxa.values()]
-    confidence_scores += [1e-100] * len(missed_taxa)
+    confidence_scores += [0] * len(missed_taxa)
     return adjusted_aupr(correctness_labels, confidence_scores, force_monotonic=False)
 
 

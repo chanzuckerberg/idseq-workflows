@@ -107,7 +107,7 @@ docker run -v $(pwd):/mnt \
         /mnt/idseq-workflows/tests/short-read-mngs/auto_benchmark/short-read-mngs-benchmarks.ipynb
 ```
 
-Then find `idseq-short-read-mngs-benchmarks.html` in your working directory! (Note: when using the viral databases, the precision-recall curves compared to the truth sets are very poor, correctly so because the simulated datasets inlcude non-viral species.)
+Then find `idseq-short-read-mngs-benchmarks.html` in your working directory! (Note: when using the viral databases, the precision-recall curves compared to the truth sets are very poor, correctly so because the simulated datasets include non-viral species.)
 
 Change "viral" to "full" if you used the full-sized databases. Strike `--no-input` to include the notebook's Python code in the HTML report.
 

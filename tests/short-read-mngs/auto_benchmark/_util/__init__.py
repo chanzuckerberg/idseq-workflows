@@ -12,8 +12,10 @@ def load_benchmarks_yml():
 
 
 def adjusted_aupr(y_true, y_score, force_monotonic=False):
+    # precision_recall_curve wants nonzero probas_pred, so adjust any zeroes to epsilon
+    adjusted_y_score = [(1e-100 if score == 0 else score) for score in y_score]
     # Adapted from https://github.com/yesimon/metax_bakeoff_2019/blob/master/plotting/Metagenomics%20Bench.ipynb
-    original_precision, recall, thresholds = precision_recall_curve(y_true, y_score)
+    original_precision, recall, thresholds = precision_recall_curve(y_true, adjusted_y_score)
 
     precision = original_precision
     if force_monotonic:

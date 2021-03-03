@@ -23,7 +23,6 @@ workflow consensus_genome {
         String prefix = ""
 
         # ONT-specific inputs
-        Directory fastq_directory # not sure if WDL takes directories as input, this directory would just contain the single .fastq file
         String primer_schemes     # this points to a directory containing the ref_fasta, primer_bed (specified as `nCoV-2019/V3` when running workflow) - see: https://github.com/artic-network/fieldbioinformatics/tree/master/test-data/primer-schemes/nCoV-2019/V3
         Int normalise  = 200
         String medaka_model = "r941_grid_fast_g303"
@@ -64,7 +63,8 @@ workflow consensus_genome {
         call ApplyLengthFilter{
             input:
                 prefix = prefix,
-                fastq_directory = fastq_directory,    # ONT data will only have single-end input, but the filter length command takes a directory with .fastq in it instead of a raw .fastq file path
+                fastqs_0 = fastqs_0,
+                fastqs_1 = fastqs_1,
                 normalise = normalise,
                 docker_image_id = docker_image_id
         }    
@@ -74,7 +74,8 @@ workflow consensus_genome {
     call RemoveHost {
         input:
             prefix = prefix,
-            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs])
+            #fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
+            fastqs = select_first([ApplyLengthFilter.filtered_fastqs]),
             ref_host = ref_host,
             technology = technology,
             docker_image_id = docker_image_id
@@ -180,8 +181,8 @@ workflow consensus_genome {
     call Quast {
         input:
             prefix = prefix,
-            assembly = MakeConsensus.consensus_fa,     # RunMinion.consensus_fa
-            bam = TrimPrimers.trimmed_bam_ch,          # RunMinion.primertrimmedbam
+            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus_fa
+            bam = select_first([TrimPrimers.trimmed_bam_ch]),          # RunMinion.primertrimmedbam
             # use trimReads output if we ran it; otherwise fall back to FilterReads output
             fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs]),   # RemoveHost.host_removed_fastqs
             ref_fasta = ref_fasta,                     # primer_schemes/nCoV-2019.reference.fasta
@@ -194,10 +195,10 @@ workflow consensus_genome {
         input:
             prefix = prefix,
             sample = sample,
-            cleaned_bam = TrimPrimers.trimmed_bam_ch,  # RunMinion.primertrimmedbam
-            assembly = MakeConsensus.consensus_fa,     # RunMinion.consensus.fa
+            cleaned_bam = select_first([TrimPrimers.trimmed_bam_ch]),  # RunMinion.primertrimmedbam
+            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus.fa
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
-            vcf = CallVariants.variants_ch,            # RunMinion.vcf_pass
+            vcf = select_first([CallVariants.variants_ch]),            # RunMinion.vcf_pass
             fastqs = select_all([fastqs_0, fastqs_1]), # RemoveHost.host_removed_fastqs
             ref_host = ref_host,                       # primer_schemes/nCoV-2019.reference.fasta
             technology = technology,
@@ -209,7 +210,7 @@ workflow consensus_genome {
     call Vadr {
         input:
             prefix = prefix,
-            assembly = MakeConsensus.consensus_fa,     # RunMinion.consensus_fa
+            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus_fa
             vadr_options = vadr_options, 
             docker_image_id = docker_image_id
     }
@@ -241,7 +242,7 @@ workflow consensus_genome {
 
     output {
         Array[File] remove_host_out_host_removed_fastqs = RemoveHost.host_removed_fastqs 
-        File quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out                           # does not exist
+        File quantify_erccs_out_ercc_out = select_first([QuantifyERCCs.ercc_out])                           # does not exist
         Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs        # does not exist
         Array[File]+? trim_reads_out_trimmed_fastqs = TrimReads.trimmed_fastqs              # does not exist
         File? align_reads_out_alignments = AlignReads.alignments                            # RunMinion.alignedbam
@@ -292,10 +293,11 @@ task ApplyLengthFilter {
 
     input {
         String prefix
-        Directory # not sure if WDL allows directory inputs
+        File fastqs_0
+        File? fastqs_1
         Int normalise
 
-        String docker_image_id 
+        String docker_image_id
     }
 
     command <<<
@@ -303,7 +305,7 @@ task ApplyLengthFilter {
     >>>
 
     output {
-        Array[File]+ filtered_fastqs = "${prefix}_.fastq"
+        Array[File]+ filtered_fastqs = ["${prefix}_.fastq"]  # FIXME (AK): GET CORRECT GLOB
     }
 
     runtime {
@@ -632,13 +634,12 @@ task CallVariants {
 
 task RunMinion{
     input{
-        String prefix,
-        String sample,
-        Array[File]+ fastqs,
-        String primer_schemes,
-        Int normalise,
-        String medaka_model,
-
+        String prefix
+        String sample
+        Array[File]+ fastqs
+        String primer_schemes
+        Int normalise
+        String medaka_model
         String docker_image_id
     }
 
@@ -658,10 +659,9 @@ task RunMinion{
         samtools sort "~{prefix}.trimmed.rg.sorted.bam" > "~{prefix}.trimmed.rg.resorted.bam" 
         mv "~{prefix}.trimmed.rg.resorted.bam" "~{prefix}.trimmed.rg.sorted.bam"
         samtools index "~{prefix}.trimmed.rg.sorted.bam"  # to create "~{prefix}.trimmed.rg.sorted.bai"
-
     >>>
 
-    output{
+    output {
         File primertrimmedbam = "~{sample}.rg.primertrimmed.bam"
         File primertrimmedbai = "~{sample}.rg.primertrimmed.bam.bai"
         File alignedbam = "~{sample}.rg.trimmed.bam"
@@ -885,7 +885,7 @@ task ComputeStats {
 # NOTE: if we add this step, we need to make it conditional on whether or not the pipeline is running for SARS-CoV-2. Expanding to other viruses
 # ...would requrie downloading the full set of VADR models
 task Vadr {
-    input{
+    input {
         String prefix
         File assembly
         String vadr_options

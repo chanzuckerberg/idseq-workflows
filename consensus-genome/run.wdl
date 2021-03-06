@@ -9,14 +9,14 @@ workflow consensus_genome {
         File? fastqs_1
 
         String docker_image_id
-        File ercc_fasta
+        File ercc_fasta = "s3://idseq-public-references/consensus-genome/ercc_sequences.fasta"
         File kraken2_db_tar_gz   #TODO: make this optional; only required if filter_reads == true, even for Illumina
-        File primer_bed          #TODO: this is only required for Illumina
-        File ref_fasta           #TODO: this is only required for Illumina 
+        File primer_bed = "s3://idseq-public-references/consensus-genome/artic_v3_primers.bed" # Only required for Illumina
+        File ref_fasta # Only required for Illumina
         File ref_host
-        String technology        #require input sequencing technology i.e. ["Illumina", "ONT"]
+        String technology # Input sequencing technology ("Illumina" or "ONT")
 
-        # Sample name : include in tags and files
+        # Sample name: include in tags and files
         String sample
 
         # Optional prefix to add to the output filenames
@@ -27,6 +27,7 @@ workflow consensus_genome {
         Int normalise  = 200
         String medaka_model = "r941_grid_fast_g303"
         String vadr_options = "-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf"  # NOTE: may not be in V1
+        File vadr_model = "s3://idseq-public-references/consensus-genome/vadr-models-corona-1.1.3-1.tar.gz"
 
         # Illumina-specific parameters
         # Step parameters
@@ -74,8 +75,7 @@ workflow consensus_genome {
     call RemoveHost {
         input:
             prefix = prefix,
-            #fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
-            fastqs = select_first([ApplyLengthFilter.filtered_fastqs]),
+            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
             ref_host = ref_host,
             technology = technology,
             docker_image_id = docker_image_id
@@ -83,7 +83,7 @@ workflow consensus_genome {
 
     # These step becomes conditional - only run for Illumina: 
     #     QuantifyERCCs, FilterReads, TrimReads, AlignReads, TrimPrimers, MakeConsensus, CallVariants
-    if (technology == "Illumina"){
+    if (technology == "Illumina") {
         call QuantifyERCCs {
             input:
                 prefix = prefix,
@@ -211,7 +211,8 @@ workflow consensus_genome {
         input:
             prefix = prefix,
             assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus_fa
-            vadr_options = vadr_options, 
+            vadr_options = vadr_options,
+            vadr_model = vadr_model,
             docker_image_id = docker_image_id
     }
 
@@ -279,7 +280,7 @@ task ValidateInput{
     >>>
 
     output {
-        # I don't think we need an output from this step. Or we could just return the files after they've been checked for type.
+        Array[File]+ validated_fastqs = fastqs
     }
 
     runtime {
@@ -330,16 +331,16 @@ task RemoveHost {
         if [[ "~{length(fastqs)}" == 1 ]]; then
             if "~{technology}" == "Illumina"; then
                 minimap2 -t $CORES -ax sr ~{ref_host} ~{fastqs[0]} | \
-                samtools view -@ $CORES -b -f 4 | \
+                samtools view --no-PG -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             else # if technology == ONT
                 minimap2 -t $CORES -ax map-ont ~{ref_host} ~{fastqs[0]} | \
-                samtools view -@ $CORES -b -f 4 | \
+                samtools view --no-PG -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             fi
         else
             minimap2 -t $CORES -ax sr ~{ref_host} ~{sep=' ' fastqs} | \
-            samtools view -@ $CORES -b -f 4 | \
+            samtools view --no-PG -@ $CORES -b -f 4 | \
             samtools fastq -@ $CORES -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
         fi
 
@@ -371,7 +372,7 @@ task QuantifyERCCs {
     command <<<
         set -euxo pipefail
 
-        minimap2 -ax sr ~{ercc_fasta} ~{sep=' ' fastqs} | samtools view -bo ercc_mapped.bam
+        minimap2 -ax sr ~{ercc_fasta} ~{sep=' ' fastqs} | samtools view --no-PG -bo ercc_mapped.bam
         samtools stats ercc_mapped.bam > "~{prefix}ercc_stats.txt"
     >>>
 
@@ -632,8 +633,8 @@ task CallVariants {
     }
 }
 
-task RunMinion{
-    input{
+task RunMinion {
+    input {
         String prefix
         String sample
         Array[File]+ fastqs
@@ -648,8 +649,8 @@ task RunMinion{
 
         export CORES=`nproc --all`
 
-        # note: when I tried running this within the .wdl file, this command would due to an issue where it could access the primer
-        #       schemes - I suspect this is related to docker access to downloaded files
+        # FIXME: (akislyuk) primer schemes
+
         # note: I think `prefix` and `sample` are interchangeable here, so if we used `prefix = ""` we could avoid the issue downstream
         #       of sample-specific names in files 
         artic minion --medaka --normalise "~{normalise}" --threads 4 --scheme-directory "~{primer_schemes}" --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
@@ -668,7 +669,6 @@ task RunMinion{
         File vcf_pass = "~{sample}.merged.pass.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"
     }
-
 }
 
 
@@ -693,19 +693,24 @@ task Quast {
 
         export CORES=`nproc --all`
         a=`cat "~{assembly}" | wc -l`
+        cp "~{bam}" .
+        export BAM=$(basename "~{bam}")
+        cp "~{assembly}" .
+        export ASSEMBLY=$(basename "~{assembly}")
 
+        # FIXME: make explicit conditional on technology not on # of fastqs
         if [ $a -ne 0 ]; then
             if [ ~{no_reads_quast} = true ]; then
-                quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}"
+                quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}"
             else
                 if [[ "~{length(fastqs)}" == 1 ]]; then
                     if "~{technology}" == "Illumina"; then
-                        quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}" --single "~{fastqs[0]}"
+                        quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --single "~{fastqs[0]}"
                     else  # technology == "ONT"
-                        quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}" --nanopore "~{fastqs[0]}"
+                        quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
                     fi
                 else
-                    quast --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}" -1 ~{sep=' -2 ' fastqs}
+                    quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" -1 ~{sep=' -2 ' fastqs}
                 fi
             fi
         else
@@ -749,8 +754,7 @@ task ComputeStats {
         samtools stats "~{cleaned_bam}" > "~{prefix}samtools_stats.txt"
         samtools depth -aa -d 0 "~{cleaned_bam}" | awk '{print $3}' > "~{prefix}samtools_depth.txt"
 
-        python <<CODE
-
+        python3 <<CODE
         import argparse
         import collections
         import gzip
@@ -889,36 +893,35 @@ task Vadr {
         String prefix
         File assembly
         String vadr_options
-
+        File vadr_model
         String docker_image_id
     }
 
     command <<<
         set -e
-
+        source /etc/profile
+        mkdir -p /usr/local/share/vadr/models
+        tar xzvf "~{vadr_model}" -C /usr/local/share/vadr/models --strip-components 1
         # find available RAM
         RAM_MB=$(free -m | head -2 | tail -1 | awk '{print $2}')
-
         # run VADR
-        v-annotate.pl ~{vadr_options} --mxsize $RAM_MB "~{assembly}" "~{prefix}"
+        v-annotate.pl ~{vadr_options} --mxsize $RAM_MB "~{assembly}" "vadr-output"
     >>>
 
-    output{
-        File vadr_quality = "~{prefix}/~{prefix}.vadr.sqc"
-        File vadr_alerts = "~{prefix}/~{prefix}.alt.list"
-
+    output {
+        File vadr_quality = "vadr-output/vadr-output.vadr.sqc"
+        File vadr_alerts = "vadr-output/vadr-output.vadr.alt.list"
     }
-    runtime{
+
+    runtime {
         docker: docker_image_id
     }
-  
 }
 
 task ZipOutputs {
     input {
         String prefix
         Array[File] outputFiles
-
         String docker_image_id
     }
 
@@ -939,5 +942,4 @@ task ZipOutputs {
     runtime {
         docker: docker_image_id
     }
-
 }

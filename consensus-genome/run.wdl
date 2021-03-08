@@ -312,9 +312,7 @@ task ApplyLengthFilter {
     >>>
 
     output {
-        # FIXME: (AK) artic guppyplex filters out the whole test dataset
-        # Array[File]+ filtered_fastqs = ["filtered.fastq"]
-        Array[File]+ filtered_fastqs = [fastqs_0]
+        Array[File]+ filtered_fastqs = ["filtered.fastq"]
     }
 
     runtime {
@@ -339,16 +337,16 @@ task RemoveHost {
         if [[ "~{length(fastqs)}" == 1 ]]; then
             if [[ "~{technology}" == "Illumina" ]]; then
                 minimap2 -t $CORES -ax sr ~{ref_host} ~{fastqs[0]} | \
-                samtools view -@ $CORES -b -f 4 | \
+                samtools view --no-PG -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             else # if technology == ONT
                 minimap2 -t $CORES -ax map-ont ~{ref_host} ~{fastqs[0]} | \
-                samtools view -@ $CORES -b -f 4 | \
+                samtools view --no-PG -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             fi
         else
             minimap2 -t $CORES -ax sr ~{ref_host} ~{sep=' ' fastqs} | \
-            samtools view -@ $CORES -b -f 4 | \
+            samtools view --no-PG -@ $CORES -b -f 4 | \
             samtools fastq -@ $CORES -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
         fi
 

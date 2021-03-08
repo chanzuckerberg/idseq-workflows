@@ -98,6 +98,6 @@ class TestConsensusGenomes(TestCase):
                 self.assertGreater(os.path.getsize(filename), 0)
 
     def test_zip_outputs(self):
-        res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", "outputFiles=run.wdl"])
+        res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", f"outputFiles={self.wdl}"])
         with zipfile.ZipFile(res["outputs"]["ZipOutputs.output_zip"]) as fh:
             self.assertEqual(fh.namelist(), ["run.wdl"])

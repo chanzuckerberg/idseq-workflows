@@ -659,9 +659,7 @@ task RunMinion {
 
         # note: I think `prefix` and `sample` are interchangeable here, so if we used `prefix = ""` we could avoid the issue downstream
         #       of sample-specific names in files
-        wc ~{sep=' ' fastqs} 1>&2
         artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
-        ls 1>&2
         # the .bam file doesn't seem to be sorted when it comes out, so explicitely sorting it here because a 
         # ...sorted .bam is necessary for ComputeStats step downstream
         samtools sort "~{sample}.trimmed.rg.sorted.bam" > "~{sample}.trimmed.rg.resorted.bam" 

@@ -25,7 +25,7 @@ workflow consensus_genome {
         # ONT-specific inputs
         File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"
         Int normalise  = 200
-        String medaka_model = "r941_min_high_g360" # FIXME: (akislyuk) select correct model, original "r941_grid_fast_g303" triggers error
+        String medaka_model = "r941_min_fast_g303"
         String vadr_options = "-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf"
         File vadr_model = "s3://idseq-public-references/consensus-genome/vadr-models-corona-1.1.3-1.tar.gz"
 
@@ -51,7 +51,7 @@ workflow consensus_genome {
 
     # NEW POTENTIAL STEP: Validate input? 
     # This step should validate that "Illumina" pipeline reads are short (<300bp)
-    call ValidateInput{
+    call ValidateInput {
         input:
             prefix = prefix,
             fastqs = select_all([fastqs_0, fastqs_1]),
@@ -60,8 +60,8 @@ workflow consensus_genome {
     }
 
     # NEW STEP: Unique to ONT
-    if (technology == "ONT"){
-        call ApplyLengthFilter{
+    if (technology == "ONT") {
+        call ApplyLengthFilter {
             input:
                 prefix = prefix,
                 fastqs_0 = fastqs_0,

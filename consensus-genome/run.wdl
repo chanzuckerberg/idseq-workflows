@@ -301,8 +301,8 @@ task ApplyLengthFilter {
         File fastqs_0
         File? fastqs_1
         Int normalise
-        Int min_length = 0
-        Int max_length = 100000000
+        Int min_length = 400
+        Int max_length = 700
 
         String docker_image_id
     }

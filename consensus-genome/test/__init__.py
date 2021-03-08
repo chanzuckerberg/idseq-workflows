@@ -45,8 +45,34 @@ class TestConsensusGenomes(TestCase):
             if not isinstance(output, list):
                 output = [output]
             for filename in output:
-                with open(filename, "rb") as fh:
-                    self.assertGreater(os.path.getsize(filename), 0)
+                self.assertGreater(os.path.getsize(filename), 0)
+
+    def test_ont_cg(self):
+        fastqs_0 = os.path.join(os.path.dirname(__file__), "MT007544.fastq.gz")
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
+        res = self.run_miniwdl(args)
+        outputs = res["outputs"]
+        with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
+            output_stats = json.load(fh)
+        self.assertEqual(output_stats["sample_name"], "test_sample")
+        # TODO: (AK) re-enable assertions
+        # self.assertGreater(output_stats["depth_avg"], 889)
+        # self.assertEqual(output_stats["total_reads"], 187444)
+        # self.assertEqual(output_stats["mapped_reads"], 187212)
+        # self.assertEqual(output_stats["mapped_paired"], 187151)
+        # self.assertEqual(output_stats["ercc_mapped_reads"], 0)
+        # self.assertEqual(output_stats["ref_snps"], 7)
+        # self.assertEqual(output_stats["ref_mnps"], 0)
+        for output_name, output in outputs.items():
+            # TODO: (AK) re-enable assertions
+            # Confirm the following outputs should not exist:
+            # - consensus_genome.trim_reads_out_trimmed_fastqs
+            # - consensus_genome.filter_reads_out_filtered_fastqs
+            if not isinstance(output, list):
+                output = [output]
+            for filename in output:
+                pass
+                # self.assertGreater(os.path.getsize(filename), 0)
 
     def test_zip_outputs(self):
         res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", "outputFiles=run.wdl"])

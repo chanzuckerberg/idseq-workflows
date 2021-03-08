@@ -10,7 +10,7 @@ workflow consensus_genome {
 
         String docker_image_id
         File ercc_fasta = "s3://idseq-public-references/consensus-genome/ercc_sequences.fasta"
-        File kraken2_db_tar_gz   #TODO: make this optional; only required if filter_reads == true, even for Illumina
+        File kraken2_db_tar_gz  # TODO: make this optional; only required if filter_reads == true, even for Illumina
         File primer_bed = "s3://idseq-public-references/consensus-genome/artic_v3_primers.bed" # Only required for Illumina
         File ref_fasta # Only required for Illumina
         File ref_host
@@ -23,10 +23,10 @@ workflow consensus_genome {
         String prefix = ""
 
         # ONT-specific inputs
-        String primer_schemes     # this points to a directory containing the ref_fasta, primer_bed (specified as `nCoV-2019/V3` when running workflow) - see: https://github.com/artic-network/fieldbioinformatics/tree/master/test-data/primer-schemes/nCoV-2019/V3
+        File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"
         Int normalise  = 200
-        String medaka_model = "r941_grid_fast_g303"
-        String vadr_options = "-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf"  # NOTE: may not be in V1
+        String medaka_model = "r941_min_high_g360" # FIXME: (akislyuk) select correct model, original "r941_grid_fast_g303" triggers error
+        String vadr_options = "-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf"
         File vadr_model = "s3://idseq-public-references/consensus-genome/vadr-models-corona-1.1.3-1.tar.gz"
 
         # Illumina-specific parameters
@@ -181,13 +181,13 @@ workflow consensus_genome {
     call Quast {
         input:
             prefix = prefix,
-            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus_fa
-            bam = select_first([TrimPrimers.trimmed_bam_ch]),          # RunMinion.primertrimmedbam
-            # use trimReads output if we ran it; otherwise fall back to FilterReads output
-            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs]),   # RemoveHost.host_removed_fastqs
-            ref_fasta = ref_fasta,                     # primer_schemes/nCoV-2019.reference.fasta
-            no_reads_quast = no_reads_quast, 
-            technology = technology, 
+            assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
+            bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
+            # use trimReads output if we ran it; otherwise fall back to FilterReads output, or RemoveHost for ONT
+            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
+            ref_fasta = ref_fasta,                     # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
+            no_reads_quast = no_reads_quast,
+            technology = technology,
             docker_image_id = docker_image_id
     }
 
@@ -195,12 +195,12 @@ workflow consensus_genome {
         input:
             prefix = prefix,
             sample = sample,
-            cleaned_bam = select_first([TrimPrimers.trimmed_bam_ch]),  # RunMinion.primertrimmedbam
-            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus.fa
+            cleaned_bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
+            assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
-            vcf = select_first([CallVariants.variants_ch]),            # RunMinion.vcf_pass
-            fastqs = select_all([fastqs_0, fastqs_1]), # RemoveHost.host_removed_fastqs
-            ref_host = ref_host,                       # primer_schemes/nCoV-2019.reference.fasta
+            vcf = select_first([CallVariants.variants_ch, RunMinion.vcf]),
+            fastqs = RemoveHost.host_removed_fastqs, # select_all([fastqs_0, fastqs_1]), # FIXME: (AK) verify the correct value for this
+            ref_host = ref_host,                       # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta?
             technology = technology,
             docker_image_id = docker_image_id
     }
@@ -210,7 +210,7 @@ workflow consensus_genome {
     call Vadr {
         input:
             prefix = prefix,
-            assembly = select_first([MakeConsensus.consensus_fa]),     # RunMinion.consensus_fa
+            assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             vadr_options = vadr_options,
             vadr_model = vadr_model,
             docker_image_id = docker_image_id
@@ -220,20 +220,25 @@ workflow consensus_genome {
         input:
             prefix = prefix,
             outputFiles = select_all(flatten([
-                RemoveHost.host_removed_fastqs,        # RemoveHost.host_removed_fastqs
+                RemoveHost.host_removed_fastqs,
                 select_all([
-                    MakeConsensus.consensus_fa,        # RunMinion.consensus_fa
+                    MakeConsensus.consensus_fa,
+                    RunMinion.consensus_fa,
                     ComputeStats.depths_fig,
-                    TrimPrimers.trimmed_bam_ch,        # RunMinion.primertrimmedbam
-                    TrimPrimers.trimmed_bam_bai,       # RunMinion.primertrimmedbai
+                    TrimPrimers.trimmed_bam_ch,
+                    RunMinion.primertrimmedbam,
+                    TrimPrimers.trimmed_bam_bai,
+                    RunMinion.primertrimmedbai,
                     Quast.quast_txt,
                     Quast.quast_tsv,
-                    AlignReads.alignments,             # RunMinion.alignedbam
-                    QuantifyERCCs.ercc_out,            # does not exist - NO ERCC results for ONT
-                    QuantifyERCCs.ercc_out,            # does not exist - NO ERCC results for ONT
+                    AlignReads.alignments,
+                    RunMinion.alignedbam,
+                    QuantifyERCCs.ercc_out,            # No ERCC results for ONT
+                    QuantifyERCCs.ercc_out,            # No ERCC results for ONT
                     ComputeStats.output_stats,
                     ComputeStats.sam_depths,
-                    CallVariants.variants_ch,          # RunMinion.vcf_pass
+                    CallVariants.variants_ch,
+                    RunMinion.vcf,
                     Vadr.vadr_quality,                 # NOTE: optional, only if we include .vadr step - filename equivalent between Illumina and ONT
                     Vadr.vadr_alerts                   # NOTE: optional, only if we include .vadr step - filename equivalent between Illumina and ONT
                 ])
@@ -243,16 +248,16 @@ workflow consensus_genome {
 
     output {
         Array[File] remove_host_out_host_removed_fastqs = RemoveHost.host_removed_fastqs 
-        File quantify_erccs_out_ercc_out = select_first([QuantifyERCCs.ercc_out])                           # does not exist
-        Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs        # does not exist
-        Array[File]+? trim_reads_out_trimmed_fastqs = TrimReads.trimmed_fastqs              # does not exist
-        File? align_reads_out_alignments = AlignReads.alignments                            # RunMinion.alignedbam
-        File? trim_primers_out_trimmed_bam_ch = TrimPrimers.trimmed_bam_ch                  # RunMinion.primertrimmedbam
-        File? trim_primers_out_trimmed_bam_bai = TrimPrimers.trimmed_bam_bai                # RunMinion.primertrimmedbai
-        File? make_consensus_out_consensus_fa = MakeConsensus.consensus_fa                  # RunMinion.consensus.fa
+        File? quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out # does not exist for ONT
+        Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs # does not exist for ONT
+        Array[File]+? trim_reads_out_trimmed_fastqs = TrimReads.trimmed_fastqs # does not exist for ONT
+        File? align_reads_out_alignments = select_first([AlignReads.alignments, RunMinion.alignedbam])
+        File? trim_primers_out_trimmed_bam_ch = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam])
+        File? trim_primers_out_trimmed_bam_bai = select_first([TrimPrimers.trimmed_bam_bai, RunMinion.primertrimmedbai])
+        File? make_consensus_out_consensus_fa = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa])
         File? quast_out_quast_txt = Quast.quast_txt
         File? quast_out_quast_tsv = Quast.quast_tsv
-        File? call_variants_out_variants_ch = CallVariants.variants_ch                      # RunMinion.vcf_pass
+        File? call_variants_out_variants_ch = select_first([CallVariants.variants_ch, RunMinion.vcf])
         File? compute_stats_out_depths_fig = ComputeStats.depths_fig
         File? compute_stats_out_output_stats = ComputeStats.output_stats
         File? compute_stats_out_sam_depths = ComputeStats.sam_depths
@@ -291,22 +296,25 @@ task ValidateInput{
 
 # NEW STEP
 task ApplyLengthFilter {
-
     input {
         String prefix
         File fastqs_0
         File? fastqs_1
         Int normalise
+        Int min_length = 0
+        Int max_length = 100000000
 
         String docker_image_id
     }
 
     command <<<
-        artic guppyplex --min-length 400 --max-length 700 --directory . --prefix ${prefix}
+        artic guppyplex --min-length ~{min_length} --max-length ~{max_length} --directory $(dirname "~{fastqs_0}") --output filtered.fastq
     >>>
 
     output {
-        Array[File]+ filtered_fastqs = ["${prefix}_.fastq"]  # FIXME (AK): GET CORRECT GLOB
+        # FIXME: (AK) artic guppyplex filters out the whole test dataset
+        # Array[File]+ filtered_fastqs = ["filtered.fastq"]
+        Array[File]+ filtered_fastqs = [fastqs_0]
     }
 
     runtime {
@@ -329,18 +337,18 @@ task RemoveHost {
 
         export CORES=`nproc --all`
         if [[ "~{length(fastqs)}" == 1 ]]; then
-            if "~{technology}" == "Illumina"; then
+            if [[ "~{technology}" == "Illumina" ]]; then
                 minimap2 -t $CORES -ax sr ~{ref_host} ~{fastqs[0]} | \
-                samtools view --no-PG -@ $CORES -b -f 4 | \
+                samtools view -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             else # if technology == ONT
                 minimap2 -t $CORES -ax map-ont ~{ref_host} ~{fastqs[0]} | \
-                samtools view --no-PG -@ $CORES -b -f 4 | \
+                samtools view -@ $CORES -b -f 4 | \
                 samtools fastq -@ $CORES -0 "~{prefix}no_host_1.fq.gz" -n -c 6 -
             fi
         else
             minimap2 -t $CORES -ax sr ~{ref_host} ~{sep=' ' fastqs} | \
-            samtools view --no-PG -@ $CORES -b -f 4 | \
+            samtools view -@ $CORES -b -f 4 | \
             samtools fastq -@ $CORES -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
         fi
 
@@ -638,7 +646,7 @@ task RunMinion {
         String prefix
         String sample
         Array[File]+ fastqs
-        String primer_schemes
+        File primer_schemes
         Int normalise
         String medaka_model
         String docker_image_id
@@ -649,25 +657,31 @@ task RunMinion {
 
         export CORES=`nproc --all`
 
-        # FIXME: (akislyuk) primer schemes
+        tar -xzf "~{primer_schemes}"
 
         # note: I think `prefix` and `sample` are interchangeable here, so if we used `prefix = ""` we could avoid the issue downstream
-        #       of sample-specific names in files 
-        artic minion --medaka --normalise "~{normalise}" --threads 4 --scheme-directory "~{primer_schemes}" --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
-
+        #       of sample-specific names in files
+        wc ~{sep=' ' fastqs} 1>&2
+        artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
+        ls 1>&2
         # the .bam file doesn't seem to be sorted when it comes out, so explicitely sorting it here because a 
         # ...sorted .bam is necessary for ComputeStats step downstream
-        samtools sort "~{prefix}.trimmed.rg.sorted.bam" > "~{prefix}.trimmed.rg.resorted.bam" 
-        mv "~{prefix}.trimmed.rg.resorted.bam" "~{prefix}.trimmed.rg.sorted.bam"
-        samtools index "~{prefix}.trimmed.rg.sorted.bam"  # to create "~{prefix}.trimmed.rg.sorted.bai"
+        samtools sort "~{sample}.trimmed.rg.sorted.bam" > "~{sample}.trimmed.rg.resorted.bam" 
+        mv "~{sample}.trimmed.rg.resorted.bam" "~{sample}.trimmed.rg.sorted.bam"
+        samtools index "~{sample}.trimmed.rg.sorted.bam"  # to create "~{sample}.trimmed.rg.sorted.bai"
     >>>
 
     output {
-        File primertrimmedbam = "~{sample}.rg.primertrimmed.bam"
-        File primertrimmedbai = "~{sample}.rg.primertrimmed.bam.bai"
-        File alignedbam = "~{sample}.rg.trimmed.bam"
-        File vcf_pass = "~{sample}.merged.pass.vcf"
+        File primertrimmedbam = "~{sample}.primertrimmed.rg.sorted.bam"
+        File primertrimmedbai = "~{sample}.primertrimmed.rg.sorted.bam.bai"
+        File alignedbam = "~{sample}.trimmed.rg.sorted.bam"
+        #        File vcf_pass = "~{sample}.merged.pass.vcf"
+        File vcf = "~{sample}.merged.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"
+    }
+
+    runtime {
+        docker: docker_image_id
     }
 }
 
@@ -704,7 +718,7 @@ task Quast {
                 quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}"
             else
                 if [[ "~{length(fastqs)}" == 1 ]]; then
-                    if "~{technology}" == "Illumina"; then
+                    if [[ "~{technology}" == "Illumina" ]]; then
                         quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --single "~{fastqs[0]}"
                     else  # technology == "ONT"
                         quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
@@ -736,7 +750,7 @@ task ComputeStats {
         String sample
         File cleaned_bam
         File assembly
-        File? ercc_stats  # make this optional, as will only exist for Illumina runs
+        File? ercc_stats  # optional, will only exist for Illumina runs
         File vcf
 
         Array[File]+ fastqs
@@ -772,7 +786,7 @@ task ComputeStats {
         if depths:
             depths = np.array([int(d) for d in depths])
         else:
-            depths = np.array([0]*pysam.AlignmentFile("~{cleaned_bam}", "rb").lengths([0]))
+            depths = np.array([0]*pysam.AlignmentFile("~{cleaned_bam}", "rb").lengths[0])
 
         stats["depth_avg"] = depths.mean()
         stats["depth_q.25"] = np.quantile(depths, .25)

@@ -24,7 +24,9 @@ workflow consensus_genome {
 
         # ONT-specific inputs
         File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"
+        # normalise: default is set in accordance with recommendation in ARTIC biox protocol here: https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html
         Int normalise  = 200
+        # medaka_model: default is selected to support current ClearLabs workflow
         String medaka_model = "r941_min_fast_g303"
         String vadr_options = "-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf"
         File vadr_model = "s3://idseq-public-references/consensus-genome/vadr-models-corona-1.1.3-1.tar.gz"
@@ -301,8 +303,8 @@ task ApplyLengthFilter {
         File fastqs_0
         File? fastqs_1
         Int normalise
-        Int min_length = 400
-        Int max_length = 700
+        Int min_length = 400 # default filters in accordance with recommended parameters in ARTIC SARS-CoV-2 bioinformatics protocol...
+        Int max_length = 700 # ...these are intended to remove obviously chimeric reads.
 
         String docker_image_id
     }

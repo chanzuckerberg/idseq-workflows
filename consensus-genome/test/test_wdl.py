@@ -46,7 +46,8 @@ class TestConsensusGenomes(TestCase):
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
-        self.assertGreater(output_stats["depth_avg"], 889)
+        # TODO: track non-determinism (888.xx vs 889.xx coverage)
+        self.assertGreater(output_stats["depth_avg"], 888)
         self.assertEqual(output_stats["total_reads"], 187444)
         self.assertEqual(output_stats["mapped_reads"], 187212)
         self.assertEqual(output_stats["mapped_paired"], 187151)

@@ -19,7 +19,7 @@ class TestConsensusGenomes(TestCase):
             cmd += ["--task", task]
         else:
             cmd += [f"{i}={v}" for i, v in self.common_inputs.items()]
-        td = tempfile.TemporaryDirectory(prefix="/mnt/idseq-workflows-test-").name
+        td = tempfile.TemporaryDirectory(prefix="idseq-workflows-test-").name
         cmd += ["--verbose", "--error-json", "--dir", td]
         print(cmd)
         res = check_output(cmd)

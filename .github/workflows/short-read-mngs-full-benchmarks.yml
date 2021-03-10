@@ -5,6 +5,7 @@ on:
     inputs:
       idseq_workflows_release:
         description: release (vX.Y.Z) of idseq-workflows
+# gh api repos/chanzuckerberg/idseq-workflows/actions/workflows/short-read-mngs-full-benchmarks.yml/dispatches --input - <<< '{"ref":"mlin/auto-benchmark","inputs":{"idseq_workflows_release":"v6.4.0"}}'
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -33,5 +34,4 @@ jobs:
         run: |
           export DEPLOY_REF="mlin/auto_benchmark" GITHUB_TOKEN=${GH_DEPLOY_TOKEN:-GITHUB_TOKEN} IDSEQ_WORKFLOWS_RELEASE='${{github.event.inputs.idseq_workflows_release}}'
           workflow_args=$(jq -n ".auto_merge=false | .ref=env.DEPLOY_REF | .inputs={idseq_workflows_release: env.IDSEQ_WORKFLOWS_RELEASE}")
-          gh api repos/:owner/idseq/deployments --input - <<< "$deployment_args"
-          repos/:owner/idseq/actions/workflows/short-read-mngs-benchmarks.yml/dispatches
+          gh api repos/:owner/idseq/actions/workflows/short-read-mngs-benchmarks.yml/dispatches --input - <<< "$workflow_args"

@@ -31,7 +31,7 @@ jobs:
           sudo dpkg -i gh_${GH_CLI_VERSION}_linux_amd64.deb
       - name: Trigger benchmarks
         run: |
-          export DEPLOY_REF="mlin/auto_benchmark" GITHUB_TOKEN=${GH_DEPLOY_TOKEN:-GITHUB_TOKEN} IDSEQ_WORKFLOWS_RELEASE='${{github.event.inputs.idseq_workflows_release}}''
+          export DEPLOY_REF="mlin/auto_benchmark" GITHUB_TOKEN=${GH_DEPLOY_TOKEN:-GITHUB_TOKEN} IDSEQ_WORKFLOWS_RELEASE='${{github.event.inputs.idseq_workflows_release}}'
           workflow_args=$(jq -n ".auto_merge=false | .ref=env.DEPLOY_REF | .inputs={idseq_workflows_release: env.IDSEQ_WORKFLOWS_RELEASE}")
           gh api repos/:owner/idseq/deployments --input - <<< "$deployment_args"
           repos/:owner/idseq/actions/workflows/short-read-mngs-benchmarks.yml/dispatches

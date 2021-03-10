@@ -5,7 +5,10 @@ on:
     inputs:
       idseq_workflows_release:
         description: release (vX.Y.Z) of idseq-workflows short-read-mngs
-# gh api repos/chanzuckerberg/idseq-workflows/actions/workflows/short-read-mngs-full-benchmarks.yml/dispatches --input - <<< '{"ref":"mlin/auto-benchmark","inputs":{"idseq_workflows_release":"v6.4.0"}}'
+      idseq_ref:
+        description: desired git ref in idseq monorepo
+        default: main
+# gh api repos/chanzuckerberg/idseq-workflows/actions/workflows/short-read-mngs-full-benchmarks.yml/dispatches --input - <<< '{"ref":"mlin/auto-benchmark","inputs":{"idseq_ref":"mlin/auto_benchmark","idseq_workflows_release":"v6.4.0"}}'
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -32,6 +35,6 @@ jobs:
           sudo dpkg -i gh_${GH_CLI_VERSION}_linux_amd64.deb
       - name: Trigger benchmarks
         run: |
-          export DEPLOY_REF="mlin/auto_benchmark" GITHUB_TOKEN=${GH_DEPLOY_TOKEN:-GITHUB_TOKEN} IDSEQ_WORKFLOWS_RELEASE='${{github.event.inputs.idseq_workflows_release}}'
+          export DEPLOY_REF='${{github.event.inputs.idseq_ref}}' GITHUB_TOKEN=${GH_DEPLOY_TOKEN:-GITHUB_TOKEN} IDSEQ_WORKFLOWS_RELEASE='${{github.event.inputs.idseq_workflows_release}}'
           workflow_args=$(jq -n ".ref=env.DEPLOY_REF | .inputs={idseq_workflows_release: env.IDSEQ_WORKFLOWS_RELEASE, idseq_workflows_ref: env.GITHUB_SHA}")
           gh api repos/:owner/idseq/actions/workflows/short-read-mngs-benchmarks.yml/dispatches --input - <<< "$workflow_args"

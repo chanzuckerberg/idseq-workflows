@@ -140,20 +140,22 @@ def run_sample(idseq_repo, workflow_version, settings, key_prefix, sample):
             subprocess.run(cmd, check=True)
 
     # run_sfn.py
-    cmd = (
-        ". workflows/environment.dev"
+    cmd = [
+        "/bin/bash",
+        "-c",
+        "source workflows/environment.dev"
         f" && scripts/run_sfn.py"
         f" --sample-dir s3://{BUCKET}/{key_prefix}/{sample}"
         f" --host-genome {local_input['host_filter.host_genome']}"
         f" --max-input-fragments {local_input['host_filter.max_input_fragments']}"
         f" --max-subsample-fragments {local_input['host_filter.max_subsample_fragments']}"
         f" --adapter-fasta {local_input['host_filter.adapter_fasta']}"
-        f" --workflow-version {workflow_version}"
-    )
+        f" --workflow-version {workflow_version}",
+    ]
     print(cmd, file=sys.stderr)
     with _timestamp_lock:
         time.sleep(1.1)
-        subprocess.run(cmd, shell=True, cwd=idseq_repo, check=True)
+        subprocess.run(cmd, cwd=idseq_repo, check=True)
 
     workflow_major_version = workflow_version.split(".")[0]
     return (

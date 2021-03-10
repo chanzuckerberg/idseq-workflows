@@ -141,7 +141,7 @@ def run_sample(idseq_repo, workflow_version, settings, key_prefix, sample):
 
     # run_sfn.py
     cmd = (
-        "source workflows/environment.dev"
+        ". workflows/environment.dev"
         f" && scripts/run_sfn.py"
         f" --sample-dir s3://{BUCKET}/{key_prefix}/{sample}"
         f" --host-genome {local_input['host_filter.host_genome']}"

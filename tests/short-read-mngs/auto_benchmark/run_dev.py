@@ -74,10 +74,6 @@ def main():
 
 
 def run_samples(idseq, samples, workflow_version, settings):
-    assert os.environ.get(
-        "AWS_PROFILE", False
-    ), f"export AWS_PROFILE to for access to s3://{BUCKET} and idseq-dev"
-
     samples = set(samples)
     for sample_i in samples:
         assert sample_i in BENCHMARKS["samples"], f"unknown sample {sample_i}"

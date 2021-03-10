@@ -41,6 +41,7 @@ def main():
         nargs="+",
         help="any of: " + ", ".join(BENCHMARKS["samples"].keys()),
     )
+    parser.add_argument("--idseq", required=True, help="path to idseq monorepo")
     parser.add_argument(
         "--workflow-version",
         metavar="X.Y.Z",
@@ -72,7 +73,7 @@ def main():
     run_samples(**vars(args))
 
 
-def run_samples(samples, workflow_version, settings):
+def run_samples(idseq, samples, workflow_version, settings):
     assert os.environ.get(
         "AWS_PROFILE", False
     ), f"export AWS_PROFILE to for access to s3://{BUCKET} and idseq-dev"
@@ -83,50 +84,31 @@ def run_samples(samples, workflow_version, settings):
 
     failures = []
     results = []
-    with tempfile.TemporaryDirectory(prefix="idseq_short_read_mngs_auto_benchmark_") as tmpdir:
-        # clone monorepo
-        subprocess.run(
-            ["git", "clone", "--depth", "1", "git@github.com:chanzuckerberg/idseq.git"],
-            cwd=tmpdir,
-            check=True,
-        )
-        # ensure up-to-date dependencies (required when we `source environment.dev`)
-        subprocess.run(
-            ["pip3", "install", "-qr", os.path.join(tmpdir, "idseq/workflows/requirements.txt")],
-            check=True,
-        )
-        subprocess.run(
-            [
-                "pip3",
-                "install",
-                "-qr",
-                os.path.join(tmpdir, "idseq/workflows/requirements-dev.txt"),
-            ],
-            check=True,
-        )
 
-        # formulate S3 directory for these benchmarking runs
-        key_prefix = f"{KEY_PREFIX}/{datetime.today().strftime('%Y%m%d_%H%M%S')}_{settings}_{workflow_version}"
+    # formulate S3 directory for these benchmarking runs
+    key_prefix = (
+        f"{KEY_PREFIX}/{datetime.today().strftime('%Y%m%d_%H%M%S')}_{settings}_{workflow_version}"
+    )
 
-        # parallelize run_sample on a thread pool
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {
-                executor.submit(
-                    run_sample,
-                    os.path.join(tmpdir, "idseq"),
-                    workflow_version,
-                    settings,
-                    key_prefix,
-                    sample_i,
-                ): sample_i
-                for sample_i in samples
-            }
-            for future in concurrent.futures.as_completed(futures):
-                exn = future.exception()
-                if exn:
-                    failures.append((futures[future], exn))
-                else:
-                    results.append(future.result())
+    # parallelize run_sample on a thread pool
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        futures = {
+            executor.submit(
+                run_sample,
+                idseq,
+                workflow_version,
+                settings,
+                key_prefix,
+                sample_i,
+            ): sample_i
+            for sample_i in samples
+        }
+        for future in concurrent.futures.as_completed(futures):
+            exn = future.exception()
+            if exn:
+                failures.append((futures[future], exn))
+            else:
+                results.append(future.result())
 
     print(" \\\n".join(f"{sample}={s3path}" for sample, s3path in results))
 

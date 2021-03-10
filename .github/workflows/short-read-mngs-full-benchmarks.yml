@@ -1,11 +1,10 @@
 name: short-read-mngs full benchmarks
 
 on:
-  push
-  #workflow_dispatch:
-  #  inputs:
-  #    idseq_workflows_release:
-  #      description: release (vX.Y.Z) of idseq-workflows
+  workflow_dispatch:
+    inputs:
+      idseq_workflows_release:
+        description: release (vX.Y.Z) of idseq-workflows
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

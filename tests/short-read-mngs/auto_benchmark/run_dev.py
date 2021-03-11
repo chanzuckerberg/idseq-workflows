@@ -106,7 +106,7 @@ def run_samples(idseq, samples, workflow_version, settings):
             else:
                 results.append(future.result())
 
-    print(" \\\n".join(f"{sample}={s3path}" for sample, s3path in results))
+    print("\n".join(f"{sample}={s3path}" for sample, s3path in results))
 
     if failures:
         for (failed_sample, exn) in failures:
@@ -155,7 +155,7 @@ def run_sample(idseq_repo, workflow_version, settings, key_prefix, sample):
     print(cmd, file=sys.stderr)
     with _timestamp_lock:
         time.sleep(1.1)
-        subprocess.run(cmd, cwd=idseq_repo, check=True)
+        subprocess.run(cmd, cwd=idseq_repo, check=True, stdout=sys.stderr.buffer)
 
     workflow_major_version = workflow_version.split(".")[0]
     return (

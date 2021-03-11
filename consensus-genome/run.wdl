@@ -1,5 +1,9 @@
-# The following pipeline was initially based on previous work at: https://github.com/czbiohub/sc2-illumina-pipeline
-# workflow version: consensus-genomes-1.5.1
+# IDseq Consensus Genome workflow
+# Based on original work at:
+# - CZ Biohub SARS-CoV-2 pipeline, https://github.com/czbiohub/sc2-illumina-pipeline
+# - ARTIC Oxford Nanopore MinION SARS-CoV-2 SOP, https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html
+# With enhancements and additional modules by the CZI Infectious Disease team
+
 version 1.0
 
 workflow consensus_genome {
@@ -51,8 +55,6 @@ workflow consensus_genome {
         String s3_wd_uri = ""
     }
 
-    # NEW POTENTIAL STEP: Validate input? 
-    # This step should validate that "Illumina" pipeline reads are short (<300bp)
     call ValidateInput {
         input:
             prefix = prefix,
@@ -61,7 +63,6 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    # NEW STEP: Unique to ONT
     if (technology == "ONT") {
         call ApplyLengthFilter {
             input:
@@ -72,7 +73,6 @@ workflow consensus_genome {
         }    
     }
 
-    # specify `technology` as an input here to pass the technology to run conditional logic within step
     call RemoveHost {
         input:
             prefix = prefix,
@@ -82,8 +82,6 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    # These step becomes conditional - only run for Illumina: 
-    #     QuantifyERCCs, FilterReads, TrimReads, AlignReads, TrimPrimers, MakeConsensus, CallVariants
     if (technology == "Illumina") {
         call QuantifyERCCs {
             input:
@@ -102,7 +100,6 @@ workflow consensus_genome {
                     docker_image_id = docker_image_id
             }
         }
-
         if (trim_adapters) {
             call TrimReads {
                 input:
@@ -110,7 +107,6 @@ workflow consensus_genome {
                     docker_image_id = docker_image_id
             }
         }
-
         call AlignReads {
             input:
                 prefix = prefix,
@@ -121,7 +117,6 @@ workflow consensus_genome {
                 ref_fasta = ref_fasta,
                 docker_image_id = docker_image_id
         }
-
         call TrimPrimers {
             input:
                 prefix = prefix,
@@ -129,7 +124,6 @@ workflow consensus_genome {
                 primer_bed = primer_bed,
                 docker_image_id = docker_image_id
         }
-
         call MakeConsensus {
             input:
                 prefix = prefix,
@@ -140,20 +134,19 @@ workflow consensus_genome {
                 ivarQualThreshold = ivarQualTreshold,
                 docker_image_id = docker_image_id
         }
-
         # this step does not rely on outputs of QUAST, so we can move it here to avoid complex logic
         call CallVariants {
-        input:
-            prefix = prefix,
-            call_variants_bam = TrimPrimers.trimmed_bam_ch,
-            ref_fasta = ref_fasta,
-            bcftoolsCallTheta = bcftoolsCallTheta,
-            minDepth = minDepth,
-            docker_image_id = docker_image_id
+            input:
+                prefix = prefix,
+                call_variants_bam = TrimPrimers.trimmed_bam_ch,
+                ref_fasta = ref_fasta,
+                bcftoolsCallTheta = bcftoolsCallTheta,
+                minDepth = minDepth,
+                docker_image_id = docker_image_id
         }
     }
+
     if (technology == "ONT"){
-        # NEW STEP: Unique to ONT
         call RunMinion {
             input:
                 prefix = prefix,
@@ -166,19 +159,6 @@ workflow consensus_genome {
         }
     }
 
-    # At this point, the output filenames from the ONT pipeline have diverged from the outut filenames 
-    # of the Illumina workflow.
-    #
-    # TODO: somehow we need to specify the inputs to the step conditionally. Some ideas are:
-    # 1. Use select_first([]) approach, i.e. select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]) to select 
-    #    ...Illumina outputs if they exist, otherwise ONT outputs. We would need good validation to ensure that if Illumina steps failed and didn't generate
-    #    ...outputs that we wouldn't try to use the ONT outputs - this is especially true for the fastqs input below.
-    # 2. Modify the RunMinion step to re-name the RunMinion outputs to generate parity btwn the ONT and Illumina outputs (?) This could generate confusion.
-    # 
-    # For each of the steps below, if inputs differ, I will comment with the name of the associated ONT filename.
-    # If inputs are the same, no other filename is added as a comment.
-    # If the input will not exist in the ONT workflow, it is labeled with "does not exist"
-    #
     call Quast {
         input:
             prefix = prefix,
@@ -206,8 +186,6 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    # OPTIONAL NEW STEP: Run VADR to provide a genome quality indicator 
-    # ...that would enable users to have confidence that sequences would be accepted in GenBank
     call Vadr {
         input:
             prefix = prefix,
@@ -268,8 +246,10 @@ workflow consensus_genome {
     }
 }
 
-# TODO: potential new task to task to validate input
 task ValidateInput{
+    # This step is still a placeholder - it does not have any logic yet.
+    # It should validate that "Illumina" pipeline reads are short (<300bp), perform other simple sanity checks, and
+    # check that only one input fastq is present for ONT.
     input {
         String prefix
         Array[File]+ fastqs
@@ -279,10 +259,8 @@ task ValidateInput{
     }
 
     command <<<
-
-    # Check if the input files from Illumina have reads with length < 300
-    #    if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
-
+    # Check if the input files from Illumina have reads with length < 300;
+    # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
     >>>
 
     output {
@@ -295,7 +273,6 @@ task ValidateInput{
 
 }
 
-# NEW STEP
 task ApplyLengthFilter {
     input {
         String prefix
@@ -892,13 +869,11 @@ task ComputeStats {
     }
 }
 
-# OPTIONAL NEW TASK: Vadr - would be run for both Illumina and ONT workflows 
-# this came directly from: https://github.com/AndrewLangvt/genomic_analyses/blob/a7ebbd44d99a0d5612697256e28f62e0e5a8f0c7/tasks/task_ncbi.wdl, 
-# ...then modified to our specific needs. This requires that the coronavirus reference files be downloaded 
-# ...from here: https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/coronaviridae/CURRENT/ and available to the workflow.
-# NOTE: if we add this step, we need to make it conditional on whether or not the pipeline is running for SARS-CoV-2. Expanding to other viruses
-# ...would requrie downloading the full set of VADR models
+# NOTE: if we add this step, we need to make it conditional on whether or not the pipeline is running for SARS-CoV-2.
+# Expanding to other viruses will require downloading the full set of VADR models
 task Vadr {
+    # Based on original work at https://github.com/AndrewLangvt/genomic_analyses/blob/v0.4.5/tasks/task_ncbi.wdl
+    # Requires coronavirus VADR models from https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/coronaviridae/CURRENT/
     input {
         String prefix
         File assembly

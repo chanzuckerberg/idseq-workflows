@@ -67,7 +67,6 @@ workflow consensus_genome {
             input:
                 prefix = prefix,
                 fastqs_0 = fastqs_0,
-                fastqs_1 = fastqs_1,
                 normalise = normalise,
                 docker_image_id = docker_image_id
         }    
@@ -301,7 +300,6 @@ task ApplyLengthFilter {
     input {
         String prefix
         File fastqs_0
-        File? fastqs_1
         Int normalise
         Int min_length = 400 # default filters in accordance with recommended parameters in ARTIC SARS-CoV-2 bioinformatics protocol...
         Int max_length = 700 # ...these are intended to remove obviously chimeric reads.

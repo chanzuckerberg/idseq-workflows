@@ -186,6 +186,7 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
+    # TODO: (Generalized CG implementer) VADR should only be called for SARS-CoV-2
     call Vadr {
         input:
             prefix = prefix,
@@ -759,7 +760,7 @@ task ComputeStats {
         if depths:
             depths = np.array([int(d) for d in depths])
         else:
-            depths = np.array([0]*pysam.AlignmentFile("~{cleaned_bam}", "rb").lengths[0])
+            raise Exception("Insufficient coverage to proceed with CG analysis")
 
         stats["depth_avg"] = depths.mean()
         stats["depth_q.25"] = np.quantile(depths, .25)

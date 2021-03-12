@@ -137,7 +137,7 @@ def run_sample(idseq_repo, workflow_version, settings, key_prefix, sample):
         ):
             cmd = ["aws", "s3", "cp", v, f"s3://{BUCKET}/{key_prefix}/{sample}/fastqs/"]
             print(" ".join(cmd), file=sys.stderr)
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, stdout=sys.stderr.buffer)
 
     # run_sfn.py
     cmd = [

@@ -647,7 +647,7 @@ task RunMinion {
     output {
         File primertrimmedbam = "~{sample}.primertrimmed.rg.sorted.bam"
         File primertrimmedbai = "~{sample}.primertrimmed.rg.sorted.bam.bai"
-        File alignedbam = "~{sample}.trimmed.rg.sorted.bam"
+        File alignedbam = "~{sample}.sorted.bam"
         #        File vcf_pass = "~{sample}.merged.pass.vcf"
         File vcf = "~{sample}.merged.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"

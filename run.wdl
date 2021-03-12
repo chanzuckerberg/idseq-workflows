@@ -6,6 +6,7 @@ workflow phylotree{
 		String cut_height = .16
 		String ska_align_p = .9
 		String docker_image_id
+		String outgroup = ""
 	}
 
 	call RunSKA{
@@ -32,6 +33,7 @@ workflow phylotree{
 	call PlotClusterPhylos{
 		input:
 			ska_results = GenerateClusterPhylos.ska_results,
+			outgroup = outgroup,
 			docker_image_id = docker_image_id
 	}
 
@@ -179,7 +181,7 @@ task ComputeClusters{
 	color_list = sns.color_palette("Dark2", 8)
 	long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
 	col_colors = [long_color_list[i] for i in ordered_clusterids]
-	h = sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors)
+	h = sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
 	plt.savefig('clustermap.png', bbox_inches='tight')
 
 	stats["dataframe_shape_0"] = df.shape[0]
@@ -272,6 +274,7 @@ task GenerateClusterPhylos{
 task PlotClusterPhylos{
 	input{
 		File ska_results
+		String outgroup
 		String docker_image_id
 	}
 
@@ -301,7 +304,16 @@ task PlotClusterPhylos{
 			lines = file.readlines()
 			newick = lines[0].strip()
 
+			# set the outgroup to first sample unless otherwise specified
+			# TODO: create a more robust method for picking outgroup...
+			# ... the current method of specifying it will break / error in cases where there
+			# ... is > 1 cluster 
 			wildcard_value = newick.split('.')[0].split('(')[1]
+			if("~{outgroup}" == ""):
+				wildcard_value = newick.split('.')[0].split('(')[1]
+			else:
+				wildcard_value = "~{outgroup}"
+
 			tre0 = toytree.tree(newick, tree_format=0)
 			rtre = tre0.root(wildcard=wildcard_value)
 

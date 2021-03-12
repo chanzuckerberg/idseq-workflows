@@ -639,9 +639,9 @@ task RunMinion {
         artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
         # the .bam file doesn't seem to be sorted when it comes out, so explicitely sorting it here because a 
         # ...sorted .bam is necessary for ComputeStats step downstream
-        samtools sort "~{sample}.trimmed.rg.sorted.bam" > "~{sample}.trimmed.rg.resorted.bam" 
-        mv "~{sample}.trimmed.rg.resorted.bam" "~{sample}.trimmed.rg.sorted.bam"
-        samtools index "~{sample}.trimmed.rg.sorted.bam"  # to create "~{sample}.trimmed.rg.sorted.bai"
+        samtools sort "~{sample}.primertrimmed.rg.sorted.bam" > "~{sample}.primertrimmed.rg.resorted.bam"
+        mv "~{sample}.primertrimmed.rg.resorted.bam" "~{sample}.primertrimmed.rg.sorted.bam"
+        samtools index "~{sample}.primertrimmed.rg.sorted.bam" # to create "~{sample}.primertrimmed.rg.sorted.bai"
     >>>
 
     output {

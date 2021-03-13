@@ -643,13 +643,14 @@ task RunMinion {
         samtools sort "~{sample}.primertrimmed.rg.sorted.bam" > "~{sample}.primertrimmed.rg.resorted.bam"
         mv "~{sample}.primertrimmed.rg.resorted.bam" "~{sample}.primertrimmed.rg.sorted.bam"
         samtools index "~{sample}.primertrimmed.rg.sorted.bam" # to create "~{sample}.primertrimmed.rg.sorted.bai"
+        gunzip "~{sample}.pass.vcf.gz"
     >>>
 
     output {
         File primertrimmedbam = "~{sample}.primertrimmed.rg.sorted.bam"
         File primertrimmedbai = "~{sample}.primertrimmed.rg.sorted.bam.bai"
         File alignedbam = "~{sample}.sorted.bam"
-        #        File vcf_pass = "~{sample}.merged.pass.vcf"
+        File vcf_pass = "~{sample}.pass.vcf"
         File vcf = "~{sample}.merged.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"
     }

@@ -37,7 +37,7 @@ class TestConsensusGenomes(TestCase):
         self.assertEqual(idseq_error["error"], error)
         self.assertEqual(idseq_error["cause"], cause)
 
-    def test_illumina_cg(self):
+    def test_sc2_illumina_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina"]
@@ -49,8 +49,8 @@ class TestConsensusGenomes(TestCase):
         # TODO: track non-determinism (888.xx vs 889.xx coverage)
         self.assertGreater(output_stats["depth_avg"], 888)
         self.assertEqual(output_stats["total_reads"], 187444)
-        self.assertEqual(output_stats["mapped_reads"], 187212)
-        self.assertEqual(output_stats["mapped_paired"], 187151)
+        self.assertEqual(output_stats["mapped_reads"], 187211)
+        self.assertEqual(output_stats["mapped_paired"], 187150)
         self.assertEqual(output_stats["ercc_mapped_reads"], 0)
         self.assertEqual(output_stats["ref_snps"], 7)
         self.assertEqual(output_stats["ref_mnps"], 0)
@@ -60,14 +60,14 @@ class TestConsensusGenomes(TestCase):
             for filename in output:
                 self.assertGreater(os.path.getsize(filename), 0)
 
-    def test_ont_cg_no_reads(self):
+    def test_sc2_ont_cg_no_reads(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "MT007544.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
         self.assertRunFailed(ecm, task="RemoveHost", error="InsufficientReadsError", cause="No reads after RemoveHost")
 
-    def test_ont_cg(self):
+    def test_sc2_ont_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "Ct20K.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
         res = self.run_miniwdl(args)

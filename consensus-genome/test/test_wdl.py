@@ -131,6 +131,15 @@ class TestConsensusGenomes(TestCase):
                 self.assertTrue(filename.endswith(".fastq.gz"))
                 self.assertGreater(os.path.getsize(filename), 0)
 
+    def test_general_cg(self):
+        fastqs_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
+        fastqs_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina", "filter_reads=false"]
+        with self.assertRaises(CalledProcessError) as ecm:
+            self.run_miniwdl(args)
+        self.assertRunFailed(ecm, task="FilterReads", error="InsufficientReadsError",
+                             cause="No reads after FilterReads")
+
     def test_zip_outputs(self):
         res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", f"outputFiles={self.wdl}"])
         with zipfile.ZipFile(res["outputs"]["ZipOutputs.output_zip"]) as fh:

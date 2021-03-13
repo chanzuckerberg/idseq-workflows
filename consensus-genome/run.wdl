@@ -16,7 +16,8 @@ workflow consensus_genome {
         File ercc_fasta = "s3://idseq-public-references/consensus-genome/ercc_sequences.fasta"
         File kraken2_db_tar_gz  # TODO: make this optional; only required if filter_reads == true, even for Illumina
         File primer_bed = "s3://idseq-public-references/consensus-genome/artic_v3_primers.bed" # Only required for Illumina
-        File ref_fasta # Only required for Illumina
+        File? ref_fasta # Only required for Illumina
+        File? ref_accession_id # Only required for Illumina
         File ref_host
         String technology # Input sequencing technology ("Illumina" or "ONT")
 

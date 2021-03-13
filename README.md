@@ -31,3 +31,8 @@ tar -czf full_entero_data.tar.gz full_entero_data
 ```
 
 The optional parameters `cut_height` and `ska_align_p` allow you to specify the dendrogram cut height for pre-clustering and the ska alignment proportion parameters, respectively. The default options are shown in the command above.
+
+
+
+The `/analysis_support` directory contains scripts that have been used to support the experimentation and validation of the phylotree pipeline.
+

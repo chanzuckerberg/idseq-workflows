@@ -55,6 +55,8 @@ class TestConsensusGenomes(TestCase):
         self.assertEqual(output_stats["ref_snps"], 7)
         self.assertEqual(output_stats["ref_mnps"], 0)
         for output_name, output in outputs.items():
+            if output_name in {"consensus_genome.minion_log"}:
+                continue
             if not isinstance(output, list):
                 output = [output]
             for filename in output:

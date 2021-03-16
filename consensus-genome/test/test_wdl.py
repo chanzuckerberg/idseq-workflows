@@ -37,7 +37,7 @@ class TestConsensusGenomes(TestCase):
         self.assertEqual(idseq_error["error"], error)
         self.assertEqual(idseq_error["cause"], cause)
 
-    def test_sc2_illumina_cg(self):
+    def test_sars_cov2_illumina_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina"]
@@ -60,14 +60,14 @@ class TestConsensusGenomes(TestCase):
             for filename in output:
                 self.assertGreater(os.path.getsize(filename), 0)
 
-    def test_sc2_ont_cg_no_reads(self):
+    def test_sars_cov2_ont_cg_no_reads(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "MT007544.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
         self.assertRunFailed(ecm, task="RemoveHost", error="InsufficientReadsError", cause="No reads after RemoveHost")
 
-    def test_sc2_ont_cg(self):
+    def test_sars_cov2_ont_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "Ct20K.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
         res = self.run_miniwdl(args)
@@ -82,8 +82,8 @@ class TestConsensusGenomes(TestCase):
         self.assertEqual(output_stats["mapped_reads"], 1347)
         self.assertEqual(output_stats["mapped_paired"], 0)
         self.assertNotIn("ercc_mapped_reads", output_stats)
-        self.assertEqual(output_stats["ref_snps"], 77)
-        self.assertEqual(output_stats["ref_mnps"], 7)
+        self.assertEqual(output_stats["ref_snps"], 10)
+        self.assertEqual(output_stats["ref_mnps"], 0)
         self.assertEqual(output_stats["n_actg"], 7864)
         self.assertEqual(output_stats["n_missing"], 22039)
         self.assertEqual(output_stats["n_gap"], 0)

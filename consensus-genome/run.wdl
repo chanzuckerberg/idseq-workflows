@@ -37,7 +37,6 @@ workflow consensus_genome {
 
         # Illumina-specific parameters
         # Step parameters
-
         Boolean filter_reads = true
         Boolean trim_adapters = true
 
@@ -45,6 +44,9 @@ workflow consensus_genome {
         Int   ivarQualTreshold  = 20
         Int   minDepth          = 10
 
+        # If no_reads_quast is true, quast runs without considering the raw reads (only considering the reference genome and the consensus.fa).
+        # This reduces the number of informative metrics that quast provides, but speeds up the step since quast is faster when it doesn't consider raw reads.
+        # (Not expected to be used in idseq production)
         String no_reads_quast = false
 
         # assumes about 20 mutations between 2 random samples
@@ -169,6 +171,7 @@ workflow consensus_genome {
             ref_fasta = ref_fasta,                     # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
             no_reads_quast = no_reads_quast,
             technology = technology,
+            primer_schemes = primer_schemes, # Only required for ONT; contains reference genome for ARTIC
             docker_image_id = docker_image_id
     }
 
@@ -179,7 +182,7 @@ workflow consensus_genome {
             cleaned_bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
-            vcf = select_first([CallVariants.variants_ch, RunMinion.vcf]),
+            vcf = select_first([CallVariants.variants_ch, RunMinion.vcf_pass]),
             fastqs = RemoveHost.host_removed_fastqs, # select_all([fastqs_0, fastqs_1]), # FIXME: (AK) verify the correct value for this
             ref_host = ref_host,                       # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta?
             technology = technology,
@@ -237,12 +240,13 @@ workflow consensus_genome {
         File? make_consensus_out_consensus_fa = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa])
         File? quast_out_quast_txt = Quast.quast_txt
         File? quast_out_quast_tsv = Quast.quast_tsv
-        File? call_variants_out_variants_ch = select_first([CallVariants.variants_ch, RunMinion.vcf])
+        File? call_variants_out_variants_ch = select_first([CallVariants.variants_ch, RunMinion.vcf_pass])
         File? compute_stats_out_depths_fig = ComputeStats.depths_fig
         File? compute_stats_out_output_stats = ComputeStats.output_stats
         File? compute_stats_out_sam_depths = ComputeStats.sam_depths
         File? vadr_quality_out = Vadr.vadr_quality    # NOTE: optional, only if we include .vadr step
         File? vadr_alerts_out = Vadr.vadr_alerts      # NOTE: optional, only if we include .vadr step
+        File? minion_log = RunMinion.log
         File zip_outputs_out_output_zip = ZipOutputs.output_zip
     }
 }
@@ -260,8 +264,15 @@ task ValidateInput{
     }
 
     command <<<
-    # Check if the input files from Illumina have reads with length < 300;
+    # TODO: Check if the input files from Illumina have reads with length < 300;
     # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
+    if [[ "~{technology}" == "ONT" ]]; then
+        if [[ ~{length(fastqs)} -gt 1 ]]; then
+            export error=InsufficientReadsError cause="No reads after RemoveHost"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
+            exit 1
+        fi
+    fi
     >>>
 
     output {
@@ -328,9 +339,10 @@ task RemoveHost {
             samtools fastq -@ $CORES -1 "~{prefix}no_host_1.fq.gz" -2 "~{prefix}no_host_2.fq.gz" -0 /dev/null -s /dev/null -n -c 6 -
         fi
 
-        if [ -z $(gzip -cd "~{prefix}no_host_1.fq.gz" | head -c1) ] && ([[ "~{length(fastqs)}" == 1 ]] || [ -z $(gzip -cd "~{prefix}no_host_2.fq.gz" | head -c1) ]); then
+        if [[ -z $(gzip -cd "~{prefix}no_host_1.fq.gz" | head -c1) ]]; then
             set +x
-            >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after RemoveHost\"}"
+            export error=InsufficientReadsError cause="No reads after RemoveHost"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1
         fi
     >>>
@@ -385,7 +397,8 @@ task FilterReads {
     command <<<
         _no_reads_error() {
             set +x
-            >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after FilterReads\"}"
+            export error=InsufficientReadsError cause="No reads after FilterReads"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1
         }
 
@@ -437,8 +450,7 @@ task FilterReads {
             [[ "~{length(fastqs)}" == 1 ]] || mv "${TMPDIR}/paired2.fq.gz" "~{prefix}filtered_2.fq.gz"
         fi
 
-        echo `gzip -cd "~{prefix}filtered_1.fq.gz" | head -c1`
-        if [ -z $(gzip -cd "~{prefix}filtered_1.fq.gz" | head -c1) ] && ([[ "~{length(fastqs)}" == 1 ]] || [ -z $(gzip -cd "~{prefix}filtered_2.fq.gz" | head -c1) ]); then
+        if [[ -z $(gzip -cd "~{prefix}filtered_1.fq.gz" | head -c1) ]]; then
             _no_reads_error
         fi
     >>>
@@ -470,9 +482,10 @@ task TrimReads {
             trim_galore --gzip --fastqc --paired --basename $BASENAME ~{sep=' ' fastqs}
         fi
 
-        if [ -z $(gzip -cd "${BASENAME}_val_1.fq.gz" | head -c1) ] && ([[ "~{length(fastqs)}" == 1 ]] || [ -z $(gzip -cd "${BASENAME}_val_2.fq.gz" | head -c1) ]); then
+        if [[ -z $(gzip -cd "${BASENAME}_val_1.fq.gz" | head -c1) ]]; then
             set +x
-            >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after TrimReads\"}"
+            export error=InsufficientReadsError cause="No reads after TrimReads"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1
         fi
     >>>
@@ -572,7 +585,8 @@ task MakeConsensus {
         # One-line file means just the fasta header with no reads
         if [[ $(wc -l "~{prefix}consensus.fa" | cut -d' ' -f1) == 1 ]]; then
             set +x
-            >&2 echo "{\"wdl_error_message\": true, \"error\": \"InsufficientReadsError\", \"cause\": \"No reads after MakeConsensus\"}"
+            export error=InsufficientReadsError cause="No reads after MakeConsensus"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1
         fi
     >>>
@@ -635,10 +649,9 @@ task RunMinion {
 
         tar -xzf "~{primer_schemes}"
 
-        # note: I think `prefix` and `sample` are interchangeable here, so if we used `prefix = ""` we could avoid the issue downstream
-        #       of sample-specific names in files
+        # TODO: upgrade to artic 1.3.0 when released (https://github.com/artic-network/fieldbioinformatics/pull/70)
         artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
-        # the .bam file doesn't seem to be sorted when it comes out, so explicitely sorting it here because a 
+        # the .bam file doesn't seem to be sorted when it comes out, so explicitly sorting it here because a
         # ...sorted .bam is necessary for ComputeStats step downstream
         samtools sort "~{sample}.primertrimmed.rg.sorted.bam" > "~{sample}.primertrimmed.rg.resorted.bam"
         mv "~{sample}.primertrimmed.rg.resorted.bam" "~{sample}.primertrimmed.rg.sorted.bam"
@@ -653,6 +666,7 @@ task RunMinion {
         File vcf_pass = "~{sample}.pass.vcf"
         File vcf = "~{sample}.merged.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"
+        File log = "~{sample}.minion.log.txt"
     }
 
     runtime {
@@ -668,7 +682,7 @@ task Quast {
         File bam
         Array[File]+ fastqs
         File ref_fasta
-
+        File? primer_schemes
         String no_reads_quast
         String technology
 
@@ -687,19 +701,21 @@ task Quast {
         cp "~{assembly}" .
         export ASSEMBLY=$(basename "~{assembly}")
 
-        # FIXME: make explicit conditional on technology not on # of fastqs
-        if [ $a -ne 0 ]; then
-            if [ ~{no_reads_quast} = true ]; then
+        if [[ $a -ne 0 ]]; then
+            if [[ ~{no_reads_quast} = true ]]; then
                 quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "~{bam}" "~{assembly}"
             else
-                if [[ "~{length(fastqs)}" == 1 ]]; then
-                    if [[ "~{technology}" == "Illumina" ]]; then
+                if [[ "~{technology}" == "Illumina" ]]; then
+                    if [[ "~{length(fastqs)}" == 1 ]]; then
                         quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --single "~{fastqs[0]}"
-                    else  # technology == "ONT"
-                        quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
+                    else
+                        quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" -1 ~{sep=' -2 ' fastqs}
                     fi
-                else
-                    quast.py --min-contig 0 -o quast -r "~{ref_fasta}" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" -1 ~{sep=' -2 ' fastqs}
+                else # technology == "ONT"
+                    # Currently, the ONT branch only supports the ARTIC SARS-CoV-2 SOP, which bundles its own reference genome.
+                    # The ref_fasta parameter is ignored and the bundled genome reference from ARTIC primer_schemes is used instead.
+                    tar -xzf ~{primer_schemes}
+                    quast.py --min-contig 0 -o quast -r "primer_schemes/nCoV-2019/V3/nCoV-2019.reference.fasta" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
                 fi
             fi
         else

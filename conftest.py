@@ -1,4 +1,13 @@
+"""
+This pytest fixture "util" provides an easy way for test cases in WORKFLOWNAME/test directories to
+import the test_util/ helper functions, without manipulating PYTHONPATH or such.
+"""
+
+import sys
+import os
 import pytest
+
+sys.path.append(os.path.dirname(__file__))
 import test_util
 
 

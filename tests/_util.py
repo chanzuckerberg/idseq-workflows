@@ -1,3 +1,10 @@
+"""
+Helper routines for idseq-workflows unit tests: boilerplate for invoking miniwdl locally,
+collecting its results, etc.
+
+Most test cases access these via the 'util' fixture (defined alongside in conftest.py)
+"""
+
 import os
 import subprocess
 import json

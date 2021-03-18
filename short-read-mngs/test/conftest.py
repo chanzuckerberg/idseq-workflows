@@ -13,10 +13,10 @@ def short_read_mngs_bench3_viral_outputs(util):
         "docker_image_id=" + os.environ.get("DOCKER_IMAGE_ID", "idseq-short-read-mngs"),
         "fastqs_0=",
         util.repo_dir()
-        / "tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R1.fastq.gz",
+        / "short-read-mngs/test/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R1.fastq.gz",
         "fastqs_1=",
         util.repo_dir()
-        / "tests/short-read-mngs/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R2.fastq.gz",
+        / "short-read-mngs/test/norg_6__nacc_27__uniform_weight_per_organism__hiseq_reads__v6__R2.fastq.gz",
         "-i",
-        util.repo_dir() / "tests/short-read-mngs/local_test_viral.yml",
+        util.repo_dir() / "short-read-mngs/test/local_test_viral.yml",
     )

@@ -545,7 +545,7 @@ task TrimPrimers {
 
         samtools view -F4 -q "~{samQualThreshold}" -o ivar.bam "~{alignments}"
         samtools index ivar.bam
-        ivar trim -e -i ivar.bam -b "~{primer_bed}" -p ivar.out
+        ivar trim -x 5 -e -i ivar.bam -b "~{primer_bed}" -p ivar.out
         samtools sort -O bam -o "~{prefix}primertrimmed.bam" ivar.out.bam
         samtools index "~{prefix}primertrimmed.bam"
     >>>

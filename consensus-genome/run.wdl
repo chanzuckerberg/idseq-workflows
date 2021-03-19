@@ -73,7 +73,7 @@ workflow consensus_genome {
         call ApplyLengthFilter {
             input:
                 prefix = prefix,
-                fastqs_0 = fastqs_0,
+                fastqs = ValidateInput.validated_fastqs,
                 min_length = min_length,
                 max_length = max_length,
                 docker_image_id = docker_image_id
@@ -235,6 +235,7 @@ workflow consensus_genome {
     }
 
     output {
+        File? debug_out = ValidateInput.debug_out
         Array[File] remove_host_out_host_removed_fastqs = RemoveHost.host_removed_fastqs 
         File? quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out # does not exist for ONT
         Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs # does not exist for ONT
@@ -271,17 +272,50 @@ task ValidateInput{
     command <<<
     # TODO: Check if the input files from Illumina have reads with length < 300;
     # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
+    echo "in validateinput" > output.txt
     if [[ "~{technology}" == "ONT" ]]; then
+        echo "technology ONT" >> output.txt
+        # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
         if [[ ~{length(fastqs)} -gt 1 ]]; then
             export error=InsufficientReadsError cause="No reads after RemoveHost"
             jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1
         fi
+        # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
+        FILE=~{fastqs[0]}
+        echo $FILE >> output.txt
+        #if [[ `file $FILE | grep compressed | wc -l` == 1 ]]; then
+        if [[ "${FILE##*.}" == "gz" ]]; then
+            echo "file was compressed, unzipping here" >> output.txt
+            gunzip $FILE
+            FILE="${FILE%.*}"
+        fi
+        mv $FILE "~{prefix}validated.fastq"
+        gzip "~{prefix}validated.fastq"
+    else  # if technology == Illumina
+        echo "technology Illumina" >> output.txt
+        FILE=~{fastqs[0]}
+        if [[ "${FILE##*.}" == "gz" ]]; then
+            COUNTER=1
+            for i in `echo ~{sep=' ' fastqs}`; do 
+                cp $i "~{prefix}validated_${COUNTER}.fastq.gz"
+                COUNTER=$((COUNTER + 1))
+            done
+        else
+            COUNTER=1
+            for i in `echo ~{sep=' ' fastqs}`; do 
+                cp $i "~{prefix}validated_${COUNTER}.fastq"
+                gzip "~{prefix}validated_${COUNTER}.fastq"
+                COUNTER=$((COUNTER + 1))
+            done
+        fi
     fi
+    
     >>>
 
     output {
-        Array[File]+ validated_fastqs = fastqs
+        Array[File]+ validated_fastqs = glob("~{prefix}validated*.fastq.gz")
+        File debug_out = "output.txt"
     }
 
     runtime {
@@ -293,7 +327,7 @@ task ValidateInput{
 task ApplyLengthFilter {
     input {
         String prefix
-        File fastqs_0
+        Array[File]+ fastqs
         Int min_length
         Int max_length
 
@@ -301,7 +335,7 @@ task ApplyLengthFilter {
     }
 
     command <<<
-        artic guppyplex --min-length ~{min_length} --max-length ~{max_length} --directory $(dirname "~{fastqs_0}") --output filtered.fastq
+        artic guppyplex --min-length ~{min_length} --max-length ~{max_length} --directory $(dirname "~{fastqs[0]}") --output filtered.fastq
     >>>
 
     output {

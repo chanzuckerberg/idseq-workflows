@@ -290,7 +290,7 @@ task ValidateInput{
             gunzip $FILE
             FILE="${FILE%.*}"
         fi
-        mv $FILE "~{prefix}validated.fastq"
+        cp $FILE "~{prefix}validated.fastq"
         gzip "~{prefix}validated.fastq"
     else  # if technology == Illumina
         echo "technology Illumina" >> output.txt
@@ -947,6 +947,16 @@ task Vadr {
         RAM_MB=$(free -m | head -2 | tail -1 | awk '{print $2}')
         # run VADR
         v-annotate.pl ~{vadr_options} --mxsize $RAM_MB "~{assembly}" "vadr-output"
+
+        # in validation, some samples fail with error: ERROR in cmalign_run(), cmalign failed in a bad way...
+        # ...see vadr-output/vadr-output.vadr.NC_045512.align.r1.s0.stdout for error output
+        if [ ! -e "vadr-output/vadr-output.vadr.sqc" ]; then
+            set +x
+            export error=InsufficientReadsError cause="VADR failed to run"
+            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
+            exit 1
+        fi
+
     >>>
 
     output {

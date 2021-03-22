@@ -235,7 +235,6 @@ workflow consensus_genome {
     }
 
     output {
-        File? debug_out = ValidateInput.debug_out
         Array[File] remove_host_out_host_removed_fastqs = RemoveHost.host_removed_fastqs 
         File? quantify_erccs_out_ercc_out = QuantifyERCCs.ercc_out # does not exist for ONT
         Array[File]+? filter_reads_out_filtered_fastqs = FilterReads.filtered_fastqs # does not exist for ONT
@@ -272,9 +271,7 @@ task ValidateInput{
     command <<<
     # TODO: Check if the input files from Illumina have reads with length < 300;
     # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
-    echo "in validateinput" > output.txt
     if [[ "~{technology}" == "ONT" ]]; then
-        echo "technology ONT" >> output.txt
         # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
         if [[ ~{length(fastqs)} -gt 1 ]]; then
             export error=InsufficientReadsError cause="No reads after RemoveHost"
@@ -283,17 +280,14 @@ task ValidateInput{
         fi
         # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
         FILE=~{fastqs[0]}
-        echo $FILE >> output.txt
         #if [[ `file $FILE | grep compressed | wc -l` == 1 ]]; then
         if [[ "${FILE##*.}" == "gz" ]]; then
-            echo "file was compressed, unzipping here" >> output.txt
             gunzip $FILE
             FILE="${FILE%.*}"
         fi
         cp $FILE "~{prefix}validated.fastq"
         gzip "~{prefix}validated.fastq"
     else  # if technology == Illumina
-        echo "technology Illumina" >> output.txt
         FILE=~{fastqs[0]}
         if [[ "${FILE##*.}" == "gz" ]]; then
             COUNTER=1
@@ -315,7 +309,6 @@ task ValidateInput{
 
     output {
         Array[File]+ validated_fastqs = glob("~{prefix}validated*.fastq.gz")
-        File debug_out = "output.txt"
     }
 
     runtime {

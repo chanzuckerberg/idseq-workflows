@@ -284,20 +284,20 @@ task ValidateInput{
             gunzip "$FILE"
             FILE="${FILE%.*}"
         fi
-        mv "$FILE" "~{prefix}validated.fastq"
+        cp "$FILE" "~{prefix}validated.fastq"
         gzip "~{prefix}validated.fastq"
     else  # if technology == Illumina
         FILE=~{fastqs[0]}
         if [[ "${FILE##*.}" == "gz" ]]; then
             COUNTER=1
             for i in `echo ~{sep=' ' fastqs}`; do 
-                mv $i "~{prefix}validated_${COUNTER}.fastq.gz"
+                cp $i "~{prefix}validated_${COUNTER}.fastq.gz"
                 COUNTER=$((COUNTER + 1))
             done
         else
             COUNTER=1
             for i in `echo ~{sep=' ' fastqs}`; do 
-                mv $i "~{prefix}validated_${COUNTER}.fastq"
+                cp $i "~{prefix}validated_${COUNTER}.fastq"
                 gzip "~{prefix}validated_${COUNTER}.fastq"
                 COUNTER=$((COUNTER + 1))
             done

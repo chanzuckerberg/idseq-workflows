@@ -104,14 +104,13 @@ class TestConsensusGenomes(TestCase):
     #       converted to .fastq.gz formats to ensure they are read by guppyplex 
     #       in ApplyLengthFilter 
     def test_sars_cov2_ont_cg_input_file_format(self):
-        fastqs_0 = os.path.join(os.path.dirname(__file__), "Ct20K.fq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
-        res = self.run_miniwdl(args)
+        fastqs = os.path.join(os.path.dirname(__file__), "Ct20K.fq.gz")
+        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", f"technology=ONT"])
         outputs = res["outputs"]
-        with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
-            output_stats = json.load(fh)
-        self.assertEqual(output_stats["sample_name"], "test_sample")
-        self.assertGreater(output_stats["depth_avg"], 13)
+        for output_name, output in outputs.items():
+            for filename in output:
+                self.assertTrue(filename.endswith(".fastq.gz"))
+                self.assertGreater(os.path.getsize(filename), 0)
 
     def test_zip_outputs(self):
         res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", f"outputFiles={self.wdl}"])

@@ -119,12 +119,13 @@ class TestConsensusGenomes(TestCase):
             for filename in output:
                 self.assertGreater(os.path.getsize(filename), 0)
 
-    # note: attempted unit test to test that .fq.gz inputs are correctly 
-    #       converted to .fastq.gz formats to ensure they are read by guppyplex 
-    #       in ApplyLengthFilter 
     def test_sars_cov2_ont_cg_input_file_format(self):
+        """
+        Tests that .fq.gz inputs are correctly converted to .fastq.gz formats to ensure they are read by guppyplex in
+        ApplyLengthFilter
+        """
         fastqs = os.path.join(os.path.dirname(__file__), "Ct20K.fq.gz")
-        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", f"technology=ONT"])
+        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", "technology=ONT"])
         outputs = res["outputs"]
         for output_name, output in outputs.items():
             for filename in output:
@@ -134,7 +135,8 @@ class TestConsensusGenomes(TestCase):
     def test_general_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina", "filter_reads=false"]
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
+                "filter_reads=false", "ref_accession_id=MF965207.1"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
         self.assertRunFailed(ecm, task="FilterReads", error="InsufficientReadsError",
@@ -144,3 +146,9 @@ class TestConsensusGenomes(TestCase):
         res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", f"outputFiles={self.wdl}"])
         with zipfile.ZipFile(res["outputs"]["ZipOutputs.output_zip"]) as fh:
             self.assertEqual(fh.namelist(), ["run.wdl"])
+
+    def test_fetch_sequence_by_accession_id(self):
+        res = self.run_miniwdl(task="FetchSequenceByAccessionId", args=["accession_id=NC_000913.3"])
+        with open(res["outputs"]["FetchSequenceByAccessionId.sequence_fa"]) as fh:
+            self.assertEqual(fh.readline().strip(), ">NC_000913.3")
+            self.assertTrue(fh.readline().startswith("AGCTTTTCATTCTGACTGCAACGGGCAATATGTCTCTG"))

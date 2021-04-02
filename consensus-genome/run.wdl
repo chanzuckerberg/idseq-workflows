@@ -4,7 +4,7 @@
 # - ARTIC Oxford Nanopore MinION SARS-CoV-2 SOP, https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html
 # With enhancements and additional modules by the CZI Infectious Disease team
 
-version 1.0
+version 1.1
 
 workflow consensus_genome {
     input {
@@ -70,6 +70,12 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
+    if (ref_accession_id != None) {
+        call FetchSequenceByAccessionId {
+            input: accession_id = ref_accession_id
+        }
+    }
+
     if (technology == "ONT") {
         call ApplyLengthFilter {
             input:
@@ -103,7 +109,7 @@ workflow consensus_genome {
                 input:
                     prefix = prefix,
                     fastqs = RemoveHost.host_removed_fastqs,
-                    ref_fasta = ref_fasta,
+                    ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                     kraken2_db_tar_gz = kraken2_db_tar_gz,
                     docker_image_id = docker_image_id
             }
@@ -122,7 +128,7 @@ workflow consensus_genome {
                 # use trimReads output if we ran it; otherwise fall back to FilterReads output if we ran it; 
                 # otherwise fall back to RemoveHost output
                 fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
-                ref_fasta = ref_fasta,
+                ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 docker_image_id = docker_image_id
         }
         call TrimPrimers {
@@ -147,7 +153,7 @@ workflow consensus_genome {
             input:
                 prefix = prefix,
                 call_variants_bam = TrimPrimers.trimmed_bam_ch,
-                ref_fasta = ref_fasta,
+                ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 bcftoolsCallTheta = bcftoolsCallTheta,
                 minDepth = minDepth,
                 docker_image_id = docker_image_id
@@ -174,7 +180,7 @@ workflow consensus_genome {
             bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
             # use trimReads output if we ran it; otherwise fall back to FilterReads output, or RemoveHost for ONT
             fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
-            ref_fasta = ref_fasta,                     # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
+            ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]), # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
             no_reads_quast = no_reads_quast,
             technology = technology,
             primer_schemes = primer_schemes, # Only required for ONT; contains reference genome for ARTIC
@@ -314,7 +320,25 @@ task ValidateInput{
     runtime {
         docker: docker_image_id
     }
+}
 
+task FetchSequenceByAccessionId {
+    input {
+        String accession_id
+        String docker_image_id
+    }
+
+    command <<<
+    taxoniq get_from_s3 --accession-id "~{accession_id}" > sequence.fa
+    >>>
+
+    output {
+        File sequence_fa = "sequence.fa"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
 }
 
 task ApplyLengthFilter {

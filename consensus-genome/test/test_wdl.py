@@ -12,6 +12,7 @@ class TestConsensusGenomes(TestCase):
     wdl = os.path.join(os.path.dirname(__file__), "..", "run.wdl")
     with open(os.path.join(os.path.dirname(__file__), "local_test.yml")) as fh:
         common_inputs = yaml.safe_load(fh)
+    sc2_ref_fasta = "s3://idseq-public-references/consensus-genome/MN908947.3.fa"
 
     def run_miniwdl(self, args, task=None, docker_image_id=os.environ["DOCKER_IMAGE_ID"]):
         cmd = ["miniwdl", "run", self.wdl] + args + [f"docker_image_id={docker_image_id}"]
@@ -40,7 +41,8 @@ class TestConsensusGenomes(TestCase):
     def test_sars_cov2_illumina_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2.fastq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina"]
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
+                f"ref_fasta={self.sc2_ref_fasta}"]
         res = self.run_miniwdl(args)
         outputs = res["outputs"]
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
@@ -66,7 +68,9 @@ class TestConsensusGenomes(TestCase):
     def test_sars_cov2_illumina_cg_snap(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "snap_top10k_R1_001.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "snap_top10k_R1_001.fastq.gz")
-        args = ["sample=test_snap", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina", "primer_bed=s3://idseq-public-references/consensus-genome/snap_primers.bed"]
+        args = ["sample=test_snap", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
+                "primer_bed=s3://idseq-public-references/consensus-genome/snap_primers.bed",
+                f"ref_fasta={self.sc2_ref_fasta}"]
         res = self.run_miniwdl(args)
         outputs = res["outputs"]
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
@@ -83,14 +87,14 @@ class TestConsensusGenomes(TestCase):
 
     def test_sars_cov2_ont_cg_no_reads(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "MT007544.fastq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
         self.assertRunFailed(ecm, task="RemoveHost", error="InsufficientReadsError", cause="No reads after RemoveHost")
 
     def test_sars_cov2_ont_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "Ct20K.fastq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT"]
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]
         res = self.run_miniwdl(args)
         outputs = res["outputs"]
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
@@ -125,9 +129,9 @@ class TestConsensusGenomes(TestCase):
         ApplyLengthFilter
         """
         fastqs = os.path.join(os.path.dirname(__file__), "Ct20K.fq.gz")
-        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", "technology=ONT"])
-        outputs = res["outputs"]
-        for output_name, output in outputs.items():
+        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", "technology=ONT",
+                                                           f"ref_fasta={self.sc2_ref_fasta}"])
+        for output_name, output in res["outputs"].items():
             for filename in output:
                 self.assertTrue(filename.endswith(".fastq.gz"))
                 self.assertGreater(os.path.getsize(filename), 0)
@@ -137,10 +141,36 @@ class TestConsensusGenomes(TestCase):
         fastqs_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
                 "filter_reads=false", "ref_accession_id=MF965207.1"]
+
+        res = self.run_miniwdl(args)
+        for output_name, output in res["outputs"].items():
+            if isinstance(output, str):
+                self.assertGreater(os.path.getsize(output), 0)
+            elif output:
+                for path in output:
+                    self.assertGreater(os.path.getsize(path), 0)
+        with open(res["outputs"]["consensus_genome.compute_stats_out_output_stats"]) as fh:
+            output_stats = json.load(fh)
+        self.assertEqual(output_stats["sample_name"], "test_sample")
+        self.assertGreater(output_stats["depth_avg"], 510)
+        self.assertGreaterEqual(output_stats["depth_frac_above_10x"], 1.0)
+        self.assertGreaterEqual(output_stats["depth_frac_above_100x"], 0.99)
+        self.assertEqual(output_stats["total_reads"], 100000)
+        self.assertEqual(output_stats["mapped_reads"], 55684)
+        self.assertEqual(output_stats["mapped_paired"], 55676)
+        self.assertEqual(output_stats["ercc_mapped_reads"], 0)
+        self.assertEqual(output_stats["ref_snps"], 0)
+        self.assertEqual(output_stats["ref_mnps"], 0)
+        self.assertEqual(output_stats["n_actg"], 15312)
+        self.assertEqual(output_stats["n_missing"], 0)
+        self.assertEqual(output_stats["n_gap"], 0)
+        self.assertEqual(output_stats["n_ambiguous"], 4)
+
+        args.append(f"ref_fasta={self.sc2_ref_fasta}")
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
-        self.assertRunFailed(ecm, task="FilterReads", error="InsufficientReadsError",
-                             cause="No reads after FilterReads")
+        self.assertRunFailed(ecm, task="MakeConsensus", error="InsufficientReadsError",
+                             cause="No reads after MakeConsensus")
 
     def test_zip_outputs(self):
         res = self.run_miniwdl(task="ZipOutputs", args=["prefix=test", f"outputFiles={self.wdl}"])

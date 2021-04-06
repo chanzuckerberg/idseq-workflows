@@ -17,7 +17,7 @@ workflow consensus_genome {
         File kraken2_db_tar_gz  # TODO: make this optional; only required if filter_reads == true, even for Illumina
         File primer_bed = "s3://idseq-public-references/consensus-genome/artic_v3_primers.bed" # Only required for Illumina
         File? ref_fasta # Only required for Illumina
-        File? ref_accession_id # Only required for Illumina
+        String? ref_accession_id # Only required for Illumina
         File ref_host
         String technology # Input sequencing technology ("Illumina" or "ONT")
 
@@ -72,7 +72,8 @@ workflow consensus_genome {
 
     if (ref_accession_id != None) {
         call FetchSequenceByAccessionId {
-            input: accession_id = ref_accession_id
+            input: accession_id = select_first([ref_accession_id]),
+            docker_image_id = docker_image_id
         }
     }
 

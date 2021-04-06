@@ -16,10 +16,12 @@ workflow consensus_genome {
         File ercc_fasta = "s3://idseq-public-references/consensus-genome/ercc_sequences.fasta"
         File kraken2_db_tar_gz  # TODO: make this optional; only required if filter_reads == true, even for Illumina
         File primer_bed = "s3://idseq-public-references/consensus-genome/artic_v3_primers.bed" # Only required for Illumina
-        File? ref_fasta # Only required for Illumina
-        String? ref_accession_id # Only required for Illumina
+
+        File? ref_fasta # Only required for Illumina (ONT SC2 reference is built into ARTIC); takes precedence over ref_accession_id
+        String? ref_accession_id # Only required for Illumina; has no effect if ref_fasta is set
+
         File ref_host
-        String technology # Input sequencing technology ("Illumina" or "ONT")
+        String technology # Input sequencing technology ("Illumina" or "ONT"); ONT only works with SC2 samples (SC2 reference is built into ARTIC)
 
         # Sample name: include in tags and files
         String sample
@@ -330,7 +332,7 @@ task FetchSequenceByAccessionId {
     }
 
     command <<<
-    taxoniq get_from_s3 --accession-id "~{accession_id}" > sequence.fa
+        taxoniq get_from_s3 --accession-id "~{accession_id}" > sequence.fa
     >>>
 
     output {

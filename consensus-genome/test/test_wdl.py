@@ -56,7 +56,7 @@ class TestConsensusGenomes(TestCase):
         self.assertEqual(output_stats["ref_snps"], 7)
         self.assertEqual(output_stats["ref_mnps"], 0)
         for output_name, output in outputs.items():
-            if output_name in {"consensus_genome.minion_log"}:
+            if output_name in {"consensus_genome.minion_log", "consensus_genome.vadr_errors"}:
                 continue
             if not isinstance(output, list):
                 output = [output]
@@ -135,7 +135,8 @@ class TestConsensusGenomes(TestCase):
         for output_name, output in outputs.items():
             if output_name in {"consensus_genome.quantify_erccs_out_ercc_out",
                                "consensus_genome.filter_reads_out_filtered_fastqs",
-                               "consensus_genome.trim_reads_out_trimmed_fastqs"}:
+                               "consensus_genome.trim_reads_out_trimmed_fastqs",
+                               "consensus_genome.vadr_errors"}:
                 continue
             if not isinstance(output, list):
                 output = [output]

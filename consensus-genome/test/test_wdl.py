@@ -81,6 +81,9 @@ class TestConsensusGenomes(TestCase):
         res = self.run_miniwdl(args=args)
         self.assertIn("consensus_genome.vadr_alerts_out", res["outputs"])
         self.assertIn("consensus_genome.vadr_alerts_out", res["outputs"])
+        print(res["outputs"])
+        print(res["outputs"]["consensus_genome.vadr_errors"])
+        self.assertEqual(res["outputs"]["consensus_genome.vadr_errors"], None)
         
     # test the depths associated with SNAP ivar trim -x 5 
     def test_sars_cov2_illumina_cg_snap(self):

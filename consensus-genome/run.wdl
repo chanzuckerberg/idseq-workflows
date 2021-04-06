@@ -952,21 +952,12 @@ task Vadr {
             # run VADR
             v-annotate.pl ~{vadr_options} --mxsize $RAM_MB "~{assembly}" "vadr-output"        
         } || {
+            # in validation, some samples fail with errors: 
+            # ... ERROR in cmalign_run(), cmalign failed in a bad way...
+            # ... ERROR, at least one sequence name exceeds the maximum GenBank allowed length of 50...
+            # we want to capture VADR errors in outputs but these should not cause the workflow to fail entirely
             grep "ERROR" vadr-output/vadr-output.vadr.log > vadr_error.txt
-            echo "VADR encountered an error, handle it below."
         }
-
-        # in validation, some samples fail with errors: 
-        # ... ERROR in cmalign_run(), cmalign failed in a bad way...
-        # ... ERROR, at least one sequence name exceeds the maximum GenBank allowed length of 50...
-        # we want to capture VADR errors in JSON outputs but these should not cause the workflow to fail entirely
-        #if [ `grep "\[fail\]" vadr-output/vadr-output.vadr.log | wc -l` -ge 1 ]; then
-        #    set +x
-        #    export error=VADRError cause=`grep "ERROR" vadr-output/vadr-output.vadr.log`
-        #    jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-        #    exit 1
-        #fi
-
     >>>
 
     output {

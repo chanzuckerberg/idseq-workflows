@@ -228,7 +228,8 @@ workflow consensus_genome {
                     CallVariants.variants_ch,
                     RunMinion.vcf,
                     Vadr.vadr_quality,                 # NOTE: optional, only if we include .vadr step - filename equivalent between Illumina and ONT
-                    Vadr.vadr_alerts                   # NOTE: optional, only if we include .vadr step - filename equivalent between Illumina and ONT
+                    Vadr.vadr_alerts,                   # NOTE: optional, only if we include .vadr step - filename equivalent between Illumina and ONT
+                    Vadr.vadr_errors
                 ])
             ])),
             docker_image_id = docker_image_id
@@ -251,6 +252,7 @@ workflow consensus_genome {
         File? compute_stats_out_sam_depths = ComputeStats.sam_depths
         File? vadr_quality_out = Vadr.vadr_quality    # NOTE: optional, only if we include .vadr step
         File? vadr_alerts_out = Vadr.vadr_alerts      # NOTE: optional, only if we include .vadr step
+        File? vadr_errors = Vadr.vadr_errors          # NOTE: optional, only if vadr runs and fails
         File? minion_log = RunMinion.log
         File zip_outputs_out_output_zip = ZipOutputs.output_zip
     }
@@ -950,6 +952,7 @@ task Vadr {
             # run VADR
             v-annotate.pl ~{vadr_options} --mxsize $RAM_MB "~{assembly}" "vadr-output"        
         } || {
+            grep "ERROR" vadr-output/vadr-output.vadr.log > vadr_error.txt
             echo "VADR encountered an error, handle it below."
         }
 
@@ -957,18 +960,19 @@ task Vadr {
         # ... ERROR in cmalign_run(), cmalign failed in a bad way...
         # ... ERROR, at least one sequence name exceeds the maximum GenBank allowed length of 50...
         # we want to capture VADR errors in JSON outputs but these should not cause the workflow to fail entirely
-        if [ `grep "\[fail\]" vadr-output/vadr-output.vadr.log | wc -l` -ge 1 ]; then
-            set +x
-            export error=VADRError cause=`grep "ERROR" vadr-output/vadr-output.vadr.log`
-            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-            exit 1
-        fi
+        #if [ `grep "\[fail\]" vadr-output/vadr-output.vadr.log | wc -l` -ge 1 ]; then
+        #    set +x
+        #    export error=VADRError cause=`grep "ERROR" vadr-output/vadr-output.vadr.log`
+        #    jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
+        #    exit 1
+        #fi
 
     >>>
 
     output {
-        File vadr_quality = "vadr-output/vadr-output.vadr.sqc"
-        File vadr_alerts = "vadr-output/vadr-output.vadr.alt.list"
+        File? vadr_errors = "vadr_error.txt"
+        File? vadr_quality = "vadr-output/vadr-output.vadr.sqc"
+        File? vadr_alerts = "vadr-output/vadr-output.vadr.alt.list"
     }
 
     runtime {

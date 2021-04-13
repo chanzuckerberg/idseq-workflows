@@ -153,7 +153,7 @@ class TestConsensusGenomes(WDLTestCase):
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
         self.assertGreater(output_stats["depth_avg"], 6)
-        self.assertGreater(output_stats["depth_avg"], 7)
+        self.assertLess(output_stats["depth_avg"], 7)
 
     def test_sars_cov2_ont_cg_input_file_format(self):
         """

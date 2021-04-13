@@ -3,6 +3,7 @@ import json
 import zipfile
 import gzip
 import tempfile
+from subprocess import CalledProcessError
 
 import yaml
 from test_util import WDLTestCase

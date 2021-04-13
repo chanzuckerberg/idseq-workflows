@@ -87,10 +87,9 @@ class WDLTestCase(unittest.TestCase):
         res = check_output(cmd)
         return json.loads(res)
 
-    def assertRunFailed(self, ecm, task, error, cause, error_without_failure = False):
+    def assertRunFailed(self, ecm, task, error, cause):
         miniwdl_error = json.loads(ecm.exception.output)
-        if not error_without_failure:
-            self.assertEqual(miniwdl_error["error"], "RunFailed")
+        self.assertEqual(miniwdl_error["error"], "RunFailed")
         self.assertEqual(miniwdl_error["cause"]["error"], "CommandFailed")
         self.assertEqual(miniwdl_error["cause"]["run"], f"call-{task}")
         with open(miniwdl_error["cause"]["stderr_file"]) as fh:

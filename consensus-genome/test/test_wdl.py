@@ -6,6 +6,8 @@ import tempfile
 from subprocess import CalledProcessError
 
 import yaml
+import sys
+sys.path.insert(1, '../../')
 from test_util import WDLTestCase
 
 
@@ -88,6 +90,24 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertGreater(output_stats["depth_frac_above_10x"], 0.28)
         self.assertGreater(output_stats["depth_frac_above_25x"], 0.03)
         self.assertGreater(output_stats["depth_frac_above_25x"], 0.03)
+
+    # test the depths associated with tailedseq protocol, ivar trim -x 2
+    def test_sars_cov2_illumina_cg_tailedseq(self):
+        fastqs_0 = os.path.join(os.path.dirname(__file__), "tailedseq_top10k_R1.fastq.gz")
+        fastqs_1 = os.path.join(os.path.dirname(__file__), "tailedseq_top10k_R1.fastq.gz")
+        args = ["sample=test_tailedseq", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
+                "primer_bed=s3://idseq-public-references/consensus-genome/artic_v3_short_275_primers.bed",
+                f"ref_fasta={self.sc2_ref_fasta}"]
+        res = self.run_miniwdl(args)
+        outputs = res["outputs"]
+        with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
+            output_stats = json.load(fh)
+        self.assertEqual(output_stats["sample_name"], "test_tailedseq")
+        self.assertGreater(output_stats["depth_avg"], 71)
+        self.assertLess(output_stats["depth_avg"], 72)
+        self.assertGreater(output_stats["n_actg"], 3.9)
+        self.assertEqual(output_stats["n_actg"], 18655)
+        self.assertEqual(output_stats["n_missing"], 11077)
 
     def test_sars_cov2_ont_cg_no_reads(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "MT007544.fastq.gz")

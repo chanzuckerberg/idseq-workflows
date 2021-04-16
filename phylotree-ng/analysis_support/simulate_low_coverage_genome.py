@@ -27,31 +27,31 @@ existing_coverage = 1 - nt_counts['N']/len_of_seq
 
 
 for simulated_coverage in [.90, .75, .5, .25]:
-	print(simulated_coverage)
-	delta_to_simulated_coverage = existing_coverage - simulated_coverage
-	ns_to_create_sim_cov = round(delta_to_simulated_coverage*len_of_seq)
-	print(ns_to_create_sim_cov)
-	start_pos = randint(0,(len_of_seq-ns_to_create_sim_cov-nt_counts['N']))
+    print(simulated_coverage)
+    delta_to_simulated_coverage = existing_coverage - simulated_coverage
+    ns_to_create_sim_cov = round(delta_to_simulated_coverage*len_of_seq)
+    print(ns_to_create_sim_cov)
+    start_pos = randint(0,(len_of_seq-ns_to_create_sim_cov-nt_counts['N']))
 
-	print('desired simulated cov: ' + str(simulated_coverage))
-	print('existing cov: ' + str(existing_coverage))
+    print('desired simulated cov: ' + str(simulated_coverage))
+    print('existing cov: ' + str(existing_coverage))
 
-	# generate new sequence with appropriate number of Ns
-	new_sequence = list(str(this_sequence))
-	i = 0
-	position = 0
-	while i < ns_to_create_sim_cov:
-	    position += 1
-	    if new_sequence[start_pos + position] == 'N':
-	        continue
-	    else:
-	        new_sequence[start_pos + position] = 'N'
-	        i += 1
-	        
-	final_coverage = 1 - Counter(new_sequence)['N']/len_of_seq
-	print("final coverage: " + str(final_coverage))
+    # generate new sequence with appropriate number of Ns
+    new_sequence = list(str(this_sequence))
+    i = 0
+    position = 0
+    while i < ns_to_create_sim_cov:
+        position += 1
+        if new_sequence[start_pos + position] == 'N':
+            continue
+        else:
+            new_sequence[start_pos + position] = 'N'
+            i += 1
 
-	output_filename = '.'.join(input_filename.split('.')[:-1]) + '_' + str(int(simulated_coverage*100)) + '.fasta'
-	with open(output_filename, 'w') as the_file:
-	    the_file.write('>'+str(records[0].id))
-	    the_file.write(''.join(new_sequence))
+    final_coverage = 1 - Counter(new_sequence)['N']/len_of_seq
+    print("final coverage: " + str(final_coverage))
+
+    output_filename = '.'.join(input_filename.split('.')[:-1]) + '_' + str(int(simulated_coverage*100)) + '.fasta'
+    with open(output_filename, 'w') as the_file:
+        the_file.write('>'+str(records[0].id))
+        the_file.write(''.join(new_sequence))

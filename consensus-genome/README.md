@@ -32,7 +32,7 @@ Where:
 * `consensus-genome/run.wdl` is the WDL for the consensus genome sequencing workflow.
 * `fastqs_0` and `fastqs_1` are the pair of FASTQ files. The ones referred to are small files to run locally.
 * `sample` is the name to use where referencing the sample in the output files.
-* `technology` is the sequencing technoloty (options = Illumina or ONT)
+* `technology` is the sequencing technology (options = Illumina or ONT)
 * `local_test.yml` supplies boilerplate workflow inputs, such as the S3 paths for the reference databases. For local run purposes, we use lighter references:
   * The human database for host removal only contains chromosome 1.
   * The kraken db used locally only has coronavirus sequences.

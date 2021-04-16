@@ -25,6 +25,11 @@ RUN apt-get -qq update && apt-get -qq -y install \
   python3-wheel \
   python3-yaml \
   python3-dateutil \
+  python3-numpy \
+  python3-scipy \
+  python3-matplotlib \
+  python3-pandas \
+  python3-seaborn \
   build-essential \
   && locale-gen en_US.UTF-8
 
@@ -34,7 +39,9 @@ RUN pip3 install taxoniq==0.5.2 && \
     https://github.com/chanzuckerberg/taxoniq/releases/download/v0.5.2/ncbi_genbank_accession_lengths-2021.3.25-py3-none-any.whl \
     https://github.com/chanzuckerberg/taxoniq/releases/download/v0.5.2/ncbi_genbank_accession_offsets-2021.3.25-py3-none-any.whl
 
-RUN curl -L -O https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz
-RUN tar -xvzf v1.0.tar.gz
-RUN make -C SKA-1.0
-RUN make -C SKA-1.0 install
+RUN curl -L -O https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz && \
+    tar -xvzf v1.0.tar.gz && \
+    make -C SKA-1.0 && \
+    make -C SKA-1.0 install
+
+# iqtree toytree toyplot

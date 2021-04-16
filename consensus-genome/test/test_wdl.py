@@ -191,7 +191,7 @@ class TestConsensusGenomes(WDLTestCase):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
-                "filter_reads=false", "ref_accession_id=MF965207.1"]
+                "filter_reads=false", "ref_accession_id=MF965207.1", "primer_bed=s3://idseq-public-references/consensus-genome/na_primers.bed"]
 
         res = self.run_miniwdl(args)
         for output_name, output in res["outputs"].items():
@@ -204,16 +204,16 @@ class TestConsensusGenomes(WDLTestCase):
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
         self.assertGreater(output_stats["depth_avg"], 510)
-        self.assertGreaterEqual(output_stats["depth_frac_above_10x"], 1.0)
+        self.assertGreaterEqual(output_stats["depth_frac_above_10x"], 0.99)
         self.assertGreaterEqual(output_stats["depth_frac_above_100x"], 0.99)
         self.assertEqual(output_stats["total_reads"], 100000)
-        self.assertEqual(output_stats["mapped_reads"], 55684)
-        self.assertEqual(output_stats["mapped_paired"], 55676)
+        self.assertEqual(output_stats["mapped_reads"], 55688)
+        self.assertEqual(output_stats["mapped_paired"], 55680)
         self.assertEqual(output_stats["ercc_mapped_reads"], 0)
         self.assertEqual(output_stats["ref_snps"], 0)
         self.assertEqual(output_stats["ref_mnps"], 0)
-        self.assertEqual(output_stats["n_actg"], 15312)
-        self.assertEqual(output_stats["n_missing"], 0)
+        self.assertEqual(output_stats["n_actg"], 15311)
+        self.assertEqual(output_stats["n_missing"], 1)
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 4)
 

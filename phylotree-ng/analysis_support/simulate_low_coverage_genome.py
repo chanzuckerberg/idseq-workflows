@@ -1,20 +1,19 @@
 '''
 This is a quick script that runs as follows:
-python3 simulate_low_coverage_genome.py KY075937.fasta 
+python3 simulate_low_coverage_genome.py KY075937.fasta
 
-It takes in a reference genome file and simulates reference genomes with Ns 
-inserted to reach the coverage breadths specified within the script 
+It takes in a reference genome file and simulates reference genomes with Ns
+inserted to reach the coverage breadths specified within the script
 (currently .9, .75, .5, .25)
 '''
 
 from Bio import SeqIO
 from collections import Counter
-from numpy import random
 from random import randint
 import sys
 
-input_filename = sys.argv[1] 
-#simulated_coverage = float(sys.argv[2]) 
+input_filename = sys.argv[1]
+# simulated_coverage = float(sys.argv[2])
 
 records = []
 for r in SeqIO.parse(input_filename, "fasta"):
@@ -31,7 +30,7 @@ for simulated_coverage in [.90, .75, .5, .25]:
     delta_to_simulated_coverage = existing_coverage - simulated_coverage
     ns_to_create_sim_cov = round(delta_to_simulated_coverage*len_of_seq)
     print(ns_to_create_sim_cov)
-    start_pos = randint(0,(len_of_seq-ns_to_create_sim_cov-nt_counts['N']))
+    start_pos = randint(0, (len_of_seq-ns_to_create_sim_cov-nt_counts['N']))
 
     print('desired simulated cov: ' + str(simulated_coverage))
     print('existing cov: ' + str(existing_coverage))

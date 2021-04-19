@@ -6,8 +6,6 @@ import tempfile
 from subprocess import CalledProcessError
 
 import yaml
-import sys
-sys.path.insert(1, '../../')
 from test_util import WDLTestCase
 
 
@@ -191,7 +189,8 @@ class TestConsensusGenomes(WDLTestCase):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
-                "filter_reads=false", "ref_accession_id=MF965207.1", "primer_bed=s3://idseq-public-references/consensus-genome/na_primers.bed"]
+                "filter_reads=false", "ref_accession_id=MF965207.1",
+                "primer_bed=s3://idseq-public-references/consensus-genome/na_primers.bed"]
 
         res = self.run_miniwdl(args)
         for output_name, output in res["outputs"].items():

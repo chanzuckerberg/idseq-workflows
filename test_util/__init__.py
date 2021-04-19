@@ -78,7 +78,7 @@ class WDLTestCase(unittest.TestCase):
             cmd += ["--task", task]
         else:
             tf = tempfile.NamedTemporaryFile(prefix="idseq-workflows-test-", suffix=".json", mode="wt")
-            json.dump(self.common_inputs, tf)
+            json.dump({k: v for k, v in self.common_inputs.items() if k+'=' not in ''.join(cmd)}, tf)
             tf.flush()
             cmd += ["--input", tf.name]
         td = tempfile.TemporaryDirectory(prefix="idseq-workflows-test-").name

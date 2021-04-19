@@ -4,15 +4,24 @@ version 1.1
 
 struct SampleInfo {
     String sample_name
-    String workflow_run_id
+    Int workflow_run_id
+}
+
+struct ReferenceInfo {
+    Int? taxon_id
+    String? accession_id
 }
 
 workflow phylotree {
     input {
 	Array[SampleInfo] samples
-        Int reference_taxon_id
+        ReferenceInfo reference
+
         # String superkingdom_name - TODO: is this needed?
-        # TODO: allow user to pass specific reference taxids/accessions to include?
+
+        # allow the user to pass specific reference taxids/accessions to include with the tree
+        Array[ReferenceInfo] additional_references
+
 	String cut_height = .16
         String ska_align_p = .9
         String docker_image_id
@@ -27,13 +36,13 @@ workflow phylotree {
 
     call GetReferenceFastas {
         input:
-        references = references,
+        references = additional_references,
         docker_image_id = docker_image_id
     }
 
     call RunSKA {
         input:
-        samples_and_references_fasta = flatten([GetSampleContigFastas.sample_contig_fastas, GetReferenceFastas.reference_fastas]),
+        sample_and_reference_fastas = flatten([GetSampleContigFastas.sample_contig_fastas, GetReferenceFastas.reference_fastas]),
         docker_image_id = docker_image_id
     }
 
@@ -60,7 +69,6 @@ workflow phylotree {
     }
 
     output {
-        File dummy_output = RunSKA.dummy_output
         File ska_hashes = RunSKA.ska_hashes
         File ska_distances = RunSKA.distances
         File stats_json = ComputeClusters.stats_json
@@ -73,9 +81,9 @@ workflow phylotree {
         File phylo_plot_outputs = PlotClusterPhylos.phylo_plot_outputs
 
         # TODO: These are the output names from the old phylotree. Check which of these we still need to emit
-        Array[File] taxon_fastas = PrepareTaxonFasta.taxon_fastas
-        File phylo_tree_newick = GeneratePhyloTree.phylo_tree_newick
-        File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
+        # Array[File] taxon_fastas = PrepareTaxonFasta.taxon_fastas
+        # File phylo_tree_newick = GeneratePhyloTree.phylo_tree_newick
+        # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
     }
 }
 
@@ -109,7 +117,9 @@ task GetReferenceFastas {
     }
 
     command <<<
-
+    for accession_id in $(jq -r .[].accession_id "~{write_json(references)}"); do
+        taxoniq get-from-s3 --accession-id $accession_id > $accession_id.fasta
+    done
     >>>
 
     output {
@@ -123,26 +133,17 @@ task GetReferenceFastas {
 
 task RunSKA {
     input {
-        File data_directory
+        Array[File] sample_and_reference_fastas
         String docker_image_id
     }
 
     command <<<
-    mkdir data_dir
-    tar -C ./data_dir -zxvf "~{data_directory}"
-    ls data_dir/*/ > zip_output.txt
-
-    for i in `ls data_dir/*/*.fasta`
-    do
-        echo $i >> zip_output.txt
-        OUT_ROOT=`basename $i`
-        echo $OUT_ROOT >> zip_output.txt
-        ska fasta $i -o $OUT_ROOT
+    for i in ~{sep=' ' sample_and_reference_fastas}; do
+        ska fasta $i
     done
 
     mkdir ska_hashes
     mv *.skf ska_hashes
-    ls ska_hashes >> zip_output.txt
 
     ska distance -o ska ska_hashes/*.skf
 
@@ -150,7 +151,6 @@ task RunSKA {
     >>>
 
     output {
-        File dummy_output = "zip_output.txt"
         File distances = "ska.distances.tsv"
         File ska_hashes = "ska_hashes.tar.gz"
     }
@@ -171,90 +171,90 @@ task ComputeClusters{
     mkdir cluster_files
 
     python3 <<CODE
-        import pandas as pd
-        import json
-        import numpy as np
-        from scipy import cluster
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        import math
+    import pandas as pd
+    import json
+    import numpy as np
+    from scipy import cluster
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import math
 
 
-        # open the ska distance file
-        distances_file = open("~{ska_distances}", 'r')
-        lines = distances_file.readlines()
+    # open the ska distance file
+    distances_file = open("~{ska_distances}", 'r')
+    lines = distances_file.readlines()
 
-        # process the lines (cannot just import with pandas due to non-standard whitespace issues)
-        processed_lines = []
-        line_id = 1
-        for l in lines[1:]:
-            split_line = l.split()
-            if line_id == 1:    # on the first line, add entry to both columns to ensure square distance matrix
-                new_line = [split_line[0], split_line[0], 0, 0, 0, 0, 0, 0]
-                processed_lines.append(new_line)
-            processed_lines.append(split_line)
-            line_id += 1
-        processed_lines.append([split_line[1], split_line[1], 0, 0, 0, 0, 0, 0])  # on the last line, add entry to both columns
+    # process the lines (cannot just import with pandas due to non-standard whitespace issues)
+    processed_lines = []
+    line_id = 1
+    for l in lines[1:]:
+        split_line = l.split()
+        if line_id == 1:    # on the first line, add entry to both columns to ensure square distance matrix
+            new_line = [split_line[0], split_line[0], 0, 0, 0, 0, 0, 0]
+            processed_lines.append(new_line)
+        processed_lines.append(split_line)
+        line_id += 1
+    processed_lines.append([split_line[1], split_line[1], 0, 0, 0, 0, 0, 0])  # on the last line, add entry to both columns
 
-        # create dataframe from the distance data
-        df = pd.DataFrame.from_dict(dict(zip([i for i in range(len(processed_lines))], processed_lines)), orient='index')
-        df.columns=['Sample_1','Sample_2','Matches','Mismatches','Jaccard_Index','Mash-like_distance','SNPs','SNP_distance']
-        df["Mash-like_distance"] = pd.to_numeric(df["Mash-like_distance"], downcast="float")
+    # create dataframe from the distance data
+    df = pd.DataFrame.from_dict(dict(zip([i for i in range(len(processed_lines))], processed_lines)), orient='index')
+    df.columns=['Sample_1','Sample_2','Matches','Mismatches','Jaccard_Index','Mash-like_distance','SNPs','SNP_distance']
+    df["Mash-like_distance"] = pd.to_numeric(df["Mash-like_distance"], downcast="float")
 
-        # long dataframe to wide
-        df2 = df.pivot_table(index=['Sample_1'], columns='Sample_2', values='Mash-like_distance')
+    # long dataframe to wide
+    df2 = df.pivot_table(index=['Sample_1'], columns='Sample_2', values='Mash-like_distance')
 
-        # fill lower triangle of the matrix (currently NA)
-        npdf = df2.to_numpy()
-        i_lower = np.tril_indices(len(df2.index), -1)
-        npdf[i_lower] = npdf.T[i_lower]
-        df3 = pd.DataFrame(npdf)
-        df3.columns = df2.columns
-        df3.index = df2.index
-        df3.fillna(0, inplace=True)
+    # fill lower triangle of the matrix (currently NA)
+    npdf = df2.to_numpy()
+    i_lower = np.tril_indices(len(df2.index), -1)
+    npdf[i_lower] = npdf.T[i_lower]
+    df3 = pd.DataFrame(npdf)
+    df3.columns = df2.columns
+    df3.index = df2.index
+    df3.fillna(0, inplace=True)
 
-        # cluster the data, create a dendrogram
-        Z = cluster.hierarchy.linkage(1-df3, method='complete')
-        dn = cluster.hierarchy.dendrogram(Z, leaf_rotation=90, labels=df3.index)
-        plt.savefig('dendrogram.png', bbox_inches='tight')
+    # cluster the data, create a dendrogram
+    Z = cluster.hierarchy.linkage(1-df3, method='complete')
+    dn = cluster.hierarchy.dendrogram(Z, leaf_rotation=90, labels=df3.index)
+    plt.savefig('dendrogram.png', bbox_inches='tight')
 
-        trim_height = "~{cut_height}"
-        cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
-        ordered_clusterids = [i[0] for i in cutree]
-        cluster_assignments = dict(zip(df3.index,ordered_clusterids ))
-        n_clusters = len(set(ordered_clusterids))
-        cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for i in range(n_clusters)]))
+    trim_height = "~{cut_height}"
+    cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
+    ordered_clusterids = [i[0] for i in cutree]
+    cluster_assignments = dict(zip(df3.index,ordered_clusterids ))
+    n_clusters = len(set(ordered_clusterids))
+    cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for i in range(n_clusters)]))
 
-        for i in cluster_assignments.keys():
-            cluster_sets[cluster_assignments[i]].append(i)
+    for i in cluster_assignments.keys():
+        cluster_sets[cluster_assignments[i]].append(i)
 
-        stats = {"sample_name": "insert_sample_name"}
+    stats = {"sample_name": "insert_sample_name"}
 
-        # write cluster contents to files for future processing
-        for c in cluster_sets.keys():
-            stats[c] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
-            if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
-                filenames = '\n'.join(cluster_sets[c])
-                text_file = open("./cluster_files/cluster_" + str(c), "w")
-                n = text_file.write(filenames)
-                text_file.close()
+    # write cluster contents to files for future processing
+    for c in cluster_sets.keys():
+        stats[c] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
+        if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
+            filenames = '\n'.join(cluster_sets[c])
+            text_file = open("./cluster_files/cluster_" + str(c), "w")
+            n = text_file.write(filenames)
+            text_file.close()
 
-        #import seaborn as sns
-        color_list = sns.color_palette("Dark2", 8)
-        long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
-        col_colors = [long_color_list[i] for i in ordered_clusterids]
-        h = sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
-        plt.savefig('clustermap.png', bbox_inches='tight')
+    #import seaborn as sns
+    color_list = sns.color_palette("Dark2", 8)
+    long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
+    col_colors = [long_color_list[i] for i in ordered_clusterids]
+    h = sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
+    plt.savefig('clustermap.png', bbox_inches='tight')
 
-        stats["dataframe_shape_0"] = df.shape[0]
-        stats["dataframe_shape_1"] = df.shape[1]
+    stats["dataframe_shape_0"] = df.shape[0]
+    stats["dataframe_shape_1"] = df.shape[1]
 
-        with open("stats.json", "w") as f:
-            json.dump(stats, f, indent=2)
+    with open("stats.json", "w") as f:
+        json.dump(stats, f, indent=2)
 
-        CODE
+    CODE
 
     tar -czf clusters.tar.gz cluster_files
     >>>

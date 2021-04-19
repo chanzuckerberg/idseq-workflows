@@ -44,5 +44,3 @@ RUN curl -L -O https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz
     tar -xvzf v1.0.tar.gz && \
     make -C SKA-1.0 && \
     make -C SKA-1.0 install
-
-# iqtree toytree toyplot

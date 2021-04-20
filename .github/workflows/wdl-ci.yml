@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: list workflows
-        run: echo "::set-output name=matrix::$(ls */*.wdl|xargs dirname|uniq|jq -nR '[inputs | select(length>0)]')"
+        run: echo "::set-output name=matrix::$(ls */*.wdl|xargs dirname|uniq|jq -cnR '[inputs | select(length>0)]')"
 
   wdl-ci:
     runs-on: ubuntu-20.04

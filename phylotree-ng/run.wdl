@@ -223,7 +223,7 @@ task ComputeClusters{
     trim_height = "~{cut_height}"
     cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
     ordered_clusterids = [i[0] for i in cutree]
-    cluster_assignments = dict(zip(df3.index,ordered_clusterids ))
+    cluster_assignments = dict(zip(df3.index, ordered_clusterids))
     n_clusters = len(set(ordered_clusterids))
     cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for i in range(n_clusters)]))
 
@@ -237,11 +237,9 @@ task ComputeClusters{
         stats[c] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
         if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
             filenames = '\n'.join(cluster_sets[c])
-            text_file = open("./cluster_files/cluster_" + str(c), "w")
-            n = text_file.write(filenames)
-            text_file.close()
+            with open("./cluster_files/cluster_" + str(c), "w") as text_file:
+                text_file.write(filenames)
 
-    #import seaborn as sns
     color_list = sns.color_palette("Dark2", 8)
     long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
     col_colors = [long_color_list[i] for i in ordered_clusterids]

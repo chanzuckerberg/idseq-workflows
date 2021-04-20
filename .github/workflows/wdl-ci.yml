@@ -30,11 +30,13 @@ jobs:
           source .venv/bin/activate
           make lint
 
-  readwd:
+  read-workflow-dirs:
     runs-on: ubuntu-20.04
+    outputs:
+      matrix: ${{ steps.list_workflows.outputs.matrix }}
     steps:
       - uses: actions/checkout@v2
-      - name: list workflows
+      - id: list_workflows
         run: |
           set -x
           matrix=$(ls */*.wdl|xargs dirname|uniq|jq -cnR '[inputs|select(length>0)]')
@@ -44,10 +46,10 @@ jobs:
 
   wdl-ci:
     runs-on: ubuntu-20.04
-    needs: readwd
+    needs: read-workflow-dirs
     strategy:
       matrix:
-        workflow_dir: ${{ fromJson(needs.readwd.outputs.matrix) }}
+        workflow_dir: ${{ fromJson(needs['read-workflow-dirs'].outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - name: docker login

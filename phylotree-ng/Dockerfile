@@ -34,13 +34,12 @@ RUN apt-get -qq update && apt-get -qq -y install \
     build-essential \
     && locale-gen en_US.UTF-8
 
-RUN pip3 install toytree==2.0.1 toyplot==0.19.0 taxoniq==0.5.2 && \
+RUN pip3 install toytree==2.0.1 toyplot==0.19.0 taxoniq==0.6.0 && \
     pip3 install --upgrade \
-    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.5.2/ncbi_genbank_accession_db-2021.3.25-py3-none-any.whl \
-    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.5.2/ncbi_genbank_accession_lengths-2021.3.25-py3-none-any.whl \
-    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.5.2/ncbi_genbank_accession_offsets-2021.3.25-py3-none-any.whl
+    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.6.0/ncbi_genbank_accession_db-2021.4.10-py3-none-any.whl \
+    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.6.0/ncbi_genbank_accession_lengths-2021.4.10-py3-none-any.whl \
+    https://github.com/chanzuckerberg/taxoniq/releases/download/v0.6.0/ncbi_genbank_accession_offsets-2021.4.10-py3-none-any.whl
 
-RUN curl -L -O https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz && \
-    tar -xvzf v1.0.tar.gz && \
+RUN curl -L https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz | tar -xvz && \
     make -C SKA-1.0 && \
     make -C SKA-1.0 install

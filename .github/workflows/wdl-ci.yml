@@ -44,7 +44,7 @@ jobs:
 
   wdl-ci:
     runs-on: ubuntu-20.04
-    needs: read-workflow-dirs
+    needs: readwd
     strategy:
       matrix:
         workflow_dir: ${{ fromJson(needs.readwd.outputs.matrix) }}

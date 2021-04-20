@@ -1,4 +1,7 @@
-# Phylo Tree Description
+# PhyloTree Workflow: Technical Description
+
+The following documentation applies to the legacy kSNP3 PhyloTree workflow. The new SKA-based PhyloTree-NG workflow is a
+work in progress. The documentation below will be adapted to the new workflow over time.
 
 ## Inputs
 

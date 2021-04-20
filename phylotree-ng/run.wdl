@@ -14,15 +14,17 @@ struct ReferenceInfo {
 
 workflow phylotree {
     input {
-	Array[SampleInfo] samples
+        Array[SampleInfo] samples
         ReferenceInfo reference
 
-        # String superkingdom_name - TODO: is this needed?
+        # TODO: pass this to the relevant tasks and adjust SKA parameters as appropriate
+        # (kSNP3 used a variable kmer length for each superkingdom: Viruses: 13, Bacteria: 19, Eukaryota: 19)
+        String superkingdom_name
 
         # allow the user to pass specific reference taxids/accessions to include with the tree
         Array[ReferenceInfo] additional_references
 
-	String cut_height = .16
+        String cut_height = .16
         String ska_align_p = .9
         String docker_image_id
         String outgroup = ""
@@ -160,7 +162,7 @@ task RunSKA {
     }
 }
 
-task ComputeClusters{
+task ComputeClusters {
     input {
         File ska_distances
         String cut_height
@@ -181,25 +183,20 @@ task ComputeClusters{
     import seaborn as sns
     import math
 
-
-    # open the ska distance file
-    distances_file = open("~{ska_distances}", 'r')
-    lines = distances_file.readlines()
-
-    # process the lines (cannot just import with pandas due to non-standard whitespace issues)
-    processed_lines = []
-    line_id = 1
-    for l in lines[1:]:
-        split_line = l.split()
-        if line_id == 1:    # on the first line, add entry to both columns to ensure square distance matrix
-            new_line = [split_line[0], split_line[0], 0, 0, 0, 0, 0, 0]
-            processed_lines.append(new_line)
-        processed_lines.append(split_line)
-        line_id += 1
-    processed_lines.append([split_line[1], split_line[1], 0, 0, 0, 0, 0, 0])  # on the last line, add entry to both columns
+    def processed_lines():
+        with open("~{ska_distances}", 'r') as distances:
+            for i, line in enumerate(distances):
+                split_line = line.split()
+                if i == 1:
+                    # on the first line, add entry to both columns to ensure square distance matrix
+                    yield [split_line[0], split_line[0], 0, 0, 0, 0, 0, 0]
+                elif i > 1: # 0 is purposefully omitted
+                    yield split_line
+           # on the last line, add entry to both columns
+            yield [split_line[1], split_line[1], 0, 0, 0, 0, 0, 0]
 
     # create dataframe from the distance data
-    df = pd.DataFrame.from_dict(dict(zip([i for i in range(len(processed_lines))], processed_lines)), orient='index')
+    df = pd.DataFrame.from_dict(dict(enumerate(processed_lines())), orient='index')
     df.columns=['Sample_1','Sample_2','Matches','Mismatches','Jaccard_Index','Mash-like_distance','SNPs','SNP_distance']
     df["Mash-like_distance"] = pd.to_numeric(df["Mash-like_distance"], downcast="float")
 

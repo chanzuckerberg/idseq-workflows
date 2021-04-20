@@ -10,7 +10,7 @@ env:
 
 jobs:
   linters:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v1
@@ -29,11 +29,20 @@ jobs:
         run: |
           source .venv/bin/activate
           make lint
+
+  read-workflow-dirs:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: list workflows
+        run: echo "::set-output name=matrix::$(ls */*.wdl | xargs dirname | uniq)"
+
   wdl-ci:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    needs: read-workflow-dirs
     strategy:
       matrix:
-        workflow_dir: [short-read-mngs, consensus-genome]
+        workflow_dir: ${{fromJson(needs['read-workflow-dirs'].outputs.matrix)}}
     steps:
       - uses: actions/checkout@v2
       - name: docker login

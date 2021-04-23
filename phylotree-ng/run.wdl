@@ -183,6 +183,8 @@ task ComputeClusters {
     import seaborn as sns
     import math
 
+    # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
+    # we may need to use a regex separator
     df = pd.read_csv("~{ska_distances}", sep='\t')
     df = pd.concat([
         pd.DataFrame(dict(zip(df.columns, [df.iloc[0][0], df.iloc[0][0]] + [0] * 6)), index=[0]),

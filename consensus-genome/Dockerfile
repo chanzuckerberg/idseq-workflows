@@ -83,7 +83,7 @@ RUN /bin/bash -c "set -e; mkdir -p /usr/local/lib/site_perl; \
   popd; \
   rm -rf Bio-Easel; \
   mkdir -p vadr; \
-  curl -L https://github.com/ncbi/vadr/archive/vadr-1.1.3.tar.gz | tar -xz --strip-components 1 -C vadr; \
+  curl -L https://github.com/ncbi/vadr/archive/vadr-1.2.tar.gz | tar -xz --strip-components 1 -C vadr; \
   sed -i -e 's|/scripts/esl-ssplit.pl|/esl-ssplit.pl|' vadr/v-annotate.pl; \
   mv vadr/*.pl /usr/local/bin/; \
   mv vadr/*.pm /usr/local/lib/site_perl/; \

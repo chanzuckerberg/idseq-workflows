@@ -212,7 +212,7 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["ref_snps"], 0)
         self.assertEqual(output_stats["ref_mnps"], 0)
         self.assertEqual(output_stats["n_actg"], 15313)
-        self.assertEqual(output_stats["n_missing"], 0)
+        self.assertEqual(output_stats["n_missing"], 1)
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 4)
 

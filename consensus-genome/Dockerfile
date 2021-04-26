@@ -45,6 +45,7 @@ RUN apt-get -qq update && apt-get -qq -y install \
   build-essential \
   automake \
   tabix \
+  fasta3 \
   && locale-gen en_US.UTF-8
 
 # These newer versions of infernal and ncbi-blast+ are required by VADR

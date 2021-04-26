@@ -91,6 +91,7 @@ RUN /bin/bash -c "set -e; mkdir -p /usr/local/lib/site_perl; \
   echo export VADRSCRIPTSDIR=/usr/local/bin \
   VADRMODELDIR=/usr/local/share/vadr/models \
   VADRBLASTDIR=/usr/bin \
+  VADRFASTADIR=/usr/bin \
   VADRINFERNALDIR=/usr/bin \
   VADRHMMERDIR=/usr/bin \
   VADREASELDIR=/usr/local/bin \

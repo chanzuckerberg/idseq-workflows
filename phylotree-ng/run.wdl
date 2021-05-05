@@ -5,6 +5,8 @@ version 1.1
 struct SampleInfo {
     String sample_name
     Int workflow_run_id
+    File? contig_fasta # assembly_out_assembly_contigs_fasta from mngs
+    File? combined_contig_summary # contig_summary_out_assembly_combined_contig_summary_json from mngs
 }
 
 struct ReferenceInfo {
@@ -19,10 +21,13 @@ workflow phylotree {
 
         # TODO: pass this to the relevant tasks and adjust SKA parameters as appropriate
         # (kSNP3 used a variable kmer length for each superkingdom: Viruses: 13, Bacteria: 19, Eukaryota: 19)
-        String superkingdom_name
+        # These kmer names can't be ported directly, because kSNP requires them to be odd while SKA requires a multiple of 3
+        # Try flanking sequence length (-k) 12 for viruses, 18 for bacteria/eukaryotes for SKA
+        # (SKA uses split kmers so the total resulting SKA kmer length here is (12*2 + 1) for 1 wobble base in the middle)
+        String superkingdom_name # viruses, bacteria, or eukaryota
 
         # allow the user to pass specific reference taxids/accessions to include with the tree
-        Array[ReferenceInfo] additional_references
+        Array[ReferenceInfo] additional_references = []
 
         String cut_height = .16
         String ska_align_p = .9
@@ -32,6 +37,7 @@ workflow phylotree {
 
     call GetSampleContigFastas {
         input:
+        reference = reference,
         samples = samples,
         docker_image_id = docker_image_id
     }
@@ -48,16 +54,16 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
-    call ComputeClusters {
-        input:
-        ska_distances = RunSKA.distances,
-        cut_height = cut_height,
-        docker_image_id = docker_image_id
-    }
+    # call ComputeClusters {
+    #     input:
+    #     ska_distances = RunSKA.distances,
+    #     cut_height = cut_height,
+    #     docker_image_id = docker_image_id
+    # }
 
     call GenerateClusterPhylos {
         input:
-        clusters_directory = ComputeClusters.clusters_directory,
+        # clusters_directory = ComputeClusters.clusters_directory,
         ska_hashes = RunSKA.ska_hashes,
         ska_align_p = ska_align_p,
         docker_image_id = docker_image_id
@@ -73,10 +79,10 @@ workflow phylotree {
     output {
         File ska_hashes = RunSKA.ska_hashes
         File ska_distances = RunSKA.distances
-        File stats_json = ComputeClusters.stats_json
-        File dendrogram_png = ComputeClusters.dendrogram_png
-        File clustermap_png = ComputeClusters.clustermap_png
-        File clusters_directory = ComputeClusters.clusters_directory
+        # File stats_json = ComputeClusters.stats_json
+        # File dendrogram_png = ComputeClusters.dendrogram_png
+        # File clustermap_png = ComputeClusters.clustermap_png
+        # File clusters_directory = ComputeClusters.clusters_directory
         File dummy_subcluster_output = GenerateClusterPhylos.dummy_subcluster_output
         File ska_results = GenerateClusterPhylos.ska_results
         File dummy_plotphylos = PlotClusterPhylos.dummy_plotphylos
@@ -90,15 +96,25 @@ workflow phylotree {
 }
 
 task GetSampleContigFastas {
-    # Given a list of samples, their workflow run IDs, and a taxon ID, retrieve contigs assigned to that taxon ID or its
-    # descendants within each sample. Emit one fasta file per sample, to be graphed in a phylotree along with references
+    # Given a list of samples, their workflow run IDs, and a reference taxon ID, retrieve contigs assigned to that taxon
+    # ID or its descendants within each sample. Emit one fasta file per sample, to be graphed in a phylotree along with
+    # references.
+
+    # For each input sample, scan its contig summary to identify the contigs that need to be pulled from contigs.fasta.
+    # TODO: For now, we do exact matching of the given reference taxon ID to the taxon IDs in the contig summary.
+    #       This implies that the reference is selected at the species level, and that the contig summary is rolled up
+    #       to species level as well. In the future we want to remove this assumption and select all contigs that map
+    #       at all ranks under the given reference taxon.
     input {
+        ReferenceInfo reference
         Array[SampleInfo] samples
         String docker_image_id
     }
 
     command <<<
-
+    export REF_TAXID=~{reference.taxon_id}
+    write_json(samples)
+    jq -r '.[] | select(.taxid == env.REF_TAXID) | .contig_counts | keys[] | select(. != "*")' FIXME | sort | uniq > selected_contig_names
     >>>
 
     output {
@@ -163,6 +179,7 @@ task RunSKA {
 }
 
 task ComputeClusters {
+    # TODO: throw warning or error if sequences are too divergent
     input {
         File ska_distances
         String cut_height
@@ -260,16 +277,16 @@ task ComputeClusters {
 }
 
 task GenerateClusterPhylos {
+    # For now, we are short-circuiting ComputeClusters, so GenerateClusterPhylos receives just one cluster (everything).
     input {
-        File clusters_directory
+        # File clusters_directory
         File ska_hashes
         String ska_align_p
         String docker_image_id
     }
 
+    # tar -xzvf "~{clusters_directory}"
     command <<<
-    echo "hello world" > output.txt
-    tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 
     ls . >> output.txt
@@ -280,18 +297,20 @@ task GenerateClusterPhylos {
     CLUSTER_COUNTER=1
     mkdir ska_outputs
 
-    for i in `ls cluster_files/*`
-    do
-        rm -r temp_cluster # remove if already existed
-        mkdir temp_cluster
+    # for i in `ls cluster_files/*`
+    # do
+    #    rm -r temp_cluster # remove if already existed
+    #    mkdir temp_cluster
 
-        for j in `cat $i`
-        do
-            cp ska_hashes/$j.skf temp_cluster
-        done
+    #    for j in `cat $i`
+    #    do
+    #        cp ska_hashes/$j.skf temp_cluster
+    #    done
 
-        ska distance -o ska temp_cluster/*.skf
-        ska merge -o ska.merged temp_cluster/*.skf
+    #    ska distance -o ska temp_cluster/*.skf
+    #    ska merge -o ska.merged temp_cluster/*.skf
+        ska distance -o ska ska_hashes/*.skf
+        ska merge -o ska.merged ska_hashes/*.skf
         ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
         mv ska_variants.aln ska.variants.aln
         iqtree -s ska.variants.aln

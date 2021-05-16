@@ -458,7 +458,6 @@ class PipelineStepRunAlignment(PipelineStep):
                 raise BatchJobFailed("chunk alignment failed")
             time.sleep(delay)
 
-
     def _validate_chunk_output(self, chunk_output_filename):
         cmd = "awk '{print NF}' | sort -nu | head -n 1"
         if self.alignment_algorithm == "rapsearch2":

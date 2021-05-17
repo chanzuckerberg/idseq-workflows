@@ -21,5 +21,5 @@ def test_RunStar_outputs_logfile(util, short_read_mngs_bench3_viral_outputs):
     )
 
     # verify Log.final.out is emitted
-    logfile = outp["outputs"]["RunStar.output_log_file"]
+    logfile = outp["outputs"]["Log.final.out"]
     assert os.path.exists(logfile)

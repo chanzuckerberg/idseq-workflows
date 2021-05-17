@@ -17,7 +17,6 @@ def test_RunStar_outputs_logfile(util, short_read_mngs_bench3_viral_outputs):
         "RunStar",
         "-i",
         json.dumps(inputs),
-        returncode=1,
     )
 
     # verify Log.final.out is emitted

@@ -29,13 +29,11 @@ jobs:
         run: |
           source .venv/bin/activate
           make lint
-      - name: cancel on fail
-        uses: andymckay/cancel-action@0.2
+      - uses: andymckay/cancel-action@0.2
         if: ${{ failure() }}
 
   cancel-previous:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.9.0
+      - uses: styfle/cancel-workflow-action@0.9.0
         with:
           access_token: ${{ github.token }}
 

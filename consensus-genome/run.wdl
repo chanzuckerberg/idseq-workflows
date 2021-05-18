@@ -6,6 +6,7 @@
 
 version 1.1
 
+
 workflow consensus_genome {
     input {
         # Required parameters

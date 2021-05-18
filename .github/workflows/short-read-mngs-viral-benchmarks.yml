@@ -21,9 +21,12 @@ jobs:
     outputs:
       has_diff: ${{steps.check_for_diff.outputs.has_diff}}
     steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - id: check_for_diff
         # only run on wdl dirs with diff
-        run: echo "::set-output name=has_diff::$(if [ -z `git diff --name-status main|cut -c 3-|xargs dirname|sort|uniq|grep short-read-mngs` ]; then true; else false; fi)"
+        run: echo "::set-output name=has_diff::$(if [ -z `git diff --name-status HEAD^|cut -c 3-|xargs dirname|sort|uniq|grep short-read-mngs` ]; then true; else false; fi)"
 
   run-samples:
     runs-on: ubuntu-20.04
@@ -35,8 +38,6 @@ jobs:
         settings: [default]
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: docker build
         run: |
             echo "${{ secrets.GITHUB_TOKEN }}" \

@@ -4,9 +4,7 @@
 # - ARTIC Oxford Nanopore MinION SARS-CoV-2 SOP, https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html
 # With enhancements and additional modules by the CZI Infectious Disease team
 
-#foo
 version 1.1
-
 
 workflow consensus_genome {
     input {

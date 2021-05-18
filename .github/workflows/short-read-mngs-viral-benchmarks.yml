@@ -16,8 +16,19 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  has-diff:
+    runs-on: ubuntu-20.04
+    outputs:
+      has_diff: ${{steps.check_for_diff.outputs.has_diff}}
+    steps:
+      - id: check_for_diff
+        # only run on wdl dirs with diff
+        run: echo "::set-output name=has_diff::$(if [ -z `git diff --name-status main|cut -c 3-|xargs dirname|sort|uniq|grep short-read-mngs` ]; then true; else false; fi)"
+
   run-samples:
     runs-on: ubuntu-20.04
+    needs: has-diff
+    if: ${{fromJson(needs['has-diff'].outputs.has_diff)}}
     strategy:
       matrix:
         sample: [idseq_bench_3, idseq_bench_5]
@@ -26,11 +37,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - id: check_for_diff
-        # only run on wdl dirs with diff
-        run: echo "::set-output name=has_diff::$(if [ -z `git diff --name-status main|cut -c 3-|xargs dirname|sort|uniq|grep short-read-mngs` ]; then true; else false; fi)"
       - name: docker build
-        if: ${{steps.check_for_diff.outputs.has_diff == true}}
         run: |
             echo "${{ secrets.GITHUB_TOKEN }}" \
                 | docker login docker.pkg.github.com --username $(dirname $GITHUB_REPOSITORY) --password-stdin

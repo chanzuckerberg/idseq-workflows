@@ -1,6 +1,5 @@
 version 1.0
 
-
 task GenerateTaxidFasta {
   input {
     String docker_image_id

@@ -31,7 +31,7 @@ jobs:
   run-samples:
     runs-on: ubuntu-20.04
     needs: has-diff
-    if: ${{Boolean(needs['has-diff'].outputs.has_diff)}}
+    if: ${{needs['has-diff'].outputs.has_diff == 'true'}}
     strategy:
       matrix:
         sample: [idseq_bench_3, idseq_bench_5]

@@ -45,6 +45,8 @@ jobs:
       matrix: ${{steps.list_dirs.outputs.matrix}}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - id: list_dirs
         # only run on wdl dirs with diff
         run: echo "::set-output name=matrix::$(ls */*.wdl|xargs dirname|xargs git diff --name-status HEAD^|cut -c 3-|xargs dirname|sort|uniq|jq -cnR '[inputs|select(length>0)]')"

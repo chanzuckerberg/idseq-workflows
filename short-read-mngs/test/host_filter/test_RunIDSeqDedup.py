@@ -14,7 +14,7 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
     outp = util.miniwdl_run(
         util.repo_dir() / "short-read-mngs/host_filter.wdl",
         "--task",
-        "RunValidateInput",
+        "RunIDSeqDedup",
         "-i",
         json.dumps(inputs),
     )

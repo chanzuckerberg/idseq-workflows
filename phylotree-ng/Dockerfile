@@ -43,3 +43,5 @@ RUN pip3 install toytree==2.0.1 toyplot==0.19.0 taxoniq==0.6.0 && \
 RUN curl -L https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz | tar -xvz && \
     make -C SKA-1.0 && \
     make -C SKA-1.0 install
+
+COPY python_steps/* /bin/

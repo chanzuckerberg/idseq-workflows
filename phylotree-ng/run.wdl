@@ -54,16 +54,16 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
-    # call ComputeClusters {
-    #     input:
-    #     ska_distances = RunSKA.distances,
-    #     cut_height = cut_height,
-    #     docker_image_id = docker_image_id
-    # }
+    call ComputeClusters {
+        input:
+        ska_distances = RunSKA.distances,
+        cut_height = cut_height,
+        docker_image_id = docker_image_id
+    }
 
     call GenerateClusterPhylos {
         input:
-        # clusters_directory = ComputeClusters.clusters_directory,
+        clusters_directory = ComputeClusters.clusters_directory,
         ska_hashes = RunSKA.ska_hashes,
         ska_align_p = ska_align_p,
         docker_image_id = docker_image_id
@@ -79,10 +79,10 @@ workflow phylotree {
     output {
         File ska_hashes = RunSKA.ska_hashes
         File ska_distances = RunSKA.distances
-        # File stats_json = ComputeClusters.stats_json
-        # File dendrogram_png = ComputeClusters.dendrogram_png
-        # File clustermap_png = ComputeClusters.clustermap_png
-        # File clusters_directory = ComputeClusters.clusters_directory
+        File stats_json = ComputeClusters.stats_json
+        File dendrogram_png = ComputeClusters.dendrogram_png
+        File clustermap_png = ComputeClusters.clustermap_png
+        File clusters_directory = ComputeClusters.clusters_directory
         File dummy_subcluster_output = GenerateClusterPhylos.dummy_subcluster_output
         File ska_results = GenerateClusterPhylos.ska_results
         File dummy_plotphylos = PlotClusterPhylos.dummy_plotphylos
@@ -113,8 +113,8 @@ task GetSampleContigFastas {
 
     command <<<
     export REF_TAXID=~{reference.taxon_id}
-    write_json(samples)
-    jq -r '.[] | select(.taxid == env.REF_TAXID) | .contig_counts | keys[] | select(. != "*")' FIXME | sort | uniq > selected_contig_names
+    
+    jq -r '.[] | select(.taxid == env.REF_TAXID) | .contig_counts | keys[] | select(. != "*")' "~{write_json(samples)}" | sort | uniq > selected_contig_names
     >>>
 
     output {
@@ -188,79 +188,7 @@ task ComputeClusters {
 
     command <<<
     mkdir cluster_files
-
-    python3 <<CODE
-    import pandas as pd
-    import json
-    import numpy as np
-    from scipy import cluster
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import math
-
-    # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
-    # we may need to use a regex separator
-    df = pd.read_csv("~{ska_distances}", sep='\t')
-    df = pd.concat([
-        pd.DataFrame(dict(zip(df.columns, [df.iloc[0][0], df.iloc[0][0]] + [0] * 6)), index=[0]),
-        df,
-        pd.DataFrame(dict(zip(df.columns, [df.iloc[-1][0], df.iloc[-1][0]] + [0] * 6)), index=[0]),
-    ])
-    df.reset_index(drop=True, inplace=True)
-
-    # long dataframe to wide
-    df2 = df.pivot_table(index=['Sample_1'], columns='Sample_2', values='Mash-like_distance')
-
-    # fill lower triangle of the matrix (currently NA)
-    npdf = df2.to_numpy()
-    i_lower = np.tril_indices(len(df2.index), -1)
-    npdf[i_lower] = npdf.T[i_lower]
-    df3 = pd.DataFrame(npdf)
-    df3.columns = df2.columns
-    df3.index = df2.index
-    df3.fillna(0, inplace=True)
-
-    # cluster the data, create a dendrogram
-    Z = cluster.hierarchy.linkage(1-df3, method='complete')
-    dn = cluster.hierarchy.dendrogram(Z, leaf_rotation=90, labels=df3.index)
-    plt.savefig('dendrogram.png', bbox_inches='tight')
-
-    trim_height = "~{cut_height}"
-    cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
-    ordered_clusterids = [i[0] for i in cutree]
-    cluster_assignments = dict(zip(df3.index, ordered_clusterids))
-    n_clusters = len(set(ordered_clusterids))
-    cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for i in range(n_clusters)]))
-
-    for i in cluster_assignments.keys():
-        cluster_sets[cluster_assignments[i]].append(i)
-
-    stats = {"sample_name": "insert_sample_name"}
-
-    # write cluster contents to files for future processing
-    for c in cluster_sets.keys():
-        stats[c] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
-        if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
-            filenames = '\n'.join(cluster_sets[c])
-            with open("./cluster_files/cluster_" + str(c), "w") as text_file:
-                text_file.write(filenames)
-
-    color_list = sns.color_palette("Dark2", 8)
-    long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
-    col_colors = [long_color_list[i] for i in ordered_clusterids]
-    h = sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
-    plt.savefig('clustermap.png', bbox_inches='tight')
-
-    stats["dataframe_shape_0"] = df.shape[0]
-    stats["dataframe_shape_1"] = df.shape[1]
-
-    with open("stats.json", "w") as f:
-        json.dump(stats, f, indent=2)
-
-    CODE
-
+    python3 /bin/compute_clusters.py --ska-distances ~{ska_distances} --cut-height ~{cut_height}
     tar -czf clusters.tar.gz cluster_files
     >>>
 
@@ -279,14 +207,14 @@ task ComputeClusters {
 task GenerateClusterPhylos {
     # For now, we are short-circuiting ComputeClusters, so GenerateClusterPhylos receives just one cluster (everything).
     input {
-        # File clusters_directory
+        File clusters_directory
         File ska_hashes
         String ska_align_p
         String docker_image_id
     }
 
-    # tar -xzvf "~{clusters_directory}"
     command <<<
+    tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 
     ls . >> output.txt
@@ -349,51 +277,7 @@ task PlotClusterPhylos {
 
     mkdir phylo_plot_outputs
 
-    python3 <<CODE
-        import toytree
-        import glob
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        import toyplot
-        import toyplot.pdf
-
-        tree_file_paths = glob.glob('ska_outputs/*/*.treefile')
-        print(tree_file_paths)
-
-        for tree_file in tree_file_paths:
-            file = open(tree_file, 'r')
-            lines = file.readlines()
-            newick = lines[0].strip()
-
-            # set the outgroup to first sample unless otherwise specified
-            # TODO: create a more robust method for picking outgroup...
-            # ... the current method of specifying it will break / error in cases where there
-            # ... is > 1 cluster
-            wildcard_value = newick.split('.')[0].split('(')[1]
-            if("~{outgroup}" == ""):
-                wildcard_value = newick.split('.')[0].split('(')[1]
-            else:
-                wildcard_value = "~{outgroup}"
-
-            tre0 = toytree.tree(newick, tree_format=0)
-            rtre = tre0.root(wildcard=wildcard_value)
-
-            style = {
-                "tip_labels_align": False,
-                "tip_labels_style": {
-                    "font-size": "9px"
-                },
-            }
-            canvas, axes, makr = rtre.draw(tip_labels_colors='indigo', **style);
-            axes.show = True
-            axes.x.ticks.show = True
-            axes.y.ticks.show = False
-            print("about to create plot")
-            print('phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.pdf')
-            toyplot.pdf.render(canvas, 'phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.pdf')
-            #plt.savefig('phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.png', bbox_inches='tight')
-        CODE
+    python3 /bin/plot_cluster_phylos.py --outgroup ~{outgroup}
 
     tar -czf phylo_plot_outputs.tar.gz phylo_plot_outputs
     >>>

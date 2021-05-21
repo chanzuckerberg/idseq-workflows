@@ -25,12 +25,12 @@ class TestPhylotree(WDLTestCase):
         ],
         "reference": {"taxon_id": 64320},
         "additional_references": [
-            {"accession_id": "MH157204.1"},
-            {"accession_id": "MH900227.1"}
+            {"accession_id": "NC_012532.1"},
+            {"accession_id": "NC_035889.1"}
         ],
-        "superkingdom_name": "fixme"
+        "superkingdom_name": "viral"
     }
 
     def test_phylotree(self):
-        res = self.run_miniwdl(args=[])
+        res = self.run_miniwdl()
         self.assertEqual(res, {})

@@ -159,6 +159,7 @@ workflow consensus_genome {
                 call_variants_bam = TrimPrimers.trimmed_bam_ch,
                 ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 bcftoolsCallTheta = bcftoolsCallTheta,
+                ivarFreqThreshold = ivarFreqThreshold,
                 minDepth = minDepth,
                 docker_image_id = docker_image_id
         }
@@ -684,6 +685,7 @@ task CallVariants {
         String prefix
         File call_variants_bam  # same as primertrimmed_bam produced by trimPrimers
         File ref_fasta
+        Float ivarFreqThreshold
         Float bcftoolsCallTheta
         Int minDepth
 
@@ -694,7 +696,7 @@ task CallVariants {
         set -euxo pipefail
 
         # NOTE: we use samtools instead of bcftools mpileup because bcftools 1.9 ignores -d0
-        samtools mpileup -u -d 0 -t AD -f "~{ref_fasta}" "~{call_variants_bam}" | bcftools call --ploidy 1 -m -P "~{bcftoolsCallTheta}" -v - | bcftools view -i 'DP>=~{minDepth}' > "~{prefix}variants.vcf"
+        samtools mpileup -aa -u -Q "~{ivarQualThreshold}" -d 100000000 -L 100000000 -t AD -f "~{ref_fasta}" "~{call_variants_bam}" | bcftools call --ploidy 1 -m -P "~{bcftoolsCallTheta}" -v - | bcftools view -i 'DP>=~{minDepth}' > "~{prefix}variants.vcf"
         bgzip "~{prefix}variants.vcf"
         tabix "~{prefix}variants.vcf.gz"
         bcftools stats "~{prefix}variants.vcf.gz" > "~{prefix}bcftools_stats.txt"

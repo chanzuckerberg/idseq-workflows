@@ -46,6 +46,6 @@ def main(outgroup: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("outgroup")
+    parser.add_argument("--outgroup")
     args = parser.parse_args()
     main(args.outgroup)

@@ -1,6 +1,7 @@
 import argparse
 import json
 import math
+import sys
 
 import matplotlib
 import numpy as np
@@ -23,7 +24,7 @@ def main(ska_distances: str, trim_height: float):
     df.reset_index(drop=True, inplace=True)
 
     # long dataframe to wide
-    df2 = df.pivot_table(index=['Sample_1'], columns='Sample_2', values='Mash-like_distance')
+    df2 = df.pivot_table(index=['Sample 1'], columns='Sample 2', values='Mash-like distance')
 
     # fill lower triangle of the matrix (currently NA)
     npdf = df2.to_numpy()
@@ -43,7 +44,7 @@ def main(ska_distances: str, trim_height: float):
     ordered_clusterids = [i[0] for i in cutree]
     cluster_assignments = dict(zip(df3.index, ordered_clusterids))
     n_clusters = len(set(ordered_clusterids))
-    cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for i in range(n_clusters)]))
+    cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for _ in range(n_clusters)]))
 
     for i in cluster_assignments.keys():
         cluster_sets[cluster_assignments[i]].append(i)
@@ -52,7 +53,7 @@ def main(ska_distances: str, trim_height: float):
 
     # write cluster contents to files for future processing
     for c in cluster_sets.keys():
-        stats[c] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
+        stats[str(c)] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
         if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
             filenames = '\n'.join(cluster_sets[c])
             with open("./cluster_files/cluster_" + str(c), "w") as text_file:
@@ -68,11 +69,11 @@ def main(ska_distances: str, trim_height: float):
     stats["dataframe_shape_1"] = df.shape[1]
 
     with open("stats.json", "w") as f:
-        json.dump(stats, f, indent=2)
+        json.dump(stats, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("ska-distances")
-    parser.add_argument("cut-height", type=float)
+    parser.add_argument("--ska-distances")
+    parser.add_argument("--cut-height", type=float)
     args = parser.parse_args()
     main(args.ska_distances, args.cut_height)

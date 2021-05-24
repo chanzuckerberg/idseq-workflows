@@ -1,23 +1,16 @@
-# IDseq PhyloTree-NG workflow
-
 version 1.1
 
 struct SampleInfo {
     String sample_name
     Int workflow_run_id
-    File? contig_fasta # assembly_out_assembly_contigs_fasta from mngs
-    File? combined_contig_summary # contig_summary_out_assembly_combined_contig_summary_json from mngs
-}
-
-struct ReferenceInfo {
-    Int? taxon_id
-    String? accession_id
+    File contig_fasta # assembly_out_assembly_contigs_fasta from mngs
+    File combined_contig_summary # contig_summary_out_assembly_combined_contig_summary_json from mngs
 }
 
 workflow phylotree {
     input {
         Array[SampleInfo] samples
-        ReferenceInfo reference
+        Int reference_taxon_id
 
         # TODO: pass this to the relevant tasks and adjust SKA parameters as appropriate
         # (kSNP3 used a variable kmer length for each superkingdom: Viruses: 13, Bacteria: 19, Eukaryota: 19)
@@ -27,7 +20,8 @@ workflow phylotree {
         String superkingdom_name # viruses, bacteria, or eukaryota
 
         # allow the user to pass specific reference taxids/accessions to include with the tree
-        Array[ReferenceInfo] additional_references = []
+        Array[Int] additional_reference_taxon_ids = []
+        Array[String] additional_reference_accession_ids = []
 
         String cut_height = .16
         String ska_align_p = .9
@@ -89,7 +83,6 @@ workflow phylotree {
         File phylo_plot_outputs = PlotClusterPhylos.phylo_plot_outputs
 
         # TODO: These are the output names from the old phylotree. Check which of these we still need to emit
-        # Array[File] taxon_fastas = PrepareTaxonFasta.taxon_fastas
         # File phylo_tree_newick = GeneratePhyloTree.phylo_tree_newick
         # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
     }
@@ -112,9 +105,7 @@ task GetSampleContigFastas {
     }
 
     command <<<
-    export REF_TAXID=~{reference.taxon_id}
-    
-    jq -r '.[] | select(.taxid == env.REF_TAXID) | .contig_counts | keys[] | select(. != "*")' "~{write_json(samples)}" | sort | uniq > selected_contig_names
+    python3 /bin/get_sample_contig_fastas.py --reference-taxid ~{reference_taxon_id} --samples "~{write_json(samples)}"
     >>>
 
     output {
@@ -157,7 +148,7 @@ task RunSKA {
 
     command <<<
     for i in ~{sep=' ' sample_and_reference_fastas}; do
-        ska fasta $i
+        ska fasta -o $(basename ${i%%.*}) $i
     done
 
     mkdir ska_hashes
@@ -189,6 +180,7 @@ task ComputeClusters {
     command <<<
     mkdir cluster_files
     python3 /bin/compute_clusters.py --ska-distances ~{ska_distances} --cut-height ~{cut_height}
+    >&2 find .
     tar -czf clusters.tar.gz cluster_files
     >>>
 
@@ -205,7 +197,6 @@ task ComputeClusters {
 }
 
 task GenerateClusterPhylos {
-    # For now, we are short-circuiting ComputeClusters, so GenerateClusterPhylos receives just one cluster (everything).
     input {
         File clusters_directory
         File ska_hashes
@@ -225,28 +216,28 @@ task GenerateClusterPhylos {
     CLUSTER_COUNTER=1
     mkdir ska_outputs
 
-    # for i in `ls cluster_files/*`
-    # do
-    #    rm -r temp_cluster # remove if already existed
-    #    mkdir temp_cluster
+    for i in `ls cluster_files/*`
+    do
+       rm -r temp_cluster # remove if already existed
+       mkdir temp_cluster
 
-    #    for j in `cat $i`
-    #    do
-    #        cp ska_hashes/$j.skf temp_cluster
-    #    done
+       for j in `cat $i`
+       do
+           cp ska_hashes/$j.skf temp_cluster
+       done
 
-    #    ska distance -o ska temp_cluster/*.skf
-    #    ska merge -o ska.merged temp_cluster/*.skf
-        ska distance -o ska ska_hashes/*.skf
-        ska merge -o ska.merged ska_hashes/*.skf
-        ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
-        mv ska_variants.aln ska.variants.aln
-        iqtree -s ska.variants.aln
+       ska distance -o ska temp_cluster/*.skf
+       ska merge -o ska.merged temp_cluster/*.skf
+       ska distance -o ska ska_hashes/*.skf
+       ska merge -o ska.merged ska_hashes/*.skf
+       ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
+       mv ska_variants.aln ska.variants.aln
+       iqtree -s ska.variants.aln
 
-        mkdir ska_outputs/cluster_$CLUSTER_COUNTER
-        mv ska.* ska_outputs/cluster_$CLUSTER_COUNTER
+       mkdir ska_outputs/cluster_$CLUSTER_COUNTER
+       mv ska.* ska_outputs/cluster_$CLUSTER_COUNTER
 
-        (( CLUSTER_COUNTER++ ))
+       (( CLUSTER_COUNTER++ ))
     done
 
     tar -czf ska_outputs.tar.gz ska_outputs

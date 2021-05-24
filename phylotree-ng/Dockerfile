@@ -40,8 +40,13 @@ RUN pip3 install toytree==2.0.1 toyplot==0.19.0 taxoniq==0.6.0 && \
     https://github.com/chanzuckerberg/taxoniq/releases/download/v0.6.0/ncbi_genbank_accession_lengths-2021.4.10-py3-none-any.whl \
     https://github.com/chanzuckerberg/taxoniq/releases/download/v0.6.0/ncbi_genbank_accession_offsets-2021.4.10-py3-none-any.whl
 
+
 RUN curl -L https://github.com/simonrharris/SKA/archive/refs/tags/v1.0.tar.gz | tar -xvz && \
     make -C SKA-1.0 && \
     make -C SKA-1.0 install
+
+COPY requirements.txt requirements.txt
+
+RUN pip3 install -r requirements.txt
 
 COPY python_steps/* /bin/

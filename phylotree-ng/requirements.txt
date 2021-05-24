@@ -5,3 +5,4 @@ scipy
 seaborn
 toyplot
 toytree
+biopython

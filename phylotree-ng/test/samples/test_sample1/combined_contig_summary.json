@@ -430,10 +430,8 @@
     "tax_level": 2,
     "count_type": "merged_NT_NR",
     "contig_counts": {
-      "CONTIG1": 6,
-      "CONTIG2": 7,
-      "CONTIG3": 8,
-      "CONTIG4": 9
+      "KX421195_zika": 7,
+      "": 3
     }
   }
 ]

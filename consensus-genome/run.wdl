@@ -49,7 +49,7 @@ workflow consensus_genome {
         Boolean trim_adapters = true
 
         Float ivarFreqThreshold = 0.9
-        Int   ivarQualTreshold  = 20
+        Int   ivarQualThreshold  = 20
         Int   minDepth          = 10
 
         # If no_reads_quast is true, quast runs without considering the raw reads (only considering the reference genome and the consensus.fa).

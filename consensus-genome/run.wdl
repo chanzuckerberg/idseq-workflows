@@ -159,6 +159,7 @@ workflow consensus_genome {
                 call_variants_bam = TrimPrimers.trimmed_bam_ch,
                 ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 bcftoolsCallTheta = bcftoolsCallTheta,
+                ivarQualThreshold = ivarQualThreshold,
                 minDepth = minDepth,
                 docker_image_id = docker_image_id
         }
@@ -684,6 +685,7 @@ task CallVariants {
         String prefix
         File call_variants_bam  # same as primertrimmed_bam produced by trimPrimers
         File ref_fasta
+        Int ivarQualThreshold
         Float bcftoolsCallTheta
         Int minDepth
 

@@ -26,7 +26,6 @@ workflow phylotree {
         String cut_height = .16
         String ska_align_p = .9
         String docker_image_id
-        String outgroup = ""
     }
 
     call GetSampleContigFastas {
@@ -75,10 +74,9 @@ workflow phylotree {
         File stats_json = ComputeClusters.stats_json
         File clustermap_png = ComputeClusters.clustermap_png
         File clustermap_svg = ComputeClusters.clustermap_svg
-        File treefile = GenerateClusterPhylos.treefile
+        File phylotree_newick = GenerateClusterPhylos.phylotree_newick
         File distances = GenerateClusterPhylos.distances
         # TODO: These are the output names from the old phylotree. Check which of these we still need to emit
-        # File phylo_tree_newick = GeneratePhyloTree.phylo_tree_newick
         # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
     }
 }
@@ -194,7 +192,6 @@ task RunSKA {
 }
 
 task ComputeClusters {
-    # TODO: throw warning or error if sequences are too divergent
     input {
         File ska_distances
         String cut_height
@@ -202,9 +199,9 @@ task ComputeClusters {
     }
 
     command <<<
+    set -e
     mkdir cluster_files
     python3 /bin/compute_clusters.py --ska-distances ~{ska_distances} --cut-height ~{cut_height}
-    >&2 find .
     tar -czf clusters.tar.gz cluster_files
     >>>
 
@@ -232,13 +229,6 @@ task GenerateClusterPhylos {
     tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 
-    N_CLUSTERS=$(ls cluster_files | wc -l)
-    
-    if [[ $N_CLUSTERS != 1 ]]; then
-        export error=MultipleClusters cause="SKA found multiple clusters ($N_CLUSTERS)"
-        jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-        exit 1
-    fi
 
     CLUSTER_FILE=$(ls cluster_files | head -n 1)
 
@@ -262,7 +252,7 @@ task GenerateClusterPhylos {
     >>>
 
     output {
-        File treefile = "tree.nwk"
+        File phylotree_newick = "tree.nwk"
         File distances = "ska.distances.tsv"
     }
 

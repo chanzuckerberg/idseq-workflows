@@ -11,6 +11,9 @@ from scipy import cluster
 
 matplotlib.use('Agg')
 
+class TooDivergentError(Exception):
+    pass
+
 def main(ska_distances: str, trim_height: float):
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
     # we may need to use a regex separator
@@ -39,6 +42,7 @@ def main(ska_distances: str, trim_height: float):
     ordered_clusterids = [i[0] for i in cutree]
     cluster_assignments = dict(zip(df3.index, ordered_clusterids))
     n_clusters = len(set(ordered_clusterids))
+
     cluster_sets = dict(zip(list(set(ordered_clusterids)), [[] for _ in range(n_clusters)]))
 
     for i in cluster_assignments.keys():
@@ -47,12 +51,21 @@ def main(ska_distances: str, trim_height: float):
     stats = {"sample_name": "insert_sample_name"}
 
     # write cluster contents to files for future processing
-    for c in cluster_sets.keys():
+    n_clusters_out = 0
+    for c, s in cluster_sets.items():
         stats[str(c)] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
-        if(len(cluster_sets[c])) > 2: # only output files where there are > 2 samples
+        if(len(s)) > 2: # only output files where there are > 2 samples
+            n_clusters_out += 1
             filenames = '\n'.join(cluster_sets[c])
             with open("./cluster_files/cluster_" + str(c), "w") as text_file:
                 text_file.write(filenames)
+
+    if n_clusters_out > 1:
+        exit(json.dumps(dict(
+            wdl_error_message=True,
+            error="TooDivergentError",
+            cause="Sequences are too divergent to create a single phylo tree",
+        )))
 
     color_list = sns.color_palette("Dark2", 8)
     long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))

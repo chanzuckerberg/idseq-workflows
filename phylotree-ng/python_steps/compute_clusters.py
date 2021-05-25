@@ -1,7 +1,6 @@
 import argparse
 import json
 import math
-import sys
 
 import matplotlib
 import numpy as np
@@ -35,11 +34,7 @@ def main(ska_distances: str, trim_height: float):
     df3.index = df2.index
     df3.fillna(0, inplace=True)
 
-    # cluster the data, create a dendrogram
     Z = cluster.hierarchy.linkage(1-df3, method='complete')
-    dn = cluster.hierarchy.dendrogram(Z, leaf_rotation=90, labels=df3.index)
-    plt.savefig('dendrogram.png', bbox_inches='tight')
-
     cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
     ordered_clusterids = [i[0] for i in cutree]
     cluster_assignments = dict(zip(df3.index, ordered_clusterids))
@@ -64,6 +59,7 @@ def main(ska_distances: str, trim_height: float):
     col_colors = [long_color_list[i] for i in ordered_clusterids]
     sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
     plt.savefig('clustermap.png', bbox_inches='tight')
+    plt.savefig('clustermap.svg', bbox_inches='tight')
 
     stats["dataframe_shape_0"] = df.shape[0]
     stats["dataframe_shape_1"] = df.shape[1]

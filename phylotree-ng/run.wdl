@@ -73,11 +73,10 @@ workflow phylotree {
         File ska_hashes = RunSKA.ska_hashes
         File ska_distances = RunSKA.distances
         File stats_json = ComputeClusters.stats_json
-        File dendrogram_png = ComputeClusters.dendrogram_png
         File clustermap_png = ComputeClusters.clustermap_png
-        File clusters_directory = ComputeClusters.clusters_directory
-        File ska_results = GenerateClusterPhylos.ska_results
-
+        File clustermap_svg = ComputeClusters.clustermap_svg
+        File treefile = GenerateClusterPhylos.treefile
+        File distances = GenerateClusterPhylos.distances
         # TODO: These are the output names from the old phylotree. Check which of these we still need to emit
         # File phylo_tree_newick = GeneratePhyloTree.phylo_tree_newick
         # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
@@ -212,8 +211,8 @@ task ComputeClusters {
     output {
         File stats_json = "stats.json"
         File clusters_directory = "clusters.tar.gz"
-        File dendrogram_png = "dendrogram.png"
         File clustermap_png = "clustermap.png"
+        File clustermap_svg = "clustermap.svg"
     }
 
     runtime {
@@ -243,13 +242,14 @@ task GenerateClusterPhylos {
 
     CLUSTER_FILE=$(ls cluster_files | head -n 1)
 
-    mkdir ska_outputs
     mkdir cluster
 
     for hash in `cat $CLUSTER_FILE`
     do
         cp ska_hashes/$hash.skf cluster
     done
+
+    mkdir ska_outputs
 
     ska distance -o ska cluster/*.skf
     ska merge -o ska.merged cluster/*.skf
@@ -258,14 +258,12 @@ task GenerateClusterPhylos {
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
     mv ska_variants.aln ska.variants.aln
     iqtree -s ska.variants.aln
-
-    mv ska.* ska_outputs/
-
-    tar -czf ska_outputs.tar.gz ska_outputs
+    mv ska.variants.aln.treefile tree.nwk
     >>>
 
     output {
-        File ska_results = "ska_outputs.tar.gz"
+        File treefile = "tree.nwk"
+        File distances = "ska.distances.tsv"
     }
 
     runtime {

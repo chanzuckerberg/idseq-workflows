@@ -35,4 +35,8 @@ class TestPhylotree(WDLTestCase):
 
     def test_phylotree(self):
         res = self.run_miniwdl()
+        a = res["outputs"]["phylotree.foo"]
+        with open(a) as f:
+            for line in f:
+                sys.stderr.write(line)
         self.assertEqual(res['outputs'], {})

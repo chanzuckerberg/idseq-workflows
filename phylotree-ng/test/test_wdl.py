@@ -1,4 +1,5 @@
 import os
+import json
 from csv import DictReader
 
 from Bio import SeqIO
@@ -44,7 +45,8 @@ class TestPhylotree(WDLTestCase):
         assert "phylotree.clustermap_png" in outputs
         assert "phylotree.clustermap_svg" in outputs
         assert "phylotree.variants" in outputs
-        assert len(outputs) == 5
+        assert "phylotree.ncbi_metadata_json" in outputs
+        assert len(outputs) == 6
             
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]
@@ -61,3 +63,7 @@ class TestPhylotree(WDLTestCase):
 
         with open(outputs["phylotree.variants"]) as f:
             assert identifiers == sorted([r.id for r in SeqIO.parse(f, "fasta")])
+
+        with open(outputs["phylotree.ncbi_metadata_json"]) as f:
+            m = json.load(f)
+            assert sorted(list(m.keys())) == self.accession_ids

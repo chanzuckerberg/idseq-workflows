@@ -71,14 +71,19 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
+    call FetchNCBIMetadata {
+        input:
+        reference_accession_ids = additional_reference_accession_ids,
+        docker_image_id = docker_image_id
+    }
+
     output {
         File ska_distances = AddSampleNamesToDistances.sample_name_distances
         File clustermap_png = ComputeClusters.clustermap_png
         File clustermap_svg = ComputeClusters.clustermap_svg
         File phylotree_newick = GenerateClusterPhylos.phylotree_newick
         File variants = AddSampleNamesToVariants.sample_name_variants
-        # TODO: Construct this file
-        # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
+        File ncbi_metadata_json = FetchNCBIMetadata.ncbi_metadata_json
     }
 }
 
@@ -283,3 +288,23 @@ task AddSampleNamesToVariants {
     }
 }
 
+task FetchNCBIMetadata {
+    input {
+        Array[String] reference_accession_ids
+        String docker_image_id
+    }
+
+    command <<<
+    python3 /bin/fetch_ncbi_metadata.py \
+        --reference-accession-ids "~{write_json(reference_accession_ids)}" \
+        --output-ncbi-metadata ncbi_metadata.json
+    >>>
+
+    output {
+        File ncbi_metadata_json = "ncbi_metadata.json"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}

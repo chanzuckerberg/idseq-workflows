@@ -1,5 +1,7 @@
 import os
-import sys
+from csv import DictReader
+
+from Bio import SeqIO
 
 from test_util import WDLTestCase
 
@@ -31,6 +33,9 @@ class TestPhylotree(WDLTestCase):
     }
 
     def test_phylotree(self):
+        workflow_run_ids = [s["workflow_run_id"] for s in self.common_inputs["samples"]]
+        sample_names = [s["sample_name"] for s in self.common_inputs["samples"]]
+
         res = self.run_miniwdl()
         outputs = res["outputs"]
 
@@ -43,7 +48,16 @@ class TestPhylotree(WDLTestCase):
             
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]
-            for sample in self.common_inputs["samples"]:
-                assert str(sample["workflow_run_id"]) in tree_text
+            for workflow_run_id in workflow_run_ids:
+                assert str(workflow_run_id) in tree_text
             for accession_id in self.accession_ids:
                 assert accession_id in tree_text
+        
+        identifiers = sorted(sample_names + self.accession_ids)
+        with open(outputs["phylotree.ska_distances"]) as f:
+            pairs = [sorted([r["Sample 1"], r["Sample 2"]]) for r in DictReader(f, delimiter="\t")]
+            expected = [[a, b] for a in identifiers for b in identifiers if a < b]
+            assert sorted(pairs) == expected
+
+        with open(outputs["phylotree.variants"]) as f:
+            assert identifiers == sorted([r.id for r in SeqIO.parse(f, "fasta")])

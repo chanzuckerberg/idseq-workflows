@@ -18,7 +18,8 @@ def main(distances: str, output_distances: str, samples: Iterable[Sample]):
         for i, row in enumerate(reader):
             if i == 0:
                 assert reader.fieldnames
-                writer = DictWriter(w, fieldnames=reader.fieldnames)
+                writer = DictWriter(w, fieldnames=reader.fieldnames, delimiter="\t")
+                writer.writeheader()
             assert writer
             row["Sample 1"] = sample_name_by_workflow_run_id.get(row["Sample 1"], row["Sample 1"])
             row["Sample 2"] = sample_name_by_workflow_run_id.get(row["Sample 2"], row["Sample 2"])

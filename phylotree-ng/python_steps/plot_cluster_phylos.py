@@ -42,7 +42,6 @@ def main(outgroup: str):
         print("about to create plot")
         print('phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.pdf')
         toyplot.pdf.render(canvas, 'phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.pdf')
-        #plt.savefig('phylo_plot_outputs/' + tree_file.split('/')[1] + '.treeplot.png', bbox_inches='tight')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

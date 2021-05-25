@@ -24,25 +24,11 @@ class TestPhylotree(WDLTestCase):
         samples[sample_name] = sample
         
     common_inputs = {
-        # "samples": [
-        #     {
-        #         "sample_name": "test_sample1",
-        #         "workflow_run_id": 12345,
-        #         "contig_fasta": os.path.join(samples_dir, "test_sample1", "contigs.fasta"),
-        #         "combined_contig_summary": os.path.join(samples_dir, "test_sample1", "combined_contig_summary.json"),
-        #     },
-        #     {
-        #         "sample_name": "test_sample2",
-        #         "workflow_run_id": 23456,
-        #         "contig_fasta": os.path.join(samples_dir, "test_sample2", "contigs.fasta"),
-        #         "combined_contig_summary": os.path.join(samples_dir, "test_sample2", "combined_contig_summary.json"),
-        #     },
-        # ],
         "samples": list(samples.values()),
-        "reference": {"taxon_id": 64320},
-        "additional_references": [
-            {"accession_id": "NC_012532.1"},
-            {"accession_id": "NC_035889.1"}
+        "reference_taxon_id": 64320,
+        "additional_reference_accession_ids": [
+            "NC_012532.1",
+            "NC_035889.1",
         ],
         "superkingdom_name": "viral"
     }

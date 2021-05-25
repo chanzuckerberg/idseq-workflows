@@ -48,12 +48,9 @@ def main(ska_distances: str, trim_height: float):
     for i in cluster_assignments.keys():
         cluster_sets[cluster_assignments[i]].append(i)
 
-    stats = {"sample_name": "insert_sample_name"}
-
     # write cluster contents to files for future processing
     n_clusters_out = 0
     for c, s in cluster_sets.items():
-        stats[str(c)] = ' '.join(cluster_sets[c]) # record cluster IDs in stats file for all clusters
         if(len(s)) > 2: # only output files where there are > 2 samples
             n_clusters_out += 1
             filenames = '\n'.join(cluster_sets[c])
@@ -74,11 +71,6 @@ def main(ska_distances: str, trim_height: float):
     plt.savefig('clustermap.png', bbox_inches='tight')
     plt.savefig('clustermap.svg', bbox_inches='tight')
 
-    stats["dataframe_shape_0"] = df.shape[0]
-    stats["dataframe_shape_1"] = df.shape[1]
-
-    with open("stats.json", "w") as f:
-        json.dump(stats, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

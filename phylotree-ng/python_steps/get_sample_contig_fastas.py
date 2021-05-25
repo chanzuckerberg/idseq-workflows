@@ -28,7 +28,9 @@ def main(reference_taxid: str, samples: Iterable[Sample]):
         contig_ids = set(get_contig_ids(reference_taxid, sample["combined_contig_summary"]))
         SeqIO.write(
             get_records(contig_ids, sample["contig_fasta"]),
-            f"{sample['sample_name']}.fasta",
+            # It is critical that these be named with the workflow_run_id so the workflow_run_id
+            # ends up in the resulting phylo tree
+            f"{sample['workflow_run_id']}.fasta",
             "fasta",
         )
 

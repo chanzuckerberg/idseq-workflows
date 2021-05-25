@@ -12,15 +12,9 @@ workflow phylotree {
         Array[SampleInfo] samples
         Int reference_taxon_id
 
-        # TODO: pass this to the relevant tasks and adjust SKA parameters as appropriate
-        # (kSNP3 used a variable kmer length for each superkingdom: Viruses: 13, Bacteria: 19, Eukaryota: 19)
-        # These kmer names can't be ported directly, because kSNP requires them to be odd while SKA requires a multiple of 3
-        # Try flanking sequence length (-k) 12 for viruses, 18 for bacteria/eukaryotes for SKA
-        # (SKA uses split kmers so the total resulting SKA kmer length here is (12*2 + 1) for 1 wobble base in the middle)
         String superkingdom_name # viruses, bacteria, or eukaryota
 
-        # allow the user to pass specific reference taxids/accessions to include with the tree
-        Array[Int] additional_reference_taxon_ids = []
+        # allow the user to pass specific refaccessions to include with the tree
         Array[String] additional_reference_accession_ids = []
 
         String cut_height = .16
@@ -41,15 +35,10 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
-    call GetReferenceTaxonFastas {
-        input:
-        taxon_ids = additional_reference_taxon_ids,
-        docker_image_id = docker_image_id
-    }
-
     call RunSKA {
         input:
-        sample_and_reference_fastas = flatten([GetSampleContigFastas.sample_contig_fastas, GetReferenceAccessionFastas.reference_fastas, GetReferenceTaxonFastas.reference_fastas]),
+        sample_and_reference_fastas = flatten([GetSampleContigFastas.sample_contig_fastas, GetReferenceAccessionFastas.reference_fastas]), 
+        superkingdom_name = superkingdom_name,
         docker_image_id = docker_image_id
     }
 
@@ -68,15 +57,27 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
+    call AddSampleNamesToDistances {
+        input:
+        distances = RunSKA.distances,
+        samples = samples,
+        docker_image_id = docker_image_id
+    }
+
+    call AddSampleNamesToVariants {
+        input:
+        variants = GenerateClusterPhylos.variants,
+        samples = samples,
+        docker_image_id = docker_image_id
+    }
+
     output {
-        File ska_hashes = RunSKA.ska_hashes
-        File ska_distances = RunSKA.distances
-        File stats_json = ComputeClusters.stats_json
+        File ska_distances = AddSampleNamesToDistances.sample_name_distances
         File clustermap_png = ComputeClusters.clustermap_png
         File clustermap_svg = ComputeClusters.clustermap_svg
         File phylotree_newick = GenerateClusterPhylos.phylotree_newick
-        File distances = GenerateClusterPhylos.distances
-        # TODO: These are the output names from the old phylotree. Check which of these we still need to emit
+        File variants = AddSampleNamesToVariants.sample_name_variants
+        # TODO: Construct this file
         # File ncbi_metadata_json = GeneratePhyloTree.ncbi_metadata_json
     }
 }
@@ -92,32 +93,6 @@ task GetReferenceAccessionFastas {
             taxoniq get-from-s3 --accession-id $accession_id > $accession_id.fasta
             if [[ $? == 4 ]]; then
                 export error=AccessionIdNotFound cause="Accession ID $accession_id not found in the index"
-                jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-                exit 4
-            fi
-        done
-    >>>
-
-    output {
-        Array[File] reference_fastas = glob("*.fasta")
-    }
-
-    runtime {
-        docker: docker_image_id
-    }
-}
-
-task GetReferenceTaxonFastas {
-    input {
-        Array[Int] taxon_ids
-        String docker_image_id
-    }
-
-    command <<<
-        for taxon_id in ~{sep=' ' taxon_ids}; do
-            taxoniq get-from-s3 --taxon-id $taxon_id > $taxon_id.fasta
-            if [[ $? == 4 ]]; then
-                export error=TaxonIdNotFound cause="Taxon ID $taxon_id not found in the index"
                 jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
                 exit 4
             fi
@@ -165,12 +140,18 @@ task GetSampleContigFastas {
 task RunSKA {
     input {
         Array[File] sample_and_reference_fastas
+        String superkingdom_name
         String docker_image_id
     }
 
     command <<<
+    k=18
+    if [[ "~{superkingdom_name}" == viruses ]]; then
+        k=12
+    fi
+
     for i in ~{sep=' ' sample_and_reference_fastas}; do
-        ska fasta -o $(basename ${i%%.*}) $i
+        ska fasta -o $(basename $i | sed 's/\.fasta//g') -k $k $i
     done
 
     mkdir ska_hashes
@@ -206,7 +187,6 @@ task ComputeClusters {
     >>>
 
     output {
-        File stats_json = "stats.json"
         File clusters_directory = "clusters.tar.gz"
         File clustermap_png = "clustermap.png"
         File clustermap_svg = "clustermap.svg"
@@ -229,18 +209,14 @@ task GenerateClusterPhylos {
     tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 
-
     CLUSTER_FILE=$(ls cluster_files | head -n 1)
-
     mkdir cluster
-
     for hash in `cat $CLUSTER_FILE`
     do
         cp ska_hashes/$hash.skf cluster
     done
 
     mkdir ska_outputs
-
     ska distance -o ska cluster/*.skf
     ska merge -o ska.merged cluster/*.skf
     ska distance -o ska ska_hashes/*.skf
@@ -248,12 +224,58 @@ task GenerateClusterPhylos {
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
     mv ska_variants.aln ska.variants.aln
     iqtree -s ska.variants.aln
-    mv ska.variants.aln.treefile tree.nwk
+    mv ska.variants.aln.treefile phylotree.nwk
     >>>
 
     output {
-        File phylotree_newick = "tree.nwk"
-        File distances = "ska.distances.tsv"
+        File phylotree_newick = "phylotree.nwk"
+        File variants = "ska.variants.aln"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
+task AddSampleNamesToDistances {
+    input {
+        File distances
+        Array[SampleInfo] samples
+        String docker_image_id
+    }
+
+    command <<<
+    python3 /bin/add_sample_names_to_distances.py \
+        --distances ~{distances} \
+        --samples "~{write_json(samples)}" \
+        --output-distances ska.distances.tsv
+    >>>
+
+    output {
+        File sample_name_distances = "ska.distances.tsv"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
+task AddSampleNamesToVariants {
+    input {
+        File variants
+        Array[SampleInfo] samples
+        String docker_image_id
+    }
+
+    command <<<
+    python3 /bin/add_sample_names_to_variants.py \
+        --variants ~{variants} \
+        --samples "~{write_json(samples)}" \
+        --output-variants ska.variants.aln
+    >>>
+
+    output {
+        File sample_name_variants = "ska.variants.aln"
     }
 
     runtime {

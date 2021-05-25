@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from csv import DictReader
 
 from Bio import SeqIO
@@ -40,13 +40,14 @@ class TestPhylotree(WDLTestCase):
         res = self.run_miniwdl()
         outputs = res["outputs"]
 
-        assert "phylotree.phylotree_newick" in outputs
-        assert "phylotree.ska_distances" in outputs
-        assert "phylotree.clustermap_png" in outputs
-        assert "phylotree.clustermap_svg" in outputs
-        assert "phylotree.variants" in outputs
-        assert "phylotree.ncbi_metadata_json" in outputs
-        assert len(outputs) == 6
+        assert sorted(outputs.keys()) == [
+            "phylotree.clustermap_png",
+            "phylotree.clustermap_svg",
+            "phylotree.ncbi_metadata_json",
+            "phylotree.phylotree_newick",
+            "phylotree.ska_distances",
+            "phylotree.variants",
+        ]
             
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]
@@ -65,5 +66,14 @@ class TestPhylotree(WDLTestCase):
             assert identifiers == sorted([r.id for r in SeqIO.parse(f, "fasta")])
 
         with open(outputs["phylotree.ncbi_metadata_json"]) as f:
-            m = json.load(f)
-            assert sorted(list(m.keys())) == self.accession_ids
+            assert json.load(f) == {
+                "NC_012532.1": {
+                    "name": "Zika virus, complete genome",
+                    "country": "Uganda",
+                },
+                "NC_035889.1": {
+                    "name": "Zika virus isolate ZIKV/H. sapiens/Brazil/Natal/2015, complete genome",
+                    "country": "Brazil: Rio Grande do Norte, Natal",
+                    "collection_date": "2015",
+                },
+            }

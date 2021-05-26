@@ -187,7 +187,10 @@ task ComputeClusters {
     command <<<
     set -e
     mkdir cluster_files
-    python3 /bin/compute_clusters.py --ska-distances ~{ska_distances} --cut-height ~{cut_height}
+    python3 /bin/compute_clusters.py \
+        --ska-distances ~{ska_distances} \
+        --cut-height ~{cut_height} \
+        --output-clusters-dir cluster_files
     tar -czf clusters.tar.gz cluster_files
     >>>
 

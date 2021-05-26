@@ -13,7 +13,7 @@ from scipy import cluster
 matplotlib.use('Agg')
 
 
-def main(ska_distances: str, trim_height: float):
+def main(ska_distances: str, trim_height: float, output_clusters_dir: str):
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
     # we may need to use a regex separator
     df = pd.read_csv(ska_distances, sep='\t')
@@ -53,7 +53,7 @@ def main(ska_distances: str, trim_height: float):
         if(len(s)) > 2:  # only output files where there are > 2 samples
             n_clusters_out += 1
             filenames = '\n'.join(cluster_sets[c])
-            with open("./cluster_files/cluster_" + str(c), "w") as text_file:
+            with open(f"{output_clusters_dir}/cluster_{str(c)}", "w") as text_file:
                 text_file.write(filenames)
 
     if n_clusters_out > 1:
@@ -75,5 +75,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ska-distances")
     parser.add_argument("--cut-height", type=float)
+    parser.add_argument("--output-clusters-dir")
     args = parser.parse_args()
-    main(args.ska_distances, args.cut_height)
+    main(args.ska_distances, args.cut_height, args.output_clusters_dir)

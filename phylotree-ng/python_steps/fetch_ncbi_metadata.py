@@ -1,49 +1,51 @@
 import argparse
 import json
 import logging
+import requests
 import time
 import xml.etree.ElementTree as ET
-from subprocess import run, PIPE
-from typing import TypedDict, Iterable
+from urllib.parse import urlencode
+from typing import Iterable, Optional, TypedDict
 
 
-class Metadata(TypedDict):
-    name: str
-    country: str
-    collection_date: str
+class Metadata(TypedDict, total=False):
+    name: Optional[str]
+    country: Optional[str]
+    collection_date: Optional[str]
 
 
-def fetch_ncbi(accession):
-    query = accession
-    base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
-    search_url = f"{base}/esearch.fcgi?db=nuccore&term={query}&usehistory=y"
-    output = run(["curl", search_url], stdout=PIPE, check=True).stdout
-    time.sleep(1)
-    root = ET.fromstring(output)
-    web = root.find('WebEnv').text
-    key = root.find('QueryKey').text
-    fetch_url = f"{base}/efetch.fcgi?db=nuccore&query_key={key}&WebEnv={web}&rettype=gb&retmode=xml"
-    genbank_xml = run(["curl", fetch_url], stdout=PIPE, check=True).stdout
-    return {
-        'search_url': search_url,
-        'fetch_url': fetch_url,
-        'genbank_xml': genbank_xml
-    }
-
-
-def get_accession_metadata(accession):
+def get_accession_metadata(accession_id: str):
     '''
     Retrieve metadata of an NCBI accession (e.g. name, country, collection date)
     TODO: Put this data in S3 instead and get it from there.
     '''
-    accession_metadata = {}
-    fetch_ncbi_result = fetch_ncbi(accession)
-    genbank_xml = fetch_ncbi_result['genbank_xml']
+    baseurl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    output = requests.get(f"{baseurl}/esearch.fcgi?" + urlencode({
+        "db": "nuccore",
+        "term": accession_id,
+        "usehistory": "y"
+    })).text
+    # sleep to avoid throttling
+    time.sleep(1)
+
+    root = ET.fromstring(output)
+    web = root.find('WebEnv').text
+    key = root.find('QueryKey').text
+    genbank_xml = requests.get(f"{baseurl}/efetch.fcgi?" + urlencode({
+        "db": "nuccore",
+        "query_key": key,
+        "WebEnv": web,
+        "rettype": "gb",
+        "retmode": "xml"
+    })).text
+    # sleep to avoid throttling
+    time.sleep(1)
+
+    accession_metadata: Metadata = {}
 
     root = ET.fromstring(genbank_xml).find('GBSeq')
-    time.sleep(1)
     if not root:
-        logging.warn(f"{fetch_ncbi_result} did not return a result")
+        logging.warn(f"Failed to fetch metadata for accession ID: {accession_id}")
         return accession_metadata
     accession_metadata['name'] = root.find('GBSeq_definition').text
     qualifiers_needed = {'country', 'collection_date'}

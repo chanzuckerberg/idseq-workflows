@@ -11,8 +11,9 @@ class Sample(TypedDict):
     contig_fasta: str
     combined_contig_summary: str
 
+
 def add_sample_names_to_records(variants: str, samples: Iterable[Sample]):
-    sample_name_by_workflow_run_id = { str(s["workflow_run_id"]): s["sample_name"] for s in samples }
+    sample_name_by_workflow_run_id = {str(s["workflow_run_id"]): s["sample_name"] for s in samples}
     for record in SeqIO.parse(variants, "fasta"):
         record.id = sample_name_by_workflow_run_id.get(record.id, record.id)
         yield record

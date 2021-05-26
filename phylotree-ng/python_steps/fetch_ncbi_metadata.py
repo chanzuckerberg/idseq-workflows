@@ -12,6 +12,7 @@ class Metadata(TypedDict):
     country: str
     collection_date: str
 
+
 def fetch_ncbi(accession):
     query = accession
     base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
@@ -29,6 +30,7 @@ def fetch_ncbi(accession):
         'genbank_xml': genbank_xml
     }
 
+
 def get_accession_metadata(accession):
     '''
     Retrieve metadata of an NCBI accession (e.g. name, country, collection date)
@@ -38,11 +40,8 @@ def get_accession_metadata(accession):
     fetch_ncbi_result = fetch_ncbi(accession)
     genbank_xml = fetch_ncbi_result['genbank_xml']
 
-    try:
-        root = ET.fromstring(genbank_xml).find('GBSeq')
-        time.sleep(1)
-    except:
-        assert False, genbank_xml
+    root = ET.fromstring(genbank_xml).find('GBSeq')
+    time.sleep(1)
     if not root:
         logging.warn(f"{fetch_ncbi_result} did not return a result")
         return accession_metadata

@@ -9,10 +9,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import cluster
 
-matplotlib.use('Agg')
 
-class TooDivergentError(Exception):
-    pass
+matplotlib.use('Agg')
 
 def main(ska_distances: str, trim_height: float):
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
@@ -51,7 +49,7 @@ def main(ska_distances: str, trim_height: float):
     # write cluster contents to files for future processing
     n_clusters_out = 0
     for c, s in cluster_sets.items():
-        if(len(s)) > 2: # only output files where there are > 2 samples
+        if(len(s)) > 2:  # only output files where there are > 2 samples
             n_clusters_out += 1
             filenames = '\n'.join(cluster_sets[c])
             with open("./cluster_files/cluster_" + str(c), "w") as text_file:
@@ -67,7 +65,7 @@ def main(ska_distances: str, trim_height: float):
     color_list = sns.color_palette("Dark2", 8)
     long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
     col_colors = [long_color_list[i] for i in ordered_clusterids]
-    sns.clustermap(df3, cmap='coolwarm_r', vmin = 0, vmax = 0.15, col_linkage = Z, col_colors = col_colors, figsize=(15,15))
+    sns.clustermap(df3, cmap='coolwarm_r', vmin=0, vmax=0.15, col_linkage=Z, col_colors=col_colors, figsize=(15, 15))
     plt.savefig('clustermap.png', bbox_inches='tight')
     plt.savefig('clustermap.svg', bbox_inches='tight')
 

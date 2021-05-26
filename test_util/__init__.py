@@ -14,7 +14,6 @@ from subprocess import check_output
 from pathlib import Path
 
 
-
 def repo_dir():
     return Path(os.path.dirname(os.path.dirname(__file__)))
 

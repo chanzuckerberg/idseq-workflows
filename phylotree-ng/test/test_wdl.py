@@ -6,6 +6,7 @@ from Bio import SeqIO
 
 from test_util import WDLTestCase
 
+
 class TestPhylotree(WDLTestCase):
     wdl = os.path.join(os.path.dirname(__file__), "..", "run.wdl")
     samples_dir = os.path.join(os.path.dirname(__file__), "full_zika_test_data")
@@ -25,7 +26,7 @@ class TestPhylotree(WDLTestCase):
         samples[sample_name] = sample
 
     accession_ids = ["NC_012532.1", "NC_035889.1"]
-        
+
     common_inputs = {
         "samples": list(samples.values()),
         "reference_taxon_id": 64320,
@@ -48,14 +49,14 @@ class TestPhylotree(WDLTestCase):
             "phylotree.ska_distances",
             "phylotree.variants",
         ]
-            
+
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]
             for workflow_run_id in workflow_run_ids:
                 assert str(workflow_run_id) in tree_text
             for accession_id in self.accession_ids:
                 assert accession_id in tree_text
-        
+
         identifiers = sorted(sample_names + self.accession_ids)
         with open(outputs["phylotree.ska_distances"]) as f:
             pairs = [sorted([r["Sample 1"], r["Sample 2"]]) for r in DictReader(f, delimiter="\t")]

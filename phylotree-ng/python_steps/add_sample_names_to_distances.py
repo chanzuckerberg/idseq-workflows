@@ -10,8 +10,9 @@ class Sample(TypedDict):
     contig_fasta: str
     combined_contig_summary: str
 
+
 def main(distances: str, output_distances: str, samples: Iterable[Sample]):
-    sample_name_by_workflow_run_id = { str(s["workflow_run_id"]): s["sample_name"] for s in samples }
+    sample_name_by_workflow_run_id = {str(s["workflow_run_id"]): s["sample_name"] for s in samples}
     with open(distances) as r, open(output_distances, "w") as w:
         reader = DictReader(r, delimiter="\t")
         writer = None

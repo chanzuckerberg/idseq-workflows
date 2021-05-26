@@ -11,6 +11,7 @@ class Sample(TypedDict):
     contig_fasta: str
     combined_contig_summary: str
 
+
 def get_contig_ids(reference_taxid: str, contig_summary: str):
     with open(contig_summary) as f:
         for row in json.load(f):

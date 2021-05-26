@@ -55,6 +55,7 @@ def get_accession_metadata(accession):
                 accession_metadata[key] = entry.find('GBQualifier_value').text
     return accession_metadata
 
+
 def main(reference_accession_ids: Iterable[str], output_ncbi_metadata: str):
     with open(output_ncbi_metadata, "w") as f:
         json.dump({a: get_accession_metadata(a) for a in reference_accession_ids}, f)

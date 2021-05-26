@@ -12,6 +12,7 @@ from scipy import cluster
 
 matplotlib.use('Agg')
 
+
 def main(ska_distances: str, trim_height: float):
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
     # we may need to use a regex separator

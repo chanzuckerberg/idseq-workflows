@@ -12,16 +12,18 @@ class Sample(TypedDict):
     combined_contig_summary: str
 
 def get_contig_ids(reference_taxid: str, contig_summary: str):
-  with open(contig_summary) as f:
-    for row in json.load(f):
-      if row["taxid"] == reference_taxid:
-        for contig_id in row["contig_counts"].keys():
-          yield contig_id
+    with open(contig_summary) as f:
+        for row in json.load(f):
+            if row["taxid"] == reference_taxid:
+                for contig_id in row["contig_counts"].keys():
+                    yield contig_id
+
 
 def get_records(contig_ids: Set[str], contig_fasta: str):
     for record in SeqIO.parse(contig_fasta, "fasta"):
         if record.id in contig_ids:
             yield record
+
 
 def main(reference_taxid: str, samples: Iterable[Sample]):
     for sample in samples:

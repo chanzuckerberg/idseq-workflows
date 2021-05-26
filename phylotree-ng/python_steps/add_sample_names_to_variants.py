@@ -18,6 +18,7 @@ def add_sample_names_to_records(variants: str, samples: Iterable[Sample]):
         record.id = sample_name_by_workflow_run_id.get(record.id, record.id)
         yield record
 
+
 def main(variants: str, output_variants: str, samples: Iterable[Sample]):
     SeqIO.write(add_sample_names_to_records(variants, samples), output_variants, "fasta")
 

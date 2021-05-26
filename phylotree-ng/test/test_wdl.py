@@ -53,21 +53,21 @@ class TestPhylotree(WDLTestCase):
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]
             for workflow_run_id in workflow_run_ids:
-                assert str(workflow_run_id) in tree_text
+                self.assertIn(str(workflow_run_id), tree_text)
             for accession_id in self.accession_ids:
-                assert accession_id in tree_text
+                self.assertIn(accession_id, tree_text)
 
         identifiers = sorted(sample_names + self.accession_ids)
         with open(outputs["phylotree.ska_distances"]) as f:
             pairs = [sorted([r["Sample 1"], r["Sample 2"]]) for r in DictReader(f, delimiter="\t")]
             expected = [[a, b] for a in identifiers for b in identifiers if a < b]
-            assert sorted(pairs) == expected
+            self.assertCountEqual(pairs, expected)
 
         with open(outputs["phylotree.variants"]) as f:
-            assert identifiers == sorted([r.id for r in SeqIO.parse(f, "fasta")])
+            self.assertCountEqual(identifiers, [r.id for r in SeqIO.parse(f, "fasta")])
 
         with open(outputs["phylotree.ncbi_metadata_json"]) as f:
-            assert json.load(f) == {
+            self.assertEqual(json.load(f), {
                 "NC_012532.1": {
                     "name": "Zika virus, complete genome",
                     "country": "Uganda",
@@ -77,4 +77,4 @@ class TestPhylotree(WDLTestCase):
                     "country": "Brazil: Rio Grande do Norte, Natal",
                     "collection_date": "2015",
                 },
-            }
+            })

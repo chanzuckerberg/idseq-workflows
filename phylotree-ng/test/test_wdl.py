@@ -41,14 +41,14 @@ class TestPhylotree(WDLTestCase):
         res = self.run_miniwdl()
         outputs = res["outputs"]
 
-        assert sorted(outputs.keys()) == [
+        self.assertCountEqual(outputs.keys(), [
             "phylotree.clustermap_png",
             "phylotree.clustermap_svg",
             "phylotree.ncbi_metadata_json",
             "phylotree.phylotree_newick",
             "phylotree.ska_distances",
             "phylotree.variants",
-        ]
+        ])
 
         with open(outputs["phylotree.phylotree_newick"]) as f:
             tree_text = f.readlines()[0]

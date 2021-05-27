@@ -1,7 +1,7 @@
 import argparse
 import json
 import math
-from typing import TypedDict, Iterable, Set
+from typing import TypedDict, Iterable
 
 import matplotlib
 import numpy as np

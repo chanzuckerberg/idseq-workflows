@@ -1,7 +1,6 @@
 import json
 import os
 from csv import DictReader
-import sys
 
 from Bio import SeqIO
 from Bio.Phylo import NewickIO
@@ -78,3 +77,8 @@ class TestPhylotree(WDLTestCase):
                     "collection_date": "2015",
                 },
             })
+
+        with open(outputs["phylotree.clustermap_svg"]) as f:
+            full_text = "\n".join(f.readlines())
+            for name in sample_names + self.accession_ids:
+                self.assertEqual(full_text.count(name), 2, name)

@@ -1,6 +1,7 @@
 import argparse
 import json
 import math
+from typing import TypedDict, Iterable, Set
 
 import matplotlib
 import numpy as np
@@ -13,7 +14,14 @@ from scipy import cluster
 matplotlib.use('Agg')
 
 
-def main(ska_distances: str, trim_height: float, output_clusters_dir: str):
+class Sample(TypedDict):
+    sample_name: str
+    workflow_run_id: int
+    contig_fasta: str
+    combined_contig_summary: str
+
+
+def main(ska_distances: str, trim_height: float, samples: Iterable[Sample], output_clusters_dir: str):
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
     # we may need to use a regex separator
     df = pd.read_csv(ska_distances, sep='\t')
@@ -36,7 +44,7 @@ def main(ska_distances: str, trim_height: float, output_clusters_dir: str):
     df3.index = df2.index
     df3.fillna(0, inplace=True)
 
-    Z = cluster.hierarchy.linkage(1-df3, method='complete')
+    Z = cluster.hierarchy.linkage(1-df3, method='average')
     cutree = cluster.hierarchy.cut_tree(Z, height=float(trim_height))
     ordered_clusterids = [i[0] for i in cutree]
     cluster_assignments = dict(zip(df3.index, ordered_clusterids))
@@ -56,6 +64,25 @@ def main(ska_distances: str, trim_height: float, output_clusters_dir: str):
             with open(f"{output_clusters_dir}/cluster_{str(c)}", "w") as text_file:
                 text_file.write(filenames)
 
+    sample_name_by_workflow_id = {str(s["workflow_run_id"]): s["sample_name"] for s in samples}
+    df3.columns = [sample_name_by_workflow_id.get(a, a) for a in df3.columns]
+    df3.index = [sample_name_by_workflow_id.get(a, a) for a in df3.index]
+    color_list = sns.color_palette("Dark2", 8)
+    long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
+    col_colors = [long_color_list[i] for i in ordered_clusterids]
+    sns.clustermap(
+        df3,
+        cmap='YlOrRd_r',
+        vmin=0,
+        vmax=0.15,
+        row_linkage=Z,
+        col_linkage=Z,
+        col_colors=col_colors,
+        figsize=(15, 15),
+    )
+    plt.savefig('clustermap.png', bbox_inches='tight')
+    plt.savefig('clustermap.svg', bbox_inches='tight')
+
     if n_clusters_out > 1:
         exit(json.dumps(dict(
             wdl_error_message=True,
@@ -63,18 +90,16 @@ def main(ska_distances: str, trim_height: float, output_clusters_dir: str):
             cause="Sequences are too divergent to create a single phylo tree",
         )))
 
-    color_list = sns.color_palette("Dark2", 8)
-    long_color_list = color_list*math.ceil(len(set(ordered_clusterids))/len(color_list))
-    col_colors = [long_color_list[i] for i in ordered_clusterids]
-    sns.clustermap(df3, cmap='coolwarm_r', vmin=0, vmax=0.15, col_linkage=Z, col_colors=col_colors, figsize=(15, 15))
-    plt.savefig('clustermap.png', bbox_inches='tight')
-    plt.savefig('clustermap.svg', bbox_inches='tight')
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ska-distances")
     parser.add_argument("--cut-height", type=float)
+    parser.add_argument("--samples")
     parser.add_argument("--output-clusters-dir")
     args = parser.parse_args()
-    main(args.ska_distances, args.cut_height, args.output_clusters_dir)
+
+    with open(args.samples) as f:
+        samples: Iterable[Sample] = json.load(f)
+
+    main(args.ska_distances, args.cut_height, samples, args.output_clusters_dir)

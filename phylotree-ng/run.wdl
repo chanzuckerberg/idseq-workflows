@@ -46,6 +46,7 @@ workflow phylotree {
         input:
         ska_distances = RunSKA.distances,
         cut_height = cut_height,
+        samples = samples,
         docker_image_id = docker_image_id
     }
 
@@ -181,6 +182,7 @@ task ComputeClusters {
     input {
         File ska_distances
         String cut_height
+        Array[SampleInfo] samples
         String docker_image_id
     }
 
@@ -190,6 +192,7 @@ task ComputeClusters {
     python3 /bin/compute_clusters.py \
         --ska-distances ~{ska_distances} \
         --cut-height ~{cut_height} \
+        --samples "~{write_json(samples)}" \
         --output-clusters-dir cluster_files
     tar -czf clusters.tar.gz cluster_files
     >>>
@@ -225,8 +228,6 @@ task GenerateClusterPhylos {
     done
 
     mkdir ska_outputs
-    ska distance -o ska cluster/*.skf
-    ska merge -o ska.merged cluster/*.skf
     ska distance -o ska ska_hashes/*.skf
     ska merge -o ska.merged ska_hashes/*.skf
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf

@@ -25,15 +25,15 @@ def main(ska_distances: str, trim_height: float, samples: Iterable[Sample], outp
     # we have observed some strange parsing behavior of this file, ensure it works with end to end testing
     # we may need to use a regex separator
     df = pd.read_csv(ska_distances, sep='\t')
-    df = pd.concat([
-        pd.DataFrame(dict(zip(df.columns, [df.iloc[0][0], df.iloc[0][0]] + [0] * 6)), index=[0]),
-        df,
-        pd.DataFrame(dict(zip(df.columns, [df.iloc[-1][0], df.iloc[-1][0]] + [0] * 6)), index=[0]),
-    ])
     df.reset_index(drop=True, inplace=True)
 
     # long dataframe to wide
     df2 = df.pivot_table(index=['Sample 1'], columns='Sample 2', values='Mash-like distance')
+    df2.columns = [str(i) for i in df2.columns]  # ensure that columns and index values are strings
+    df2.index = [str(i) for i in df2.index]
+    index = df2.index.union(df2.columns)
+    df2 = df2.reindex(index=index, columns=index, fill_value=0)
+    df2 = df2[df2.index]  # re-order columns to match index order
 
     # fill lower triangle of the matrix (currently NA)
     npdf = df2.to_numpy()

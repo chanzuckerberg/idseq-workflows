@@ -13,7 +13,10 @@ def test_RunAssembly_defaults(util, short_read_mngs_bench3_viral_outputs):
     assembly_contigs_all_fasta = short_read_mngs_bench3_viral_outputs["outputs"][
         "idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_all_fasta"
     ]
-    assert count_fasta(assembly_contigs_fasta) == count_fasta(assembly_contigs_all_fasta)
+    assert fasta_headers(assembly_contigs_fasta) == fasta_headers(assembly_contigs_all_fasta)
+    # quick&dirty: the contents should be identical modulo newlines
+    with open(assembly_contigs_fasta) as in1, open(assembly_contigs_all_fasta) as in2:
+        assert in1.read().replace("\n", "") == in2.read().replace("\n", "")
 
 
 def test_RunAssembly_filtered(util, short_read_mngs_bench3_viral_outputs):
@@ -49,17 +52,17 @@ def test_RunAssembly_filtered(util, short_read_mngs_bench3_viral_outputs):
     assembly_contigs_all_fasta = os.path.join(
         outp["dir"], outp["outputs"][f"{task_name}.assembly_contigs_all_fasta"]
     )
-    assert count_fasta(assembly_contigs_fasta) and count_fasta(
-        assembly_contigs_fasta
-    ) < count_fasta(assembly_contigs_all_fasta)
+    contigs_headers = fasta_headers(assembly_contigs_fasta)
+    contigs_all_headers = fasta_headers(assembly_contigs_all_fasta)
+    assert contigs_headers and (set(contigs_all_headers) - set(contigs_headers))
 
 
-def count_fasta(fn):
-    ans = 0
+def fasta_headers(fn):
+    ans = []
     with open(fn) as infile:
         while True:
             line = infile.readline()
             if not line:
                 return ans
             if line[0] == ">":
-                ans += 1
+                ans.append(line)

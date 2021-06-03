@@ -13,19 +13,23 @@ class Read(NamedTuple):
 
 def iterator(fasta_file: str) -> Iterator[Read]:
     """Iterate through fasta_file, yielding one Read tuple at a time."""
-    # TODO: Support full fasta format, where sequences may be split over multiple lines.
-    # Perf: 47 million (unpaired) reads per minute on a high end 2018 laptop.
     with open(fasta_file, 'r', encoding='utf-8') as f:
+        header = None
+        sequence_wip = []
         while True:
-            header = f.readline().rstrip()
-            sequence = f.readline().rstrip()
-            if not header or not sequence:
+            line = f.readline().rstrip()
+            if not line:
                 break
-            # the performance penalty for these asserts is only 8 percent
-            assert header[0] == '>'
-            assert sequence[0] != '>'
-            # the performance penalty for constructing a Read tuple is 40 percent
-            yield Read(header, sequence)
+            if line[0] == '>':
+                if header:
+                    yield Read(header, ("".join(sequence_wip) if len(sequence_wip) != 1 else sequence_wip[0]))
+                header = line
+                sequence_wip.clear()
+            else:
+                assert header, "FASTA file doesn't begin with header"
+                sequence_wip.append(line)
+        if header:
+            yield Read(header, "".join(sequence_wip))
 
 def synchronized_iterator(fasta_files: List[str]) -> Iterator[Tuple[Read, ...]]:
     """Iterate through one or more fasta files in lockstep, yielding tuples of

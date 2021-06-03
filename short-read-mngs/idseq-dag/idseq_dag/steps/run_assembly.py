@@ -6,6 +6,7 @@ from collections import defaultdict
 from idseq_dag.engine.pipeline_step import PipelineStep
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns
+import idseq_dag.util.fasta as fasta
 
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE
 from idseq_dag.util.count import get_read_cluster_size, load_duplicate_cluster_sizes, READ_COUNTING_MODE, ReadCountingMode
@@ -64,11 +65,13 @@ class PipelineStepRunAssembly(PipelineStep):
         duplicate_cluster_sizes_path, = self.input_files_local[1]
         assert duplicate_cluster_sizes_path.endswith(".tsv"), self.input_files_local[1]
 
-        assembled_contig, assembled_scaffold, bowtie_sam, contig_stats = self.output_files_local()
+        assembled_contig, assembled_contig_all, assembled_scaffold, bowtie_sam, contig_stats = self.output_files_local()
         read2contig = {}
         memory = self.additional_attributes.get('memory', 100)
-        self.assemble(input_fasta, input_fasta2, bowtie_fasta, duplicate_cluster_sizes_path, assembled_contig, assembled_scaffold,
-                      bowtie_sam, contig_stats, read2contig, int(memory))
+        min_contig_length = int(self.additional_attributes.get('min_contig_length', 0))
+        self.assemble(input_fasta, input_fasta2, bowtie_fasta, duplicate_cluster_sizes_path,
+                      assembled_contig, assembled_contig_all, assembled_scaffold,
+                      bowtie_sam, contig_stats, read2contig, int(memory), min_contig_length)
 
     @staticmethod
     def assemble(input_fasta,
@@ -76,11 +79,13 @@ class PipelineStepRunAssembly(PipelineStep):
                  bowtie_fasta,  # fasta file for running bowtie against contigs
                  duplicate_cluster_sizes_path,
                  assembled_contig,
+                 assembled_contig_all,
                  assembled_scaffold,
                  bowtie_sam,
                  contig_stats,
                  read2contig,
-                 memory=100):
+                 memory=100,
+                 min_contig_length=0):
         basedir = os.path.dirname(assembled_contig)
         assembled_dir = os.path.join(basedir, 'spades')
         command.make_dirs(assembled_dir)
@@ -124,14 +129,25 @@ class PipelineStepRunAssembly(PipelineStep):
                         ]
                     )
                 )
-            command.move_file(assembled_contig_tmp, assembled_contig)
+            command.move_file(assembled_contig_tmp, assembled_contig_all)
             command.move_file(assembled_scaffold_tmp, assembled_scaffold)
+
+            if min_contig_length:
+                # apply contig length filter
+                with open(assembled_contig, "w") as outfile:
+                    for record in fasta.iterator(assembled_contig_all):
+                        if len(record.sequence) >= min_contig_length:
+                            print(record.header, file=outfile)
+                            print(record.sequence, file=outfile)
+            else:
+                command.copy_file(assembled_contig_all, assembled_contig)
 
             PipelineStepRunAssembly.generate_read_to_contig_mapping(assembled_contig, bowtie_fasta,
                                                                     read2contig, duplicate_cluster_sizes_path, bowtie_sam, contig_stats)
         except:
             # Assembly failed. create dummy output files
             command.write_text_to_file(';ASSEMBLY FAILED', assembled_contig)
+            command.write_text_to_file(';ASSEMBLY FAILED', assembled_contig_all)
             command.write_text_to_file(';ASSEMBLY FAILED', assembled_scaffold)
             command.write_text_to_file('@NO INFO', bowtie_sam)
             command.write_text_to_file('{}', contig_stats)

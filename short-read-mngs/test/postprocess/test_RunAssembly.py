@@ -13,7 +13,7 @@ def test_RunAssembly_defaults(util, short_read_mngs_bench3_viral_outputs):
     assembly_contigs_all_fasta = short_read_mngs_bench3_viral_outputs["outputs"][
         "idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_all_fasta"
     ]
-    assert os.path.getsize(assembly_contigs_fasta) == os.path.getsize(assembly_contigs_all_fasta)
+    assert count_fasta(assembly_contigs_fasta) == count_fasta(assembly_contigs_all_fasta)
 
 
 def test_RunAssembly_filtered(util, short_read_mngs_bench3_viral_outputs):

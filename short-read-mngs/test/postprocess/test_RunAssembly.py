@@ -1,7 +1,5 @@
 import os
 import json
-import csv
-import tempfile
 
 
 def test_RunAssembly_defaults(util, short_read_mngs_bench3_viral_outputs):
@@ -9,7 +7,6 @@ def test_RunAssembly_defaults(util, short_read_mngs_bench3_viral_outputs):
     On default settings, the assembly_out_contigs_fasta and assembly_out_contigs_all_fasta files
     should be identicaly (because all contigs pass the default min_contig_length filter)
     """
-    task_name = "RunAlignment_gsnap_out"
     assembly_contigs_fasta = short_read_mngs_bench3_viral_outputs["outputs"][
         "idseq_short_read_mngs.postprocess.assembly_out_assembly_contigs_fasta"
     ]

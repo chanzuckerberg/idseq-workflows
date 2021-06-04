@@ -24,6 +24,7 @@ class TestConsensusGenomes(WDLTestCase):
                 # if the file is empty we still want to fail
                 self.assertEqual(error_file_path, None)
 
+
     def test_sars_cov2_illumina_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
         fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2.fastq.gz")

@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Union
 import zipfile
 import gzip
 import tempfile
@@ -14,6 +15,15 @@ class TestConsensusGenomes(WDLTestCase):
     with open(os.path.join(os.path.dirname(__file__), "local_test.yml")) as fh:
         common_inputs = yaml.safe_load(fh)
     sc2_ref_fasta = "s3://idseq-public-references/consensus-genome/MN908947.3.fa"
+
+    # if this assertion fails it will fail with the error text for easier debugging
+    def _assertNoErrorFile(self, error_file_path: Union[str, None]):
+        if error_file_path:
+            with open(error_file_path) as f:
+                self.assertEqual("", "\n".join(f))
+                # if the file is empty we still want to fail
+                self.assertEqual(error_file_path, None)
+
 
     def test_sars_cov2_illumina_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
@@ -33,6 +43,9 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["ercc_mapped_reads"], 0)
         self.assertEqual(output_stats["ref_snps"], 7)
         self.assertEqual(output_stats["ref_mnps"], 0)
+
+        # TODO: tmorse exp
+        self.assertEqual([], [e for e in outputs.values() if e])
         for output_name, output in outputs.items():
             if output_name in {"consensus_genome.minion_log", "consensus_genome.vadr_errors"}:
                 continue
@@ -52,8 +65,8 @@ class TestConsensusGenomes(WDLTestCase):
                 f"vadr_options={vadr_opts_string}", f"ref_fasta={self.sc2_ref_fasta}"]
         res = self.run_miniwdl(args=args)
         self.assertIn("consensus_genome.vadr_errors", res["outputs"])
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_alerts_out"], None)
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_quality_out"], None)
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_alerts_out"])
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_quality_out"])
 
     def test_vadr_flag_works(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
@@ -64,9 +77,7 @@ class TestConsensusGenomes(WDLTestCase):
         res = self.run_miniwdl(args=args)
         self.assertIn("consensus_genome.vadr_alerts_out", res["outputs"])
         self.assertIn("consensus_genome.vadr_alerts_out", res["outputs"])
-        print(res["outputs"])
-        print(res["outputs"]["consensus_genome.vadr_errors"])
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_errors"], None)
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_errors"])
 
     # test the depths associated with SNAP ivar trim -x 5
     def test_sars_cov2_illumina_cg_snap(self):
@@ -135,6 +146,7 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["n_missing"], 22039)
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 0)
+        self.assertEqual([], [e for e in outputs.values() if e])
         for output_name, output in outputs.items():
             if output_name in {"consensus_genome.quantify_erccs_out_ercc_out",
                                "consensus_genome.filter_reads_out_filtered_fastqs",
@@ -216,9 +228,9 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 4)
 
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_alerts_out"], None)
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_quality_out"], None)
-        self.assertEqual(res["outputs"]["consensus_genome.vadr_errors"], None)
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_alerts_out"])
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_quality_out"])
+        self._assertNoErrorFile(res["outputs"]["consensus_genome.vadr_errors"])
 
         args.append(f"ref_fasta={self.sc2_ref_fasta}")
         with self.assertRaises(CalledProcessError) as ecm:

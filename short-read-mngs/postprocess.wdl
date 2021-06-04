@@ -6,7 +6,7 @@ task RunAssembly {
     String s3_wd_uri
     Array[File] host_filter_out_gsnap_filter_fa
     File duplicate_cluster_sizes_tsv
-    Int min_contig_length = 100
+    Int min_contig_length
   }
   command<<<
   set -euxo pipefail
@@ -481,6 +481,7 @@ workflow idseq_postprocess {
     File deuterostome_db = "s3://idseq-public-references/taxonomy/2020-04-20/deuterostome_taxids.txt"
     Boolean use_deuterostome_filter = true
     Boolean use_taxon_whitelist = false
+    Int min_contig_length = 100
   }
 
   call RunAssembly {
@@ -488,7 +489,8 @@ workflow idseq_postprocess {
       docker_image_id = docker_image_id,
       s3_wd_uri = s3_wd_uri,
       host_filter_out_gsnap_filter_fa = select_all([host_filter_out_gsnap_filter_1_fa, host_filter_out_gsnap_filter_2_fa, host_filter_out_gsnap_filter_merged_fa]),
-      duplicate_cluster_sizes_tsv = duplicate_cluster_sizes_tsv
+      duplicate_cluster_sizes_tsv = duplicate_cluster_sizes_tsv,
+      min_contig_length = min_contig_length
   }
 
   call GenerateCoverageStats {

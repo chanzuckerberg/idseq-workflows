@@ -44,7 +44,7 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["ref_mnps"], 0)
 
         # TODO: tmorse exp
-        self.assertEqual([], [n for n, e in outputs.items() if e == None])
+        self.assertEqual([], [n for n, e in outputs.items() if e is None])
         for output_name, output in outputs.items():
             if output_name in {"consensus_genome.minion_log", "consensus_genome.vadr_errors"}:
                 continue
@@ -146,7 +146,7 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 0)
         # TODO: tmorse exp
-        self.assertEqual([], [n for n, e in outputs.items() if e == None])
+        self.assertEqual([], [n for n, e in outputs.items() if e is None])
         for output_name, output in outputs.items():
             if output_name in {"consensus_genome.quantify_erccs_out_ercc_out",
                                "consensus_genome.filter_reads_out_filtered_fastqs",

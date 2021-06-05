@@ -3,10 +3,10 @@ import json
 import os
 import traceback
 from collections import defaultdict
+from Bio import SeqIO
 from idseq_dag.engine.pipeline_step import PipelineStep
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns
-import idseq_dag.util.fasta as fasta
 
 from idseq_dag.util.m8 import MIN_CONTIG_SIZE
 from idseq_dag.util.count import get_read_cluster_size, load_duplicate_cluster_sizes, READ_COUNTING_MODE, ReadCountingMode
@@ -134,11 +134,12 @@ class PipelineStepRunAssembly(PipelineStep):
 
             if min_contig_length:
                 # apply contig length filter
-                with open(assembled_contig, "w") as outfile:
-                    for record in fasta.iterator(assembled_contig_all):
-                        if len(record.sequence) >= min_contig_length:
-                            print(record.header, file=outfile)
-                            print(record.sequence, file=outfile)
+                SeqIO.write(
+                    (r for r in SeqIO.parse(assembled_contig_all, "fasta")
+                        if len(r.seq) >= min_contig_length),
+                    assembled_contig,
+                    "fasta",
+                )
             else:
                 command.copy_file(assembled_contig_all, assembled_contig)
 

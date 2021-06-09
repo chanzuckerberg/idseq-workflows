@@ -161,6 +161,19 @@ class TestConsensusGenomes(WDLTestCase):
             for _, filename in res["outputs"].items():
                 self.assertGreater(os.path.getsize(filename), 0)
 
+    def test_sars_cov2_medaka_fail(self):
+        """
+        Test that the pipeline will fail if the medaka model is incompatible
+        """
+        model = "r941_prom_snp_g360"
+        fastq = os.path.join(os.path.dirname(__file__), "no_host_1.fq.gz")
+        args = ["prefix=''", "sample=test_sample", f"fastqs={fastq}",
+                "normalise=1000", f"medaka_model={model}",
+                "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"]
+        with self.assertRaises(CalledProcessError) as ecm:
+            self.run_miniwdl(args, task="RunMinion")
+            self.assertRunFailed(ecm, task="RunMinion", error="CalledProcessError")
+
     def test_sars_cov2_ont_cg_no_length_filter(self):
         """
         Ensures that the apply_length_filter=false option has an effect by truncating every other input read

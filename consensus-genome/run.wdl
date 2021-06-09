@@ -149,7 +149,7 @@ workflow consensus_genome {
                 bam = TrimPrimers.trimmed_bam_ch,
                 ivarFreqThreshold = ivarFreqThreshold,
                 minDepth = minDepth,
-                ivarQualThreshold = ivarQualTreshold,
+                ivarQualThreshold = ivarQualThreshold,
                 docker_image_id = docker_image_id
         }
         # this step does not rely on outputs of QUAST, so we can move it here to avoid complex logic

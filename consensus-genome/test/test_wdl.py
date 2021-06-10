@@ -156,7 +156,7 @@ class TestConsensusGenomes(WDLTestCase):
         for model in models:
             args = ["prefix=''", "sample=test_sample", f"fastqs={fastq}",
                     "normalise=1000", f"medaka_model={model}",
-                    "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz", 
+                    "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz",
                     "primer_set=nCoV-2019/V3"]
             res = self.run_miniwdl(args, task="RunMinion")
             for filename in res["outputs"].values():
@@ -170,7 +170,7 @@ class TestConsensusGenomes(WDLTestCase):
         fastq = os.path.join(os.path.dirname(__file__), "no_host_1.fq.gz")
         args = ["prefix=''", "sample=test_sample", f"fastqs={fastq}",
                 "normalise=1000", f"medaka_model={model}",
-                "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz", 
+                "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz",
                 "primer_set=nCoV-2019/V3"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args, task="RunMinion")

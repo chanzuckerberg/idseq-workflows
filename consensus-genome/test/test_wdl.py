@@ -157,7 +157,7 @@ class TestConsensusGenomes(WDLTestCase):
                     "normalise=1000", f"medaka_model={model}",
                     "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"]
             res = self.run_miniwdl(args, task="RunMinion")
-            for _, filename in res["outputs"].items():
+            for filename in res["outputs"].values():
                 self.assertGreater(os.path.getsize(filename), 0)
 
     def test_sars_cov2_medaka_fail(self):
@@ -171,7 +171,9 @@ class TestConsensusGenomes(WDLTestCase):
                 "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args, task="RunMinion")
-            self.assertRunFailed(ecm, task="RunMinion", error="CalledProcessError")
+        miniwdl_error = json.loads(ecm.exception.output)
+        self.assertEqual(miniwdl_error["error"], "RunFailed")
+        self.assertEqual(miniwdl_error["cause"]["error"], "CommandFailed")
 
     def test_sars_cov2_ont_cg_no_length_filter(self):
         """

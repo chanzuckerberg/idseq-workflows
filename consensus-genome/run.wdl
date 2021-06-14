@@ -721,9 +721,9 @@ task RunMinion {
         String sample
         Array[File]+ fastqs
         File primer_schemes
+        String primer_set
         Int normalise
         String medaka_model
-        String primer_set
         String docker_image_id
     }
 
@@ -766,11 +766,11 @@ task Quast {
         File assembly   # same as consensus_fa
         File bam
         Array[File]+ fastqs
-        File ref_fasta
+        File? ref_fasta
         File? primer_schemes
+        String? primer_set
         String no_reads_quast
         String technology
-        String primer_set
         Int threads = 4
 
         String docker_image_id

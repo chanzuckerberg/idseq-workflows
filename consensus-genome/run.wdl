@@ -30,7 +30,7 @@ workflow consensus_genome {
         String prefix = ""
 
         # ONT-specific inputs
-        File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"
+        File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes_v2.tar.gz"
         String primer_set = "nCoV-2019/V3"
         # filters in accordance with recommended parameters in ARTIC SARS-CoV-2 bioinformatics protocol are...
         # ...intended to remove obviously chimeric reads.

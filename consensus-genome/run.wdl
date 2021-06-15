@@ -398,6 +398,7 @@ task Subsample {
 
     command <<<
         python3 <<CODE
+        import gzip
         import shutil
         from hashlib import md5
         from random import seed, sample
@@ -408,7 +409,8 @@ task Subsample {
         HASH_BLOCK_SIZE = 65536  # 64 KB
 
         def count_reads(fastq):
-            return sum(1 for _ in SeqIO.parse(fastq, "fastq"))
+            with gzip.open(fastq) as f:
+                return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         def hash_file(path):
             h = md5()
@@ -429,21 +431,22 @@ task Subsample {
             seed(hash_file(input_fastq))
             s_idx = set(sample(range(n_reads), MAX_READS))
 
-            reads_iter = enumerate(SeqIO.parse(input_fastq, "fastq"))
-            SeqIO.write(
-                (read for i, read in reads_iter if i in s_idx),
-                output_fastq,
-                "fastq"
-            )
+            with gzip.open(input_fastq) as in_f, gzip.open(output_fastq, 'wb') as out_f:
+                reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
+                SeqIO.write(
+                    (read for i, read in reads_iter if i in s_idx),
+                    out_f,
+                    "fastq"
+                )
 
 
         for i, input_fastq in enumerate(["~{sep='\",\"' fastqs}"]):
-            subsample(input_fastq, f"subsampled_{i}.fastq")
+            subsample(input_fastq, f"subsampled_{i}.fastq.gz")
         CODE
     >>>
 
     output {
-        Array[File] subsampled_fastqs = glob("*.fastq")
+        Array[File] subsampled_fastqs = glob("*.fastq.gz")
     }
 
     runtime {

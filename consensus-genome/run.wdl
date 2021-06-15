@@ -429,7 +429,7 @@ task Subsample {
             seed(hash_file(input_fastq))
             s_idx = set(sample(range(n_reads), MAX_READS))
 
-            reads_iter = enumerate(SeqIO.parse(input_fastq, "fastq")):
+            reads_iter = enumerate(SeqIO.parse(input_fastq, "fastq"))
             SeqIO.write(
                 (read for i, read in reads_iter if i in s_idx),
                 output_fastq,

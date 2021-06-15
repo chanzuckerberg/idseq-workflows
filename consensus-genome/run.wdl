@@ -409,7 +409,7 @@ task Subsample {
         HASH_BLOCK_SIZE = 65536  # 64 KB
 
         def count_reads(fastq):
-            with gzip.open(fastq, 'r') as f:
+            with gzip.open(fastq, 'rt') as f:
                 return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         def hash_file(path):
@@ -431,7 +431,7 @@ task Subsample {
             seed(hash_file(input_fastq))
             s_idx = set(sample(range(n_reads), MAX_READS))
 
-            with gzip.open(input_fastq, 'r') as in_f, gzip.open(output_fastq, 'w') as out_f:
+            with gzip.open(input_fastq, 'rt') as in_f, gzip.open(output_fastq, 'wt') as out_f:
                 reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
                 SeqIO.write(
                     (read for i, read in reads_iter if i in s_idx),

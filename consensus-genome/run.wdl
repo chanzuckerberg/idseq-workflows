@@ -36,6 +36,8 @@ workflow consensus_genome {
         Boolean apply_length_filter = true # Set to False for Clear Labs samples
         Int min_length = 350
         Int max_length = 700
+        # max reads for subsampling
+        Int max_reads = 100 # TODO: pick a good value
         # normalise: default is set to 1000 to avoid spurious indels observed in validation
         Int normalise  = 1000
         # medaka_model: default is selected to support current Clear Labs workflow
@@ -91,10 +93,17 @@ workflow consensus_genome {
         }    
     }
 
+    call Subsample {
+        input:
+            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
+            max_reads = max_reads,
+            docker_image_id = docker_image_id
+    }
+
     call RemoveHost {
         input:
             prefix = prefix,
-            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
+            fastqs = Subsample.subsampled_fastqs,
             ref_host = ref_host,
             technology = technology,
             docker_image_id = docker_image_id
@@ -372,6 +381,69 @@ task ApplyLengthFilter {
 
     output {
         Array[File]+ filtered_fastqs = ["filtered.fastq"]
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
+task Subsample {
+    input {
+        Array[File] fastqs
+        Int max_reads
+
+        String docker_image_id
+    }
+
+    command <<<
+        python3 <<CODE
+        import shutil
+        from hashlib import md5
+        from random import seed, sample
+
+        from Bio import SeqIO
+
+        MAX_READS = ~{max_reads}
+        HASH_BLOCK_SIZE = 65536  # 64 KB
+
+        def count_reads(fastq):
+            return sum(1 for _ in SeqIO.parse(fastq, "fastq"))
+
+        def hash_file(path):
+            h = md5()
+            with open(path, 'rb') as f:
+                while True:
+                    data = f.read(HASH_BLOCK_SIZE)
+                    if not data:
+                        break
+                    h.update(data)
+            return h.hexdigest()
+
+        def subsample(input_fastq, output_fastq):
+            n_reads = count_reads(input_fastq)
+            if n_reads <= MAX_READS:
+                return shutil.copyfile(input_fastq, output_fastq)
+
+            # seed rng based on file contents for determinism
+            seed(hash_file(input_fastq))
+            s_idx = set(sample(range(n_reads), MAX_READS))
+
+            reads_iter = enumerate(SeqIO.parse(input_fastq, "fastq")):
+            SeqIO.write(
+                (read for i, read in reads_iter if i in s_idx),
+                output_fastq,
+                "fastq"
+            )
+
+
+        for i, input_fastq in enumerate(["~{sep='\",\"' fastqs}"]):
+            subsample(input_fastq, f"subsampled_{i}.fastq")
+        CODE
+    >>>
+
+    output {
+        Array[File] subsampled_fastqs = glob("*.fastq")
     }
 
     runtime {

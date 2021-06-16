@@ -8,6 +8,7 @@ from subprocess import CalledProcessError
 import yaml
 from test_util import WDLTestCase
 
+from Bio import SeqIO
 
 class TestConsensusGenomes(WDLTestCase):
     wdl = os.path.join(os.path.dirname(__file__), "..", "run.wdl")
@@ -272,3 +273,49 @@ class TestConsensusGenomes(WDLTestCase):
             self.run_miniwdl(task="FetchSequenceByAccessionId", args=["accession_id=NO_ACCESSION_ID"])
         self.assertRunFailed(ecm, task="FetchSequenceByAccessionId",
                              error="AccessionIdNotFound", cause="Accession ID NO_ACCESSION_ID not found in the index")
+
+    def test_subsampling(self):
+        fastq_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
+        fastq_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
+
+        res = self.run_miniwdl(
+            task="Subsample",
+            task_input={
+                "max_reads": 100,
+                "fastqs": [fastq_0, fastq_1],
+            },
+        )
+        output = res["outputs"]["Subsample.subsampled_fastqs"][0]
+        with gzip.open(output, 'rt') as f:
+            self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
+
+    def test_subsampling_uncompressed_input(self):
+        fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
+        with tempfile.NamedTemporaryFile('wb') as f, gzip.open(fastq) as gzipped_f:
+            f.write(gzipped_f.read())
+
+            res = self.run_miniwdl(
+                task="Subsample",
+                args=["max_reads=100", f"fastqs={f.name}"],
+            )
+            output = res["outputs"]["Subsample.subsampled_fastqs"][0]
+            with gzip.open(output, 'rt') as f:
+                self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
+
+    def test_subsampling_determinism(self):
+        fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
+
+        res_1 = self.run_miniwdl(
+            task="Subsample",
+            args=["max_reads=100", f"fastqs={fastq}"],
+        )
+        output_1 = res_1["outputs"]["Subsample.subsampled_fastqs"][0]
+
+        res_2 = self.run_miniwdl(
+            task="Subsample",
+            args=["max_reads=100", f"fastqs={fastq}"],
+        )
+        output_2 = res_2["outputs"]["Subsample.subsampled_fastqs"][0]
+
+        with gzip.open(output_1) as f1, gzip.open(output_2) as f2:
+            self.assertEqual(f1.read(), f2.read())

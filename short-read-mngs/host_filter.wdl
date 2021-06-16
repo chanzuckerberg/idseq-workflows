@@ -45,22 +45,63 @@ task RunStar {
   }
   command<<<
   set -euxo pipefail
-  idseq-dag-run-step --workflow-name host_filter \
-    --step-module idseq_dag.steps.run_star \
-    --step-class PipelineStepRunStar \
-    --step-name star_out \
-    --input-files '[["~{validate_input_summary_json}", "~{sep='","' valid_input_fastq}"]]' \
-    --output-files '[~{if length(valid_input_fastq) == 2 then '"unmapped1.fastq", "unmapped2.fastq"' else '"unmapped1.fastq"'}]' \
-    --output-dir-s3 '~{s3_wd_uri}' \
-    --additional-files '{"star_genome": "~{star_genome}"}' \
-    --additional-attributes '{"output_gene_file": "reads_per_gene.star.tab", "nucleotide_type": "~{nucleotide_type}", "host_genome": "~{host_genome}", "output_metrics_file": "picard_insert_metrics.txt", "output_histogram_file": "insert_size_histogram.pdf", "output_log_file": "Log.final.out"}'
+  tar -xf "~{star_genome}"
+  # Set Params
+  SAMMODE="None"
+  SAMTYPE="None"
+  QUANTMODE="~{if nucleotide_type == 'RNA' then 'TranscriptomeSAM GeneCounts' else 'GeneCounts'}"
+  # is nucleotide_type either DNA or RNA?
+  if [[ "~{length(valid_input_fastq)}" -eq "2" ]] && [[ "~{host_genome}" == "human" ]]; then
+    SAMMODE="NoQS"
+    SAMTYPE="BAM Unsorted"
+  fi
+  # TODO add long reads check
+  # TODO add quantmode check
+  # TODO add cpu det
+  if [[ $(jq '."500-10000"' "~{validate_input_summary_json}") -ne "0" ]] || [[ $(jq '."10000+"' "~{validate_input_summary_json}") -ne "0" ]]; then 
+    STARlong \
+    --outFilterMultimapNmax 99999 \
+    --outFilterScoreMinOverLread 0.5 \
+    --outFilterMatchNminOverLread 0.5 \
+    --outReadsUnmapped Fastx \
+    --outFilterMismatchNmax 999 \
+    --outSAMmode None \
+    --clip3pNbases 0 \
+    --runThreadN "$(nproc --all)" \
+    --genomeDir STAR_genome/part-0/ \
+    --readFilesIn "~{sep='" "' valid_input_fastq}" \
+    --seedSearchStartLmax 20 \
+    --seedPerReadNmax 100000 \
+    --seedPerWindowNmax 1000 \
+    --alignTranscriptsPerReadNmax 100000 \
+    --outSAMmode $SAMMODE \
+    --outSAMtype $SAMTYPE \
+    --quantMode $QUANTMODE
+  else
+    STAR --outFilterMultimapNmax 99999 \
+    --outFilterScoreMinOverLread 0.5 \
+    --outFilterMatchNminOverLread 0.5 \
+    --outReadsUnmapped Fastx \
+    --outFilterMismatchNmax 999 \
+    --outSAMmode $SAMMODE \
+    --outSAMtype $SAMTYPE \
+    --clip3pNbases 0 \
+    --runThreadN "$(nproc --all)" \
+    --limitOutSJcollapsed 2000000 \
+    --runRNGseed 777 \
+    --genomeDir STAR_genome/part-0/ \
+    --quantMode $QUANTMODE \
+    --readFilesIn "~{sep='" "' valid_input_fastq}" 
+  fi
+
+  picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
   >>>
   output {
-    String step_description_md = read_string("star_out.description.md")
-    File unmapped1_fastq = "unmapped1.fastq"
+    File unmapped1_fastq = "Unmapped.out.mate1"
     File output_log_file = "Log.final.out"
-    File? unmapped2_fastq = "unmapped2.fastq"
-    File? output_read_count = "star_out.count"
+    File? unmapped2_fastq = "Unmapped.out.mate2"
+    File? aligned_file = "Aligned.out.bam"
+    File? output_read_count = "ReadsPerGene.out.tab"
     File? output_gene_file = "reads_per_gene.star.tab"
     File? output_metrics_file = "picard_insert_metrics.txt"
     File? output_histogram_file = "insert_size_histogram.pdf"

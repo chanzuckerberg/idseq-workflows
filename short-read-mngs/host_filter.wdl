@@ -55,9 +55,7 @@ task RunStar {
     SAMMODE="NoQS"
     SAMTYPE="BAM Unsorted"
   fi
-  # TODO add long reads check
-  # TODO add quantmode check
-  # TODO add cpu det
+
   if [[ $(jq '."500-10000"' "~{validate_input_summary_json}") -ne "0" ]] || [[ $(jq '."10000+"' "~{validate_input_summary_json}") -ne "0" ]]; then 
     STARlong \
     --outFilterMultimapNmax 99999 \

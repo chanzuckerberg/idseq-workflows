@@ -12,6 +12,7 @@ class TestPhylotree(WDLTestCase):
     wdl = os.path.join(os.path.dirname(__file__), "..", "run.wdl")
     samples_dir = os.path.join(os.path.dirname(__file__), "full_zika_test_data")
 
+
     samples = {}
     for i, name in enumerate(os.listdir(samples_dir)):
         first_dot = name.find(".")

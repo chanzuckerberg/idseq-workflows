@@ -10,6 +10,7 @@ from test_util import WDLTestCase
 
 from Bio import SeqIO
 
+
 class TestConsensusGenomes(WDLTestCase):
     wdl = os.path.join(os.path.dirname(__file__), "..", "run.wdl")
     with open(os.path.join(os.path.dirname(__file__), "local_test.yml")) as fh:

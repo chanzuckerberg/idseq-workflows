@@ -408,8 +408,15 @@ task Subsample {
         MAX_READS = ~{max_reads}
         HASH_BLOCK_SIZE = 65536  # 64 KB
 
+        def maybe_gzip_open(path):
+            with open(path, 'rb') as f:
+                gzipped = f.read(2) == b'\x1f\x8b'
+            if gzipped:
+                return gzip.open(path, 'rt')
+            return open(path)
+
         def count_reads(fastq):
-            with gzip.open(fastq, 'rt') as f:
+            with maybe_gzip_open(fastq) as f:
                 return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         def hash_file(path):
@@ -421,13 +428,6 @@ task Subsample {
                         break
                     h.update(data)
             return h.hexdigest()
-
-        def maybe_gzip_open(path):
-            with open(path, 'rb') as f:
-                gzipped = f.read(2) == b'\x1f\x8b'
-            if gzipped:
-                return gzip.open(path, 'rt')
-            return open(path)
 
         def subsample(input_fastq, output_fastq):
             n_reads = count_reads(input_fastq)

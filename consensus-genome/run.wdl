@@ -422,6 +422,13 @@ task Subsample {
                     h.update(data)
             return h.hexdigest()
 
+        def maybe_gzip_open(path):
+            with open(path, 'rb') as f:
+                gzipped = f.read(2) == b'\x1f\x8b'
+            if gzipped:
+                return gzip.open(path, 'rt')
+            return open(path)
+
         def subsample(input_fastq, output_fastq):
             n_reads = count_reads(input_fastq)
             if n_reads <= MAX_READS:
@@ -431,7 +438,7 @@ task Subsample {
             seed(hash_file(input_fastq))
             s_idx = set(sample(range(n_reads), MAX_READS))
 
-            with gzip.open(input_fastq, 'rt') as in_f, gzip.open(output_fastq, 'wt') as out_f:
+            with maybe_gzip_open(input_fastq) as in_f, gzip.open(output_fastq, 'wt') as out_f:
                 reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
                 SeqIO.write(
                     (read for i, read in reads_iter if i in s_idx),

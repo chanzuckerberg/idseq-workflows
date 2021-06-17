@@ -1,4 +1,8 @@
 import re 
+import os
+from subprocess import run
+from idseq_dag.exceptions import InsufficientReadsError
+
 RE_SPLIT = re.compile('(/[12])?\t')
 
 def sync_pairs(fastq_files, max_discrepant_fraction=0):
@@ -106,13 +110,57 @@ def unmapped_files_in(folder, num_inputs):
     return [f"{folder}/Unmapped.out.mate{i+1}" for i in range(num_inputs)]
 
 
+
+def input_file_type(input_file):
+    ''' Check input file type based on first line of file. file needs to be uncompressed '''
+    with open(input_file, 'r') as f:
+        first_line = f.readline()
+    if not first_line:
+        raise InsufficientReadsError("Insufficient reads")
+    if first_line[0] == '@':
+        return 'fastq'
+    elif first_line[0] == '>':
+        return 'fasta'
+    return
+
+def sort_fastx_by_entry_id(fastq_path):
+    tmp_sorted_path = fastq_path + ".sorted"
+    with open(fastq_path, 'rb') as in_file:
+        with open(tmp_sorted_path, 'wb') as out_file:
+            # Command based on this https://www.biostars.org/p/15011/#103041
+            if input_file_type(fastq_path) == 'fastq':
+                # Use obscure, non-printable delimiter because all printable ASCII characters could
+                # potentially appear in quality scores.
+                cmd = "paste -d $'\31' - - - - | sort -k1,1 -S 3G | tr $'\31' '\n'"
+            else:
+                # WARNING: does not support multiline fasta
+                cmd = "paste -d $'\31' - - | sort -k1,1 -S 3G | tr $'\31' '\n'"
+            # By default the sort utility uses a locale-based sort, this is significantly
+            #   slower than a simple byte comparison. It also produces a different
+            #   order than python's default string comparisons would which makes testing
+            #   a bit less convenient. All we care about is producing a consistent order
+            #   every time, the order itself is irrelevant, so we set LC_ALL=C to do a
+            #   simple byte comparison instead of a locale-based sort which is faster,
+            #   produces a consistent result regardless of locale, and produces the same
+            #   order python's default string comparison would.
+            run(["/bin/bash", "-c", cmd], env={'LC_ALL': 'C'}, stdin=in_file, stdout=out_file, check=True)
+    os.rename(tmp_sorted_path, fastq_path)
+
 def main():
     import sys
-    pair1 = sys.argv[1]
-    pair2 = sys.argv[2]
-    output_files, too_discrepant = sync_pairs((pair1, pair2))
+    import shutil 
+    
+    input_files = sorted(sys.argv[1:]) # sort inputs, not sure if this is appropriate
+    output_files, too_discrepant = sync_pairs(input_files)
     if too_discrepant:
         raise ValueError("pairs are too discrepant")
+    for unmapped_file in output_files:
+        sort_fastx_by_entry_id(unmapped_file)
+
+    for ind, unmapped_file in enumerate(output_files):
+        shutil.move(unmapped_file, f"unmapped{ind+1}.fastq")
+        
+
 
 if __name__ == "__main__":
     main()

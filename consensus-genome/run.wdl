@@ -391,72 +391,6 @@ task ApplyLengthFilter {
     }
 }
 
-task Subsample {
-    input {
-        Array[File] fastqs
-        Int max_reads
-
-        String docker_image_id
-    }
-
-    command <<<
-        python3 <<CODE
-        import gzip
-        import shutil
-        from hashlib import md5
-        from random import seed, sample
-
-        from Bio import SeqIO
-
-        MAX_READS = ~{max_reads}
-        HASH_BLOCK_SIZE = 65536  # 64 KB
-
-        def count_reads(fastq):
-            with gzip.open(fastq, "wt") as f:
-                return sum(1 for _ in SeqIO.parse(f, "fastq"))
-
-        def hash_file(path):
-            h = md5()
-            with open(path, 'rb') as f:
-                while True:
-                    data = f.read(HASH_BLOCK_SIZE)
-                    if not data:
-                        break
-                    h.update(data)
-            return h.hexdigest()
-
-        def subsample(input_fastq, output_fastq):
-            n_reads = count_reads(input_fastq)
-            if n_reads <= MAX_READS:
-                return shutil.copyfile(input_fastq, output_fastq)
-
-            # seed rng based on file contents for determinism
-            seed(hash_file(input_fastq))
-            s_idx = set(sample(range(n_reads), MAX_READS))
-
-            with gzip.open(input_fastq, "rt") as in_f, gzip.open(output_fastq, 'wt') as out_f:
-                reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
-                SeqIO.write(
-                    (read for i, read in reads_iter if i in s_idx),
-                    out_f,
-                    "fastq"
-                )
-
-
-        for i, input_fastq in enumerate(["~{sep='\",\"' fastqs}"]):
-            subsample(input_fastq, f"subsampled_{i}.fastq.gz")
-        CODE
-    >>>
-
-    output {
-        Array[File] subsampled_fastqs = glob("*.fastq.gz")
-    }
-
-    runtime {
-        docker: docker_image_id
-    }
-}
-
 task RemoveHost {
     input {
         String prefix
@@ -497,6 +431,79 @@ task RemoveHost {
 
     output {
         Array[File] host_removed_fastqs = glob("~{prefix}no_host_*.fq.gz")
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
+task Subsample {
+    input {
+        Array[File] fastqs
+        Int max_reads
+
+        String docker_image_id
+    }
+
+    command <<<
+        python3 <<CODE
+        import gzip
+        import shutil
+        from hashlib import md5
+        from random import seed, sample
+
+        from Bio import SeqIO
+
+        MAX_READS = ~{max_reads}
+        HASH_BLOCK_SIZE = 65536  # 64 KB
+
+        def maybe_gzip_open(path):
+            with open(path, "rb") as f:
+                gzipped = f.read(2) == b'\x1f\x8b'
+            if gzipped:
+                return gzip.open(path, "rt")
+            return open(path)
+
+        def count_reads(fastq):
+            with maybe_gzip_open(fastq) as f:
+                return sum(1 for _ in SeqIO.parse(f, "fastq"))
+
+        def hash_file(path):
+            h = md5()
+            with open(path, 'rb') as f:
+                while True:
+                    data = f.read(HASH_BLOCK_SIZE)
+                    if not data:
+                        break
+                    h.update(data)
+            return h.hexdigest()
+
+        def subsample(input_fastq, output_fastq):
+            n_reads = count_reads(input_fastq)
+            if n_reads <= MAX_READS:
+                return shutil.copyfile(input_fastq, output_fastq)
+
+            # seed rng based on file contents for determinism
+            seed(hash_file(input_fastq))
+            s_idx = set(sample(range(n_reads), MAX_READS))
+
+            with maybe_gzip_open(input_fastq) as in_f, gzip.open(output_fastq, 'wt') as out_f:
+                reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
+                SeqIO.write(
+                    (read for i, read in reads_iter if i in s_idx),
+                    out_f,
+                    "fastq"
+                )
+
+
+        for i, input_fastq in enumerate(["~{sep='\",\"' fastqs}"]):
+            subsample(input_fastq, f"subsampled_{i}.fastq.gz")
+        CODE
+    >>>
+
+    output {
+        Array[File] subsampled_fastqs = glob("*.fastq.gz")
     }
 
     runtime {
@@ -933,10 +940,10 @@ task ComputeStats {
         import seaborn as sns
 
         def maybe_gzip_open(path):
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 gzipped = f.read(2) == b'\x1f\x8b'
             if gzipped:
-                return gzip.open(path, 'rt')
+                return gzip.open(path, "rt")
             return open(path)
 
         def count_reads(fastq):

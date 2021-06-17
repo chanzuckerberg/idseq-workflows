@@ -1,24 +1,29 @@
 import gzip
 from enum import Enum
 from subprocess import run, PIPE
-from typing import Iterator, List, Tuple, NamedTuple
+from typing import Iterator, NamedTuple
 import json
 from idseq_dag.exceptions import InvalidFileFormatError
+
 
 class ReadCountingMode(Enum):
     COUNT_UNIQUE = "COUNT UNIQUE READS"
     COUNT_ALL = "COUNT ALL READS"
 
+
 class Read(NamedTuple):
     header: str
     sequence: str
 
+
 READ_COUNTING_MODE = ReadCountingMode.COUNT_ALL
-GZIP_MAGIC_HEADER = b'\037\213'
+GZIP_MAGIC_HEADER = b"\037\213"
 
 
-def reads_in_group(file_group, max_fragments=None, cluster_sizes=None, cluster_key=None):
-    '''
+def reads_in_group(
+    file_group, max_fragments=None, cluster_sizes=None, cluster_key=None
+):
+    """
     OVERVIEW
 
     Count reads in a group of matching files, up to a maximum number of fragments,
@@ -72,9 +77,14 @@ def reads_in_group(file_group, max_fragments=None, cluster_sizes=None, cluster_k
     all in one would allow a future reimplementation in a more performant language that
     could lift all restrictions and make all code paths performant.  The choice, then, is
     this better future, and just fail an assert where the present falls short.
-    '''
-    assert None in (max_fragments, cluster_sizes), "Truncating to max_fragments is not supported at the same time as expanding cluster_sizes.  Consider setting max_fragments=None."
-    assert (cluster_sizes == None) == (cluster_key == None), "Please specify cluster_key when using cluster_sizes."
+    """
+    assert None in (
+        max_fragments,
+        cluster_sizes,
+    ), "Truncating to max_fragments is not supported at the same time as expanding cluster_sizes.  Consider setting max_fragments=None."
+    assert (cluster_sizes == None) == (
+        cluster_key == None
+    ), "Please specify cluster_key when using cluster_sizes."
     first_file = file_group[0]
     # This is so fast, just do it always as a sanity check.
     unique_fast = count_reads(first_file)
@@ -82,14 +92,21 @@ def reads_in_group(file_group, max_fragments=None, cluster_sizes=None, cluster_k
         unique_fast = min(unique_fast, max_fragments)
     if cluster_sizes:
         # Run this even if ReadCountingMode.COUNT_UNIQUE to get it well tested before release.  Dark launch.
-        unique, nonunique = _count_reads_expanding_duplicates(first_file, cluster_sizes, cluster_key)
-        assert unique_fast == unique, f"Different read counts from wc ({unique_fast}) and fasta.iterator ({unique}) for file {first_file}."
-        assert unique <= nonunique, f"Unique count ({unique}) should not exceed nonunique count ({nonunique}) for file {first_file}."
+        unique, nonunique = _count_reads_expanding_duplicates(
+            first_file, cluster_sizes, cluster_key
+        )
+        assert (
+            unique_fast == unique
+        ), f"Different read counts from wc ({unique_fast}) and fasta.iterator ({unique}) for file {first_file}."
+        assert (
+            unique <= nonunique
+        ), f"Unique count ({unique}) should not exceed nonunique count ({nonunique}) for file {first_file}."
     reads_in_first_file = unique_fast
     if cluster_sizes and READ_COUNTING_MODE == ReadCountingMode.COUNT_ALL:
         reads_in_first_file = nonunique
     num_files = len(file_group)
     return num_files * reads_in_first_file
+
 
 def _count_reads_expanding_duplicates(local_file_path, cluster_sizes, cluster_key):
     # See documentation for reads_in_group use case with cluster_sizes, below.
@@ -119,6 +136,7 @@ def _count_reads_expanding_duplicates(local_file_path, cluster_sizes, cluster_ke
         nonunique_count += get_read_cluster_size(cluster_sizes, cluster_key(read_id))
     return unique_count, nonunique_count
 
+
 def get_read_cluster_size(duplicate_cluster_sizes, read_id):
     suffix = None
     cluster_size = duplicate_cluster_sizes.get(read_id)
@@ -126,29 +144,34 @@ def get_read_cluster_size(duplicate_cluster_sizes, read_id):
         prefix, suffix = read_id[:-2], read_id[-2:]
         cluster_size = duplicate_cluster_sizes.get(prefix)
     assert cluster_size != None and suffix in (
-        None, "/1", "/2"), f"Read ID not found in duplicate_cluster_sizes dict: {read_id}"
+        None,
+        "/1",
+        "/2",
+    ), f"Read ID not found in duplicate_cluster_sizes dict: {read_id}"
     return cluster_size
+
 
 def fasta_iterator(fasta_file: str) -> Iterator[Read]:
     """Iterate through fasta_file, yielding one Read tuple at a time."""
     # TODO: Support full fasta format, where sequences may be split over multiple lines.
     # Perf: 47 million (unpaired) reads per minute on a high end 2018 laptop.
-    with open(fasta_file, 'r', encoding='utf-8') as f:
+    with open(fasta_file, "r", encoding="utf-8") as f:
         while True:
             header = f.readline().rstrip()
             sequence = f.readline().rstrip()
             if not header or not sequence:
                 break
             # the performance penalty for these asserts is only 8 percent
-            assert header[0] == '>'
-            assert sequence[0] != '>'
+            assert header[0] == ">"
+            assert sequence[0] != ">"
             # the performance penalty for constructing a Read tuple is 40 percent
             yield Read(header, sequence)
 
+
 def count_reads(filename):
-    '''
+    """
     Count reads in a given FASTA or FASTQ file.
-    '''
+    """
     with open(filename, "rb") as gz_fh:
         is_gzipped = True if gz_fh.read(2).startswith(GZIP_MAGIC_HEADER) else False
     with gzip.open(filename) if is_gzipped else open(filename, mode="rb") as fmt_fh:
@@ -166,21 +189,28 @@ def count_reads(filename):
             cmd = "wc -l"
             if is_gzipped:
                 cmd = "gunzip | " + cmd
-            num_lines = int(run(cmd, stdin=fh, stdout=PIPE, check=True, shell=True).stdout)
+            num_lines = int(
+                run(cmd, stdin=fh, stdout=PIPE, check=True, shell=True).stdout
+            )
             if num_lines % 4 != 0:
                 raise InvalidFileFormatError("File does not follow fastq format")
             return num_lines // 4
         raise InvalidFileFormatError("Unable to recognize file format")
 
+
 def main():
     import sys
+
     workflow_name = sys.argv[1]
     input_files = sys.argv[2:]
     counts_dict = {}
-    counts_dict[workflow_name] = reads_in_group(input_files) #previous code limits input_files to 2
+    counts_dict[workflow_name] = reads_in_group(
+        input_files
+    )  # previous code limits input_files to 2
     count_file_name = f"{workflow_name}.count"
-    with open(count_file_name, 'w') as count_file:
+    with open(count_file_name, "w") as count_file:
         json.dump(counts_dict, count_file)
+
 
 if __name__ == "__main__":
     main()

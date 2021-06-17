@@ -209,7 +209,7 @@ workflow consensus_genome {
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
             vcf = select_first([CallVariants.variants_ch, RunMinion.vcf_pass]),
-            input_fastqs = [fastqs_0, fastqs_1],
+            input_fastqs = select_all([fastqs_0, fastqs_1]),
             host_removed_fastqs = RemoveHost.host_removed_fastqs,
             subsampled_fastqs = Subsample.subsampled_fastqs,
             ref_host = ref_host,                       # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta?

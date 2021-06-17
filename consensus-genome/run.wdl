@@ -93,19 +93,19 @@ workflow consensus_genome {
         }    
     }
 
-    call Subsample {
-        input:
-            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
-            max_reads = max_reads,
-            docker_image_id = docker_image_id
-    }
-
     call RemoveHost {
         input:
             prefix = prefix,
-            fastqs = Subsample.subsampled_fastqs,
+            fastqs = select_first([ApplyLengthFilter.filtered_fastqs, ValidateInput.validated_fastqs]),
             ref_host = ref_host,
             technology = technology,
+            docker_image_id = docker_image_id
+    }
+
+    call Subsample {
+        input:
+            fastqs = RemoveHost.host_removed_fastqs,
+            max_reads = max_reads,
             docker_image_id = docker_image_id
     }
 
@@ -113,7 +113,7 @@ workflow consensus_genome {
         call QuantifyERCCs {
             input:
                 prefix = prefix,
-                fastqs = RemoveHost.host_removed_fastqs,
+                fastqs = Subsample.subsampled_fastqs,
                 ercc_fasta = ercc_fasta,
                 docker_image_id = docker_image_id
         }    
@@ -121,7 +121,7 @@ workflow consensus_genome {
             call FilterReads {
                 input:
                     prefix = prefix,
-                    fastqs = RemoveHost.host_removed_fastqs,
+                    fastqs = Subsample.subsampled_fastqs,
                     ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                     kraken2_db_tar_gz = kraken2_db_tar_gz,
                     docker_image_id = docker_image_id
@@ -130,7 +130,7 @@ workflow consensus_genome {
         if (trim_adapters) {
             call TrimReads {
                 input:
-                    fastqs = select_first([FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
+                    fastqs = select_first([FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
                     docker_image_id = docker_image_id
             }
         }
@@ -140,7 +140,7 @@ workflow consensus_genome {
                 sample = sample,
                 # use trimReads output if we ran it; otherwise fall back to FilterReads output if we ran it; 
                 # otherwise fall back to RemoveHost output
-                fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
+                fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
                 ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 docker_image_id = docker_image_id
         }
@@ -179,7 +179,7 @@ workflow consensus_genome {
             input:
                 prefix = prefix,
                 sample = sample,
-                fastqs = RemoveHost.host_removed_fastqs,
+                fastqs = Subsample.subsampled_fastqs,
                 primer_schemes = primer_schemes,
                 normalise = normalise,
                 medaka_model = medaka_model,
@@ -193,7 +193,7 @@ workflow consensus_genome {
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
             # use trimReads output if we ran it; otherwise fall back to FilterReads output, or RemoveHost for ONT
-            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
+            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
             ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]), # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
             no_reads_quast = no_reads_quast,
             technology = technology,
@@ -209,7 +209,9 @@ workflow consensus_genome {
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
             vcf = select_first([CallVariants.variants_ch, RunMinion.vcf_pass]),
-            fastqs = RemoveHost.host_removed_fastqs, # select_all([fastqs_0, fastqs_1]), # FIXME: (AK) verify the correct value for this
+            input_fastqs = [fastqs_0, fastqs_1],
+            host_removed_fastqs = RemoveHost.host_removed_fastqs,
+            subsampled_fastqs = Subsample.subsampled_fastqs,
             ref_host = ref_host,                       # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta?
             technology = technology,
             docker_image_id = docker_image_id
@@ -232,6 +234,7 @@ workflow consensus_genome {
             prefix = prefix,
             outputFiles = select_all(flatten([
                 RemoveHost.host_removed_fastqs,
+                Subsample.subsampled_fastqs,
                 select_all([
                     MakeConsensus.consensus_fa,
                     RunMinion.consensus_fa,
@@ -408,15 +411,8 @@ task Subsample {
         MAX_READS = ~{max_reads}
         HASH_BLOCK_SIZE = 65536  # 64 KB
 
-        def maybe_gzip_open(path):
-            with open(path, 'rb') as f:
-                gzipped = f.read(2) == b'\x1f\x8b'
-            if gzipped:
-                return gzip.open(path, 'rt')
-            return open(path)
-
         def count_reads(fastq):
-            with maybe_gzip_open(fastq) as f:
+            with gzip.open(fastq, "wt") as f:
                 return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         def hash_file(path):
@@ -438,7 +434,7 @@ task Subsample {
             seed(hash_file(input_fastq))
             s_idx = set(sample(range(n_reads), MAX_READS))
 
-            with maybe_gzip_open(input_fastq) as in_f, gzip.open(output_fastq, 'wt') as out_f:
+            with gzip.open(input_fastq, "rt") as in_f, gzip.open(output_fastq, 'wt') as out_f:
                 reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
                 SeqIO.write(
                     (read for i, read in reads_iter if i in s_idx),
@@ -907,7 +903,9 @@ task ComputeStats {
         File? ercc_stats  # optional, will only exist for Illumina runs
         File vcf
 
-        Array[File]+ fastqs
+        Array[File] input_fastqs
+        Array[File] host_removed_fastqs
+        Array[File] subsampled_fastqs
         File ref_host
 
         String technology
@@ -933,6 +931,17 @@ task ComputeStats {
         import numpy as np
         from matplotlib import pyplot as plt
         import seaborn as sns
+
+        def maybe_gzip_open(path):
+            with open(path, 'rb') as f:
+                gzipped = f.read(2) == b'\x1f\x8b'
+            if gzipped:
+                return gzip.open(path, 'rt')
+            return open(path)
+
+        def count_reads(fastq):
+            with maybe_gzip_open(fastq) as f:
+                return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         stats = {"sample_name": "~{sample}"}
 
@@ -960,19 +969,13 @@ task ComputeStats {
         seq, = SeqIO.parse("~{assembly}", "fasta")
         stats["allele_counts"] = dict(collections.Counter(str(seq.seq)))
 
-        fq_list=list(filter(None, ["~{sep='\",\"' fastqs}"]))
-        try:
-            fq_lines = 0
-            for fq_file in fq_list:
-                with gzip.open(fq_file, 'r') as f:
-                    for line in f: fq_lines += 1
-        except OSError:
-            fq_lines = 0
-            for fq_file in fq_list:
-                with open(fq_file, 'r') as f:
-                    for line in f: fq_lines += 1
+        input_fastqs=list(filter(None, ["~{sep='\",\"' input_fastqs}"]))
+        host_removed_fastqs = ["~{sep='\",\"' host_removed_fastqs}"]
+        subsampled_fastqs = ["~{sep='\",\"' subsampled_fastqs}"]
 
-        stats["total_reads"] = int(int(fq_lines) / 4)
+        stats["total_reads"] = sum(count_reads(f) for f in input_fastqs)
+        stats["non_host_reads"] = sum(count_reads(f) for f in host_removed_fastqs)
+        stats["processed_reads"] = sum(count_reads(f) for f in subsampled_fastqs)
 
         with open("~{prefix}samtools_stats.txt") as f:
             sam_stats_re = re.compile(r"SN\s+([^\s].*):\s+(\d+)")

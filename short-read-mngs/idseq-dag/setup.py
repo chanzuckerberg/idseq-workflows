@@ -17,7 +17,8 @@ setup(name='idseq_dag',
           'console_scripts': [
               'idseq_dag = idseq_dag.__main__:main',
               'idseq-dag-run-step = idseq_dag.__main__:run_step',
-              'sync-pairs = idseq_dag.sync_pairs:main'
+              'sync-pairs = idseq_dag.sync_pairs:main', 
+              'count-reads = idseq_dag.count_reads:main'
           ]
       },
       zip_safe=False)

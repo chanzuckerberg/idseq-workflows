@@ -56,7 +56,7 @@ task RunStar {
     SAMTYPE="BAM Unsorted"
   fi
 
-  if [[ $(jq '."500-10000"' "~{validate_input_summary_json}") -ne "0" ]] || [[ $(jq '."10000+"' "~{validate_input_summary_json}") -ne "0" ]]; then 
+  if [[ $(jq '."500-10000"' "~{validate_input_summary_json}") -gt "1" ]] || [[ $(jq '."10000+"' "~{validate_input_summary_json}") -gt "1" ]]; then 
     STARlong \
     --outFilterMultimapNmax 99999 \
     --outFilterScoreMinOverLread 0.5 \
@@ -91,11 +91,20 @@ task RunStar {
     --quantMode $QUANTMODE \
     --readFilesIn "~{sep='" "' valid_input_fastq}" 
   fi
+
+  if [ -f "Aligned.toTranscriptome.out.bam" ]; then 
+    mv "Aligned.toTranscriptome.out.bam" "Aligned.out.bam"
+  fi
+
   sync-pairs Unmapped.out.mate1 Unmapped.out.mate2
   if [ $? -ne "0" ]; then 
     echo "Pairs are too discrepant"
   fi
+
   picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
+
+  # There are a couple of tests for the existence of files that
+  # should have been generated, should I replicate these?
   >>>
   output {
     File unmapped1_fastq = "Unmapped.out.mate1"

@@ -91,7 +91,10 @@ task RunStar {
     --quantMode $QUANTMODE \
     --readFilesIn "~{sep='" "' valid_input_fastq}" 
   fi
-
+  sync-pairs Unmapped.out.mate1 Unmapped.out.mate2
+  if [ $? -ne "0" ]; then 
+    echo "Pairs are too discrepant"
+  fi
   picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
   >>>
   output {

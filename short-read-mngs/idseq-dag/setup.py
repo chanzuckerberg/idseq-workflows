@@ -16,7 +16,8 @@ setup(name='idseq_dag',
       entry_points={
           'console_scripts': [
               'idseq_dag = idseq_dag.__main__:main',
-              'idseq-dag-run-step = idseq_dag.__main__:run_step'
+              'idseq-dag-run-step = idseq_dag.__main__:run_step',
+              'sync-pairs = idseq_dag.sync_pairs:main'
           ]
       },
       zip_safe=False)

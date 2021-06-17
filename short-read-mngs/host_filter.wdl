@@ -96,23 +96,24 @@ task RunStar {
     mv "Aligned.toTranscriptome.out.bam" "Aligned.out.bam"
   fi
 
-  sync-pairs Unmapped.out.mate1 Unmapped.out.mate2
+  sync-pairs Unmapped.out.mate*
   if [ $? -ne "0" ]; then 
     echo "Pairs are too discrepant"
   fi
 
   picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
 
+  count-reads "star_out" unmapped*.fastq
   # There are a couple of tests for the existence of files that
   # should have been generated, should I replicate these?
   >>>
   output {
-    File unmapped1_fastq = "Unmapped.out.mate1"
+    File unmapped1_fastq = "unmapped1.fastq"
     File output_log_file = "Log.final.out"
-    File? unmapped2_fastq = "Unmapped.out.mate2"
+    File? unmapped2_fastq = "unmapped2.fastq"
     File? aligned_file = "Aligned.out.bam"
-    File? output_read_count = "ReadsPerGene.out.tab"
-    File? output_gene_file = "reads_per_gene.star.tab"
+    File? output_read_count = "star_out.count"
+    File? output_gene_file = "ReadsPerGene.out.tab"
     File? output_metrics_file = "picard_insert_metrics.txt"
     File? output_histogram_file = "insert_size_histogram.pdf"
   }

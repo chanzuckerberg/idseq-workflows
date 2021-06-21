@@ -81,9 +81,10 @@ def reads_in_group(
     assert None in (
         max_fragments,
         cluster_sizes,
-    ), "Truncating to max_fragments is not supported at the same time as expanding cluster_sizes.  Consider setting max_fragments=None."
-    assert (cluster_sizes == None) == (
-        cluster_key == None
+    ), "Truncating to max_fragments is not supported at the same time as expanding cluster_sizes.  \
+    Consider setting max_fragments=None."
+    assert (cluster_sizes is None) == (
+        cluster_key is None
     ), "Please specify cluster_key when using cluster_sizes."
     first_file = file_group[0]
     # This is so fast, just do it always as a sanity check.
@@ -140,10 +141,10 @@ def _count_reads_expanding_duplicates(local_file_path, cluster_sizes, cluster_ke
 def get_read_cluster_size(duplicate_cluster_sizes, read_id):
     suffix = None
     cluster_size = duplicate_cluster_sizes.get(read_id)
-    if cluster_size == None:
+    if cluster_size is None:
         prefix, suffix = read_id[:-2], read_id[-2:]
         cluster_size = duplicate_cluster_sizes.get(prefix)
-    assert cluster_size != None and suffix in (
+    assert cluster_size is not None and suffix in (
         None,
         "/1",
         "/2",

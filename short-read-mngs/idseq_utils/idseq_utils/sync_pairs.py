@@ -111,8 +111,8 @@ def get_read(f):
 
 
 def write_lines(of, lines):
-    for l in lines:
-        of.write(l)
+    for line in lines:
+        of.write(line)
 
 
 def unmapped_files_in(folder, num_inputs):

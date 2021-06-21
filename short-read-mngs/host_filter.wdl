@@ -109,8 +109,6 @@ task RunStar {
   fi 
 
   count-reads "star_out" unmapped*.fastq
-  # There are a couple of tests for the existence of files that
-  # should have been generated, should I replicate these?
   >>>
   output {
     String step_description_md = read_string("star_out.description.md")

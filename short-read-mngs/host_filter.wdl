@@ -49,8 +49,10 @@ task RunStar {
   # Set Params
   SAMMODE="None"
   SAMTYPE="None"
+
+  # Currently we always use 'GeneCounts', 
   QUANTMODE="~{if nucleotide_type == 'RNA' then 'TranscriptomeSAM GeneCounts' else 'GeneCounts'}"
-  # is nucleotide_type either DNA or RNA?
+  save-description "star_out" "~{nucleotide_type}"
   if [[ "~{length(valid_input_fastq)}" -eq "2" ]] && [[ "~{host_genome}" == "human" ]]; then
     SAMMODE="NoQS"
     SAMTYPE="BAM Unsorted"
@@ -99,15 +101,19 @@ task RunStar {
   sync-pairs Unmapped.out.mate*
   if [ $? -ne "0" ]; then 
     echo "Pairs are too discrepant"
+    exit 1
   fi
 
-  picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
+  if [ -f "Aligned.out.bam" ]; then 
+    picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
+  fi 
 
   count-reads "star_out" unmapped*.fastq
   # There are a couple of tests for the existence of files that
   # should have been generated, should I replicate these?
   >>>
   output {
+    String step_description_md = read_string("star_out.description.md")
     File unmapped1_fastq = "unmapped1.fastq"
     File output_log_file = "Log.final.out"
     File? unmapped2_fastq = "unmapped2.fastq"

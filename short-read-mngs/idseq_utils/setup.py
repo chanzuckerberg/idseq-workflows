@@ -14,7 +14,7 @@ setup(name='idseq_utils',
       dependency_links=[],
       entry_points={
           'console_scripts': [
-              'sync-pairs = idseq_utils.sync_pairs:main', 
+              'sync-pairs = idseq_utils.sync_pairs:main',
               'count-reads = idseq_utils.count_reads:main',
               'save-description = idseq_utils.save_descriptions:main'
           ]

@@ -1,12 +1,11 @@
-
 def star_description(collect_insert_size_metrics_for):
     outSAMmode = "--outSAMmode None"
     collect_insert_size_metrics_for = collect_insert_size_metrics_for.lower()
-    if collect_insert_size_metrics_for == 'dna':
+    if collect_insert_size_metrics_for == "dna":
         outSAMmode = """--outSAMtype BAM Unsorted
             --outSAMmode NoQS"""
 
-    if collect_insert_size_metrics_for == 'rna':
+    if collect_insert_size_metrics_for == "rna":
         outSAMmode = """--outSAMtype BAM Unsorted
             --outSAMmode NoQS
             --quantMode TranscriptomeSAM GeneCounts"""
@@ -88,15 +87,16 @@ def star_description(collect_insert_size_metrics_for):
 
     return description
 
+
 def main():
     import sys
+
     step_name = sys.argv[1]
     if step_name == "star_out":
         description = star_description(sys.argv[2])
-    
+
     with open(f"{step_name}.description.md", "w+") as f:
         f.write(description)
-
 
 
 if __name__ == "__main__":

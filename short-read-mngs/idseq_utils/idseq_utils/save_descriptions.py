@@ -94,7 +94,7 @@ def main():
     if step_name == "star_out":
         description = star_description(sys.argv[2])
     
-    with open(f"{step_name}.description", "w+") as f:
+    with open(f"{step_name}.description.md", "w+") as f:
         f.write(description)
 
 

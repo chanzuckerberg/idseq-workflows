@@ -65,7 +65,6 @@ task RunStar {
     --outFilterMatchNminOverLread 0.5 \
     --outReadsUnmapped Fastx \
     --outFilterMismatchNmax 999 \
-    --outSAMmode None \
     --clip3pNbases 0 \
     --runThreadN "$(nproc --all)" \
     --genomeDir STAR_genome/part-0/ \

@@ -37,7 +37,7 @@ workflow consensus_genome {
         Int min_length = 350
         Int max_length = 700
         # max reads for subsampling
-        Int max_reads = 90000 # TODO: pick a good value
+        Int max_reads = 75000000
         # normalise: default is set to 1000 to avoid spurious indels observed in validation
         Int normalise  = 1000
         # medaka_model: default is selected to support current Clear Labs workflow

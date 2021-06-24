@@ -199,11 +199,7 @@ def count_reads(filename):
         raise InvalidFileFormatError("Unable to recognize file format")
 
 
-def main():
-    import sys
-
-    workflow_name = sys.argv[1]
-    input_files = sys.argv[2:]
+def main(workflow_name, input_files):
     counts_dict = {}
     counts_dict[workflow_name] = reads_in_group(
         input_files
@@ -214,4 +210,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    workflow_name = sys.argv[1]
+    main(workflow_name, sys.argv[2:])

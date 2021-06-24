@@ -42,17 +42,26 @@ task RunStar {
     File star_genome
     String nucleotide_type
     String host_genome
+    String genome_dir = "STAR_genome/part-0/"
   }
   command<<<
   set -euxo pipefail
+
+  python3 <<CODE
+  """ save description to file """
+  from idseq_utils.save_descriptions import star_description
+  description = star_description("~{nucleotide_type}")
+  with open("star_out.description.md", "w+") as f:
+    f.write(description)
+  CODE
+
   tar -xf "~{star_genome}"
-  # Set Params
+  # Set Parameters
   SAMMODE="None"
   SAMTYPE="None"
 
   # Currently we always use 'GeneCounts', 
   QUANTMODE="~{if nucleotide_type == 'RNA' then 'TranscriptomeSAM GeneCounts' else 'GeneCounts'}"
-  save-description "star_out" "~{nucleotide_type}"
   if [[ "~{length(valid_input_fastq)}" -eq "2" ]] && [[ "~{host_genome}" == "human" ]]; then
     SAMMODE="NoQS"
     SAMTYPE="BAM Unsorted"
@@ -67,7 +76,7 @@ task RunStar {
     --outFilterMismatchNmax 999 \
     --clip3pNbases 0 \
     --runThreadN "$(nproc --all)" \
-    --genomeDir STAR_genome/part-0/ \
+    --genomeDir "~{genome_dir}" \
     --readFilesIn "~{sep='" "' valid_input_fastq}" \
     --seedSearchStartLmax 20 \
     --seedPerReadNmax 100000 \
@@ -88,7 +97,7 @@ task RunStar {
     --runThreadN "$(nproc --all)" \
     --limitOutSJcollapsed 2000000 \
     --runRNGseed 777 \
-    --genomeDir STAR_genome/part-0/ \
+    --genomeDir "~{genome_dir}" \
     --quantMode $QUANTMODE \
     --readFilesIn "~{sep='" "' valid_input_fastq}" 
   fi
@@ -97,17 +106,36 @@ task RunStar {
     mv "Aligned.toTranscriptome.out.bam" "Aligned.out.bam"
   fi
 
-  sync-pairs Unmapped.out.mate*
-  if [ $? -ne "0" ]; then 
-    echo "Pairs are too discrepant"
-    exit 1
-  fi
+  python3 <<CODE
+  """ sync pairs of files, sort by entry id, count reads """
+  import idseq_utils.sync_pairs as sp
+  import shutil
+  import glob
+  unmapped = sorted(glob.glob("Unmapped.out.mate*"))
+  output_files, too_discrepant = sp.sync_pairs(unmapped)
+  if too_discrepant:
+      raise ValueError("pairs are too discrepant")
+  for unmapped_file in output_files:
+      sp.sort_fastx_by_entry_id(unmapped_file)
+
+  for ind, unmapped_file in enumerate(output_files):
+      shutil.move(unmapped_file, f"unmapped{ind+1}.fastq")
+  CODE
 
   if [ -f "Aligned.out.bam" ]; then 
     picard CollectInsertSizeMetrics I=Aligned.out.bam O=picard_insert_metrics.txt H=insert_size_histogram.pdf
   fi 
 
-  count-reads "star_out" unmapped*.fastq
+  python3 <<CODE
+  """ count reads """
+  import idseq_utils.count_reads as cr
+  import glob
+  input_files = sorted(glob.glob("unmapped*.fastq"))
+  cr.main("star_out", input_files)
+  CODE
+
+  rm "~{genome_dir}"/SAindex # the star genome is pretty big (1.5G)
+  rm "~{genome_dir}"/Genome 
   >>>
   output {
     String step_description_md = read_string("star_out.description.md")

@@ -323,7 +323,6 @@ class TestConsensusGenomes(WDLTestCase):
             with gzip.open(output, 'rt') as f:
                 self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
 
-
     def test_subsampling_determinism(self):
         fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
 

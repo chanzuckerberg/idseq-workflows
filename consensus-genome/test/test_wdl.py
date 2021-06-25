@@ -275,33 +275,54 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertRunFailed(ecm, task="FetchSequenceByAccessionId",
                              error="AccessionIdNotFound", cause="Accession ID NO_ACCESSION_ID not found in the index")
 
-    def test_subsampling(self):
+    def test_max_reads_illumina(self):
         fastq_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
         fastq_1 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R2.fastq.gz")
 
         res = self.run_miniwdl(
-            task="Subsample",
+            task="ValidateInput",
             task_input={
                 "max_reads": 100,
+                "technology": "Illumina",
                 "fastqs": [fastq_0, fastq_1],
             },
         )
-        output = res["outputs"]["Subsample.subsampled_fastqs"][0]
-        with gzip.open(output, 'rt') as f:
-            self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
+        for output in res["outputs"]["ValidateInput.validated_fastqs"]:
+            with gzip.open(output, 'rt') as f:
+                self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
 
-    def test_subsampling_uncompressed_input(self):
+    def test_max_reads_ont(self):
+        fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
+
+        res = self.run_miniwdl(
+            task="ValidateInput",
+            task_input={
+                "max_reads": 100,
+                "technology": "ONT",
+                "fastqs": [fastq],
+            },
+        )
+        for output in res["outputs"]["ValidateInput.validated_fastqs"]:
+            with gzip.open(output, 'rt') as f:
+                self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
+
+    def test_max_reads_uncompressed_input(self):
         fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
         with tempfile.NamedTemporaryFile('wb') as f, gzip.open(fastq) as gzipped_f:
             f.write(gzipped_f.read())
 
             res = self.run_miniwdl(
-                task="Subsample",
-                args=["max_reads=100", f"fastqs={f.name}"],
+                task="ValidateInput",
+                task_input={
+                    "max_reads": 100,
+                    "technology": "ONT",
+                    "fastqs": [f.name],
+                }
             )
-            output = res["outputs"]["Subsample.subsampled_fastqs"][0]
+        for output in res["outputs"]["ValidateInput.validated_fastqs"]:
             with gzip.open(output, 'rt') as f:
                 self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
+
 
     def test_subsampling_determinism(self):
         fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")

@@ -12,6 +12,8 @@ workflow consensus_genome {
         File fastqs_0
         File? fastqs_1
 
+        Int max_reads = 75000000
+
         String docker_image_id
         File ercc_fasta = "s3://idseq-public-references/consensus-genome/ercc_sequences.fasta"
         File kraken2_db_tar_gz  # TODO: make this optional; only required if filter_reads == true, even for Illumina
@@ -36,8 +38,6 @@ workflow consensus_genome {
         Boolean apply_length_filter = true # Set to False for Clear Labs samples
         Int min_length = 350
         Int max_length = 700
-        # max reads for subsampling
-        Int max_reads = 75000000
         # normalise: default is set to 1000 to avoid spurious indels observed in validation
         Int normalise  = 1000
         # medaka_model: default is selected to support current Clear Labs workflow
@@ -72,6 +72,7 @@ workflow consensus_genome {
             prefix = prefix,
             fastqs = select_all([fastqs_0, fastqs_1]),
             technology = technology,
+            max_reads = max_reads,
             docker_image_id = docker_image_id
     }
 
@@ -102,18 +103,11 @@ workflow consensus_genome {
             docker_image_id = docker_image_id
     }
 
-    call Subsample {
-        input:
-            fastqs = RemoveHost.host_removed_fastqs,
-            max_reads = max_reads,
-            docker_image_id = docker_image_id
-    }
-
     if (technology == "Illumina") {
         call QuantifyERCCs {
             input:
                 prefix = prefix,
-                fastqs = Subsample.subsampled_fastqs,
+                fastqs = RemoveHost.host_removed_fastqs,
                 ercc_fasta = ercc_fasta,
                 docker_image_id = docker_image_id
         }    
@@ -121,7 +115,7 @@ workflow consensus_genome {
             call FilterReads {
                 input:
                     prefix = prefix,
-                    fastqs = Subsample.subsampled_fastqs,
+                    fastqs = RemoveHost.host_removed_fastqs,
                     ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                     kraken2_db_tar_gz = kraken2_db_tar_gz,
                     docker_image_id = docker_image_id
@@ -130,7 +124,7 @@ workflow consensus_genome {
         if (trim_adapters) {
             call TrimReads {
                 input:
-                    fastqs = select_first([FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
+                    fastqs = select_first([FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
                     docker_image_id = docker_image_id
             }
         }
@@ -140,7 +134,7 @@ workflow consensus_genome {
                 sample = sample,
                 # use trimReads output if we ran it; otherwise fall back to FilterReads output if we ran it; 
                 # otherwise fall back to RemoveHost output
-                fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
+                fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
                 ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
                 docker_image_id = docker_image_id
         }
@@ -179,7 +173,7 @@ workflow consensus_genome {
             input:
                 prefix = prefix,
                 sample = sample,
-                fastqs = Subsample.subsampled_fastqs,
+                fastqs = RemoveHost.host_removed_fastqs,
                 primer_schemes = primer_schemes,
                 normalise = normalise,
                 medaka_model = medaka_model,
@@ -193,7 +187,7 @@ workflow consensus_genome {
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             bam = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam]),
             # use trimReads output if we ran it; otherwise fall back to FilterReads output, or RemoveHost for ONT
-            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, Subsample.subsampled_fastqs]),
+            fastqs = select_first([TrimReads.trimmed_fastqs, FilterReads.filtered_fastqs, RemoveHost.host_removed_fastqs]),
             ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]), # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta
             no_reads_quast = no_reads_quast,
             technology = technology,
@@ -209,9 +203,7 @@ workflow consensus_genome {
             assembly = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa]),
             ercc_stats = QuantifyERCCs.ercc_out,       # does not exist - NO ERCC results for ONT, this argument must be optional
             vcf = select_first([CallVariants.variants_ch, RunMinion.vcf_pass]),
-            input_fastqs = select_all([fastqs_0, fastqs_1]),
-            host_removed_fastqs = RemoveHost.host_removed_fastqs,
-            subsampled_fastqs = Subsample.subsampled_fastqs,
+            fastqs = RemoveHost.host_removed_fastqs, # select_all([fastqs_0, fastqs_1]), # FIXME: (AK) verify the correct value for this
             ref_host = ref_host,                       # FIXME: (AK) primer_schemes/nCoV-2019.reference.fasta?
             technology = technology,
             docker_image_id = docker_image_id
@@ -234,7 +226,6 @@ workflow consensus_genome {
             prefix = prefix,
             outputFiles = select_all(flatten([
                 RemoveHost.host_removed_fastqs,
-                Subsample.subsampled_fastqs,
                 select_all([
                     MakeConsensus.consensus_fa,
                     RunMinion.consensus_fa,
@@ -292,11 +283,13 @@ task ValidateInput{
         String prefix
         Array[File]+ fastqs
         String technology
+        Int max_reads
 
         String docker_image_id
     }
 
     command <<<
+    set -euxo pipefail
     # TODO: Check if the input files from Illumina have reads with length < 300;
     # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
     if [[ "~{technology}" == "ONT" ]]; then
@@ -313,25 +306,45 @@ task ValidateInput{
             FILE="${FILE%.*}"
         fi
         cp "$FILE" "~{prefix}validated.fastq"
-        gzip "~{prefix}validated.fastq"
     else  # if technology == Illumina
         FILE=~{fastqs[0]}
         if [[ "${FILE##*.}" == "gz" ]]; then
             COUNTER=1
             for i in `echo ~{sep=' ' fastqs}`; do 
                 cp $i "~{prefix}validated_${COUNTER}.fastq.gz"
+                gunzip "~{prefix}validated_${COUNTER}.fastq.gz"
                 COUNTER=$((COUNTER + 1))
             done
         else
             COUNTER=1
             for i in `echo ~{sep=' ' fastqs}`; do 
                 cp $i "~{prefix}validated_${COUNTER}.fastq"
-                gzip "~{prefix}validated_${COUNTER}.fastq"
                 COUNTER=$((COUNTER + 1))
             done
         fi
     fi
+
+    python3 <<CODE
+    from glob import glob
+    from shutil import move
+
+    from Bio import SeqIO
+
+    def truncate(gen, n):
+        for i, elem in enumerate(gen):
+            if i >= n:
+              break
+            yield elem
+
+    for file in glob("~{prefix}validated*.fastq"):
+        SeqIO.write(truncate(SeqIO.parse(file, "fastq")), "temp.fastq", "fastq")
+        move("temp.fastq", file)
+    CODE
     
+    for file in "~{prefix}validated*.fastq"
+    do
+        gzip $file
+    end
     >>>
 
     output {
@@ -431,79 +444,6 @@ task RemoveHost {
 
     output {
         Array[File] host_removed_fastqs = glob("~{prefix}no_host_*.fq.gz")
-    }
-
-    runtime {
-        docker: docker_image_id
-    }
-}
-
-task Subsample {
-    input {
-        Array[File] fastqs
-        Int max_reads
-
-        String docker_image_id
-    }
-
-    command <<<
-        python3 <<CODE
-        import gzip
-        import shutil
-        from hashlib import md5
-        from random import seed, sample
-
-        from Bio import SeqIO
-
-        MAX_READS = ~{max_reads}
-        HASH_BLOCK_SIZE = 65536  # 64 KB
-
-        def maybe_gzip_open(path):
-            with open(path, "rb") as f:
-                gzipped = f.read(2) == b'\x1f\x8b'
-            if gzipped:
-                return gzip.open(path, "rt")
-            return open(path)
-
-        def count_reads(fastq):
-            with maybe_gzip_open(fastq) as f:
-                return sum(1 for _ in SeqIO.parse(f, "fastq"))
-
-        def hash_file(path):
-            h = md5()
-            with open(path, 'rb') as f:
-                while True:
-                    data = f.read(HASH_BLOCK_SIZE)
-                    if not data:
-                        break
-                    h.update(data)
-            return h.hexdigest()
-
-        def subsample(input_fastq, output_fastq):
-            n_reads = count_reads(input_fastq)
-            if n_reads <= MAX_READS:
-                return shutil.copyfile(input_fastq, output_fastq)
-
-            # seed rng based on file contents for determinism
-            seed(hash_file(input_fastq))
-            s_idx = set(sample(range(n_reads), MAX_READS))
-
-            with maybe_gzip_open(input_fastq) as in_f, gzip.open(output_fastq, 'wt') as out_f:
-                reads_iter = enumerate(SeqIO.parse(in_f, "fastq"))
-                SeqIO.write(
-                    (read for i, read in reads_iter if i in s_idx),
-                    out_f,
-                    "fastq"
-                )
-
-
-        for i, input_fastq in enumerate(["~{sep='\",\"' fastqs}"]):
-            subsample(input_fastq, f"subsampled_{i}.fastq.gz")
-        CODE
-    >>>
-
-    output {
-        Array[File] subsampled_fastqs = glob("*.fastq.gz")
     }
 
     runtime {
@@ -910,9 +850,7 @@ task ComputeStats {
         File? ercc_stats  # optional, will only exist for Illumina runs
         File vcf
 
-        Array[File] input_fastqs
-        Array[File] host_removed_fastqs
-        Array[File] subsampled_fastqs
+        Array[File]+ fastqs
         File ref_host
 
         String technology
@@ -938,17 +876,6 @@ task ComputeStats {
         import numpy as np
         from matplotlib import pyplot as plt
         import seaborn as sns
-
-        def maybe_gzip_open(path):
-            with open(path, "rb") as f:
-                gzipped = f.read(2) == b'\x1f\x8b'
-            if gzipped:
-                return gzip.open(path, "rt")
-            return open(path)
-
-        def count_reads(fastq):
-            with maybe_gzip_open(fastq) as f:
-                return sum(1 for _ in SeqIO.parse(f, "fastq"))
 
         stats = {"sample_name": "~{sample}"}
 
@@ -976,13 +903,19 @@ task ComputeStats {
         seq, = SeqIO.parse("~{assembly}", "fasta")
         stats["allele_counts"] = dict(collections.Counter(str(seq.seq)))
 
-        input_fastqs=list(filter(None, ["~{sep='\",\"' input_fastqs}"]))
-        host_removed_fastqs = ["~{sep='\",\"' host_removed_fastqs}"]
-        subsampled_fastqs = ["~{sep='\",\"' subsampled_fastqs}"]
+        fq_list=list(filter(None, ["~{sep='\",\"' fastqs}"]))
+        try:
+            fq_lines = 0
+            for fq_file in fq_list:
+                with gzip.open(fq_file, 'r') as f:
+                    for line in f: fq_lines += 1
+        except OSError:
+            fq_lines = 0
+            for fq_file in fq_list:
+                with open(fq_file, 'r') as f:
+                    for line in f: fq_lines += 1
 
-        stats["total_reads"] = sum(count_reads(f) for f in input_fastqs)
-        stats["non_host_reads"] = sum(count_reads(f) for f in host_removed_fastqs)
-        stats["processed_reads"] = sum(count_reads(f) for f in subsampled_fastqs)
+        stats["total_reads"] = int(int(fq_lines) / 4)
 
         with open("~{prefix}samtools_stats.txt") as f:
             sam_stats_re = re.compile(r"SN\s+([^\s].*):\s+(\d+)")

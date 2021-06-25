@@ -325,4 +325,3 @@ class TestConsensusGenomes(WDLTestCase):
         for output in res["outputs"]["ValidateInput.validated_fastqs"]:
             with gzip.open(output, 'rt') as f:
                 self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
-

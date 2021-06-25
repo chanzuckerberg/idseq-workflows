@@ -285,6 +285,7 @@ class TestConsensusGenomes(WDLTestCase):
                 "max_reads": 100,
                 "technology": "Illumina",
                 "fastqs": [fastq_0, fastq_1],
+                "prefix": "",
             },
         )
         for output in res["outputs"]["ValidateInput.validated_fastqs"]:
@@ -300,6 +301,7 @@ class TestConsensusGenomes(WDLTestCase):
                 "max_reads": 100,
                 "technology": "ONT",
                 "fastqs": [fastq],
+                "prefix": "",
             },
         )
         for output in res["outputs"]["ValidateInput.validated_fastqs"]:
@@ -317,26 +319,10 @@ class TestConsensusGenomes(WDLTestCase):
                     "max_reads": 100,
                     "technology": "ONT",
                     "fastqs": [f.name],
+                    "prefix": "",
                 }
             )
         for output in res["outputs"]["ValidateInput.validated_fastqs"]:
             with gzip.open(output, 'rt') as f:
                 self.assertEqual(sum(1 for _ in SeqIO.parse(f, "fastq")), 100)
 
-    def test_subsampling_determinism(self):
-        fastq = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")
-
-        res_1 = self.run_miniwdl(
-            task="Subsample",
-            args=["max_reads=100", f"fastqs={fastq}"],
-        )
-        output_1 = res_1["outputs"]["Subsample.subsampled_fastqs"][0]
-
-        res_2 = self.run_miniwdl(
-            task="Subsample",
-            args=["max_reads=100", f"fastqs={fastq}"],
-        )
-        output_2 = res_2["outputs"]["Subsample.subsampled_fastqs"][0]
-
-        with gzip.open(output_1) as f1, gzip.open(output_2) as f2:
-            self.assertEqual(f1.read(), f2.read())

@@ -344,7 +344,7 @@ task ValidateInput{
     for file in "~{prefix}validated*.fastq"
     do
         gzip $file
-    end
+    done
     >>>
 
     output {

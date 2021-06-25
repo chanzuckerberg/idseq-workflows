@@ -330,9 +330,9 @@ task ValidateInput{
 
     from Bio import SeqIO
 
-    def truncate(gen, n):
+    def truncate(gen):
         for i, elem in enumerate(gen):
-            if i >= n:
+            if i >= ~{max_reads}:
               break
             yield elem
 

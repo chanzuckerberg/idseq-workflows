@@ -302,10 +302,11 @@ task ValidateInput{
         # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
         FILE=~{fastqs[0]}
         if [[ "${FILE##*.}" == "gz" ]]; then
-            gunzip "$FILE"
-            FILE="${FILE%.*}"
+            cp "$FILE" "~{prefix}validated.fastq.gz"
+            gunzip "~{prefix}validated.fastq.gz"
+        else
+            cp "$FILE" "~{prefix}validated.fastq"
         fi
-        cp "$FILE" "~{prefix}validated.fastq"
     else  # if technology == Illumina
         FILE=~{fastqs[0]}
         if [[ "${FILE##*.}" == "gz" ]]; then

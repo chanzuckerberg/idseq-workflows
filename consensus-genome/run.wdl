@@ -327,6 +327,7 @@ task ValidateInput{
 
     python3 <<CODE
     from glob import glob
+    from os import stat
     from shutil import move
 
     from Bio import SeqIO
@@ -338,8 +339,9 @@ task ValidateInput{
             yield elem
 
     for file in glob("~{prefix}validated*.fastq"):
-        SeqIO.write(truncate(SeqIO.parse(file, "fastq")), "temp.fastq", "fastq")
-        move("temp.fastq", file)
+        if stat(file).st_size:
+          SeqIO.write(truncate(SeqIO.parse(file, "fastq")), "temp.fastq", "fastq")
+          move("temp.fastq", file)
     CODE
     
     for file in "~{prefix}validated*.fastq"

@@ -211,7 +211,10 @@ class TestConsensusGenomes(WDLTestCase):
         ApplyLengthFilter
         """
         fastqs = os.path.join(os.path.dirname(__file__), "Ct20K.fq.gz")
-        res = self.run_miniwdl(task="ValidateInput", args=["prefix=test", f"fastqs={fastqs}", "technology=ONT"])
+        res = self.run_miniwdl(
+            task="ValidateInput",
+            args=["prefix=test", f"fastqs={fastqs}", "technology=ONT", "max_reads=75000000"],
+        )
         for output_name, output in res["outputs"].items():
             for filename in output:
                 self.assertTrue(filename.endswith(".fastq.gz"))

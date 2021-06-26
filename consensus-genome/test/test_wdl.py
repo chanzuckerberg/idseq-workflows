@@ -116,7 +116,7 @@ class TestConsensusGenomes(WDLTestCase):
             self.run_miniwdl(args)
         self.assertRunFailed(
             ecm,
-            task="ValidateInput",
+            task="RemoveHost",
             error="InsufficientReadsError",
             cause="No reads after RemoveHost"
         )

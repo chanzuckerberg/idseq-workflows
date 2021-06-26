@@ -114,7 +114,12 @@ class TestConsensusGenomes(WDLTestCase):
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(args)
-        self.assertRunFailed(ecm, task="ValidateInput", error="InsufficientReadsError", cause="No reads after RemoveHost")
+        self.assertRunFailed(
+            ecm,
+            task="ValidateInput",
+            error="InsufficientReadsError",
+            cause="No reads after RemoveHost"
+        )
 
     def test_sars_cov2_ont_cg(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "Ct20K.fastq.gz")

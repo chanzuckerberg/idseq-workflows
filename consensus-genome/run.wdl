@@ -289,65 +289,54 @@ task ValidateInput{
     }
 
     command <<<
-    set -euxo pipefail
-    # TODO: Check if the input files from Illumina have reads with length < 300;
-    # if not, throw an error and do not proceed - the user has likely selected the wrong input analysis type
-    if [[ "~{technology}" == "ONT" ]]; then
-        # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
-        if [[ ~{length(fastqs)} -gt 1 ]]; then
-            export error=InsufficientReadsError cause="No reads after RemoveHost"
-            jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-            exit 1
-        fi
-        # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
-        FILE=~{fastqs[0]}
-        if [[ "${FILE##*.}" == "gz" ]]; then
-            cp "$FILE" "~{prefix}validated.fastq.gz"
-            gunzip "~{prefix}validated.fastq.gz"
-        else
-            cp "$FILE" "~{prefix}validated.fastq"
-        fi
-    else  # if technology == Illumina
-        FILE=~{fastqs[0]}
-        if [[ "${FILE##*.}" == "gz" ]]; then
-            COUNTER=1
-            for i in `echo ~{sep=' ' fastqs}`; do 
-                cp $i "~{prefix}validated_${COUNTER}.fastq.gz"
-                gunzip "~{prefix}validated_${COUNTER}.fastq.gz"
-                COUNTER=$((COUNTER + 1))
-            done
-        else
-            COUNTER=1
-            for i in `echo ~{sep=' ' fastqs}`; do 
-                cp $i "~{prefix}validated_${COUNTER}.fastq"
-                COUNTER=$((COUNTER + 1))
-            done
-        fi
-    fi
-
     python3 <<CODE
-    from glob import glob
-    from os import stat
-    from shutil import move
+    import gzip
+    import json
+    import os
+    import sys
 
     from Bio import SeqIO
 
     def truncate(gen):
         for i, elem in enumerate(gen):
             if i >= ~{max_reads}:
-              break
+                break
+            if "~{technology}" == "Illumina" and len(elem.seq) >= 300:
+                json.dump(({
+                    "wdl_error_message": True,
+                    "error": "InvalidInputFileError",
+                    "cause": "Read longer than 300bp for Illumina",
+                }, sys.stderr)
+                os.exit(1)
             yield elem
 
-    for file in glob("~{prefix}validated*.fastq"):
-        if stat(file).st_size:
-          SeqIO.write(truncate(SeqIO.parse(file, "fastq")), "temp.fastq", "fastq")
-          move("temp.fastq", file)
+    def maybe_gzip_open(path):
+        with open(path, "rb") as f:
+            gzipped = f.read(2) == b'\x1f\x8b'
+        if gzipped:
+            return gzip.open(path, "rt")
+        return open(path)
+
+    fastqs = ["~{sep=", " fastqs}"]
+
+    # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
+    if "~{technology}" == "ONT" and len(fastqs) > 1:
+        json.dump({
+            "wdl_error_message": True,
+            "error": "InvalidInputFileError",
+            "cause": "Multiple fastqs provided for ONT",
+        }, sys.stderr)
+        os.exit(1)
+
+    for i, file in enumerate(fastqs):
+        if not os.stat(file).st_size:
+            pass
+
+        # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
+        out_path = f"~{prefix}validated_{i}.fastq" if len(fastqs) > 1 else "~{prefix}validated.fastq"
+        with maybe_gzip_open(file) as in_f, gzip.open(out_path, "wt") as out_f:
+            SeqIO.write(truncate(SeqIO.parse(in_f, "fastq")), out_f, "fastq")
     CODE
-    
-    for file in "~{prefix}validated*.fastq"
-    do
-        gzip $file
-    done
     >>>
 
     output {

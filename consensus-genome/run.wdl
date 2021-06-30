@@ -276,9 +276,6 @@ workflow consensus_genome {
 }
 
 task ValidateInput{
-    # This step is still a placeholder - it does not have any logic yet.
-    # It should validate that "Illumina" pipeline reads are short (<300bp), perform other simple sanity checks, and
-    # check that only one input fastq is present for ONT.
     input {
         String prefix
         Array[File]+ fastqs
@@ -317,7 +314,7 @@ task ValidateInput{
                 return gzip.open(path, "rt")
             return open(path)
 
-        fastqs = ["~{sep=", " fastqs}"]
+        fastqs = ["~{sep='", "' fastqs}"]
 
         # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
         if "~{technology}" == "ONT" and len(fastqs) > 1:

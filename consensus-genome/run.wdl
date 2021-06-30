@@ -852,7 +852,7 @@ task ComputeStats {
         String docker_image_id
     }
 
-    ommand <<<
+    command <<<
         set -euxo pipefail
 
         samtools index "~{cleaned_bam}"

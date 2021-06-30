@@ -289,55 +289,55 @@ task ValidateInput{
     }
 
     command <<<
-    python3 <<CODE
-    import gzip
-    import json
-    import os
-    import sys
+        python3 <<CODE
+        import gzip
+        import json
+        import os
+        import sys
 
-    from Bio import SeqIO
+        from Bio import SeqIO
 
-    def truncate(gen):
-        for i, elem in enumerate(gen):
-            if i >= ~{max_reads}:
-                break
-            if "~{technology}" == "Illumina" and len(elem.seq) >= 300:
-                json.dump({
-                    "wdl_error_message": True,
-                    "error": "InvalidInputFileError",
-                    "cause": "Read longer than 300bp for Illumina",
-                }, sys.stderr)
-                os.exit(1)
-            yield elem
+        def truncate(gen):
+            for i, elem in enumerate(gen):
+                if i >= ~{max_reads}:
+                    break
+                if "~{technology}" == "Illumina" and len(elem.seq) >= 300:
+                    json.dump({
+                        "wdl_error_message": True,
+                        "error": "InvalidInputFileError",
+                        "cause": "Read longer than 300bp for Illumina",
+                    }, sys.stderr)
+                    os.exit(1)
+                yield elem
 
-    def maybe_gzip_open(path):
-        with open(path, "rb") as f:
-            gzipped = f.read(2) == b'\x1f\x8b'
-        if gzipped:
-            return gzip.open(path, "rt")
-        return open(path)
+        def maybe_gzip_open(path):
+            with open(path, "rb") as f:
+                gzipped = f.read(2) == b'\x1f\x8b'
+            if gzipped:
+                return gzip.open(path, "rt")
+            return open(path)
 
-    fastqs = ["~{sep=", " fastqs}"]
+        fastqs = ["~{sep=", " fastqs}"]
 
-    # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
-    if "~{technology}" == "ONT" and len(fastqs) > 1:
-        json.dump({
-            "wdl_error_message": True,
-            "error": "InvalidInputFileError",
-            "cause": "Multiple fastqs provided for ONT",
-        }, sys.stderr)
-        os.exit(1)
+        # expect ONT to include only 1 input .fastq file; throw error if multiple input fastqs provided
+        if "~{technology}" == "ONT" and len(fastqs) > 1:
+            json.dump({
+                "wdl_error_message": True,
+                "error": "InvalidInputFileError",
+                "cause": "Multiple fastqs provided for ONT",
+            }, sys.stderr)
+            os.exit(1)
 
-    for i, file in enumerate(fastqs):
-        if not os.stat(file).st_size:
-            pass
+        for i, file in enumerate(fastqs):
+            if not os.stat(file).st_size:
+                pass
 
-        # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
-        prefix = "~{prefix}"
-        out_path = f"{prefix}validated_{i}.fastq.gz" if len(fastqs) > 1 else f"{prefix}validated.fastq.gz"
-        with maybe_gzip_open(file) as in_f, gzip.open(out_path, "wt") as out_f:
-            SeqIO.write(truncate(SeqIO.parse(in_f, "fastq")), out_f, "fastq")
-    CODE
+            # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
+            prefix = "~{prefix}"
+            out_path = f"{prefix}validated_{i}.fastq.gz" if len(fastqs) > 1 else f"{prefix}validated.fastq.gz"
+            with maybe_gzip_open(file) as in_f, gzip.open(out_path, "wt") as out_f:
+                SeqIO.write(truncate(SeqIO.parse(in_f, "fastq")), out_f, "fastq")
+        CODE
     >>>
 
     output {
@@ -347,6 +347,7 @@ task ValidateInput{
     runtime {
         docker: docker_image_id
     }
+}
 
 
 task FetchSequenceByAccessionId {
@@ -851,7 +852,7 @@ task ComputeStats {
         String docker_image_id
     }
 
-    command <<<
+    ommand <<<
         set -euxo pipefail
 
         samtools index "~{cleaned_bam}"

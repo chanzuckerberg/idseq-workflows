@@ -333,7 +333,8 @@ task ValidateInput{
             pass
 
         # ONT guppyplex requires files are in .fastq format with .fastq extension (not .fq)
-        out_path = f"~{prefix}validated_{i}.fastq" if len(fastqs) > 1 else "~{prefix}validated.fastq"
+        prefix = "~{prefix}"
+        out_path = f"{prefix}validated_{i}.fastq.gz" if len(fastqs) > 1 else f"{prefix}validated.fastq.gz"
         with maybe_gzip_open(file) as in_f, gzip.open(out_path, "wt") as out_f:
             SeqIO.write(truncate(SeqIO.parse(in_f, "fastq")), out_f, "fastq")
     CODE
@@ -346,7 +347,7 @@ task ValidateInput{
     runtime {
         docker: docker_image_id
     }
-}
+
 
 task FetchSequenceByAccessionId {
     input {

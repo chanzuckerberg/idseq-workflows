@@ -302,7 +302,7 @@ task ValidateInput{
             if i >= ~{max_reads}:
                 break
             if "~{technology}" == "Illumina" and len(elem.seq) >= 300:
-                json.dump(({
+                json.dump({
                     "wdl_error_message": True,
                     "error": "InvalidInputFileError",
                     "cause": "Read longer than 300bp for Illumina",

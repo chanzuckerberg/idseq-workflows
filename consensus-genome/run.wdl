@@ -629,6 +629,7 @@ task TrimPrimers {
             primerOffset=0
         fi
         ivar trim -x $primerOffset -e -i ivar.bam -b "~{primer_bed}" -p ivar.out
+        ls -ltah 
         samtools sort -O bam -o "~{prefix}primertrimmed.bam" ivar.out.bam
         samtools index "~{prefix}primertrimmed.bam"
     >>>

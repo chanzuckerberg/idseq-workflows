@@ -28,6 +28,7 @@ RUN apt-get -qq update && apt-get -qq -y install \
   freebayes \
   kraken2 \
   minimap2 \
+  muscle \
   samtools \
   seqtk \
   trim-galore \

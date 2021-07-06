@@ -736,6 +736,9 @@ task RealignConsensus {
     }
 
     command <<<
+        # MUSCLE accepts a fasta file containing all the sequences that are to be aligned (in this case we want
+        # to align the reference and the consensus genome) and outputs a multiple sequence alignment file. 
+        # Some documentation here: https://www.drive5.com/muscle/manual/basic_alignment.html
         cat "~{consensus}" "~{ref_fasta}" > "~{sample}.muscle.in.fasta" 
         muscle -in "~{sample}.muscle.in.fasta" -out "~{sample}.muscle.out.fasta"
 

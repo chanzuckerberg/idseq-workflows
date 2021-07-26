@@ -238,6 +238,8 @@ task GenerateClusterPhylos {
 
     num_zero_variant_samples=`grep -c "^$" ska.variants.aln`
     if [[ $num_zero_variant_samples -gt 0 ]]; then
+      # If we have more than one 0 variant samples then the samples
+      #   are too divergent and we should not generate a tree
       exit 0
     fi
 

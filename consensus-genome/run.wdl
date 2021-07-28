@@ -384,12 +384,10 @@ task ApplyLengthFilter {
 
     command <<<
         artic guppyplex --min-length ~{min_length} --max-length ~{max_length} --directory $(dirname "~{fastqs[0]}") --output filtered.fastq
-
     >>>
 
     output {
         Array[File]+ filtered_fastqs = ["filtered.fastq"]
-
     }
 
     runtime {

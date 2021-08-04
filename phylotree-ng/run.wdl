@@ -78,7 +78,7 @@ workflow phylotree {
     if (GenerateClusterPhylos.phylotree_newick != None) {
       call AddSampleNamesToNewick {
         input:
-        newick = GenerateClusterPhylos.phylotree_newick,
+        newick = select_first([GenerateClusterPhylos.phylotree_newick]),
         samples = samples,
         docker_image_id = docker_image_id
       }

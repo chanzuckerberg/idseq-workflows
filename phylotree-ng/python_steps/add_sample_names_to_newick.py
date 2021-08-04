@@ -14,10 +14,11 @@ class Sample(TypedDict):
 
 def main(newick: str, output_newick: str, samples: Iterable[Sample]):
     sample_name_by_workflow_run_id = {str(s["workflow_run_id"]): s["sample_name"] for s in samples}
-    tree = next(NewickIO.parse(newick))
-    for node in tree.find_clades(order="level"):
-        node.name = sample_name_by_workflow_run_id.get(node.name, node.name)
-    NewickIO.write([tree], output_newick)
+    with open(newick) as i, open(output_newick, "w") as o:
+        tree = next(NewickIO.parse(i))
+        for node in tree.find_clades(order="level"):
+            node.name = sample_name_by_workflow_run_id.get(node.name, node.name)
+        NewickIO.write([tree], o)
 
 
 if __name__ == "__main__":

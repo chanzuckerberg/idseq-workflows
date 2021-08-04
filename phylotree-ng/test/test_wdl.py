@@ -36,7 +36,6 @@ class TestPhylotree(WDLTestCase):
     }
 
     def test_phylotree(self):
-        workflow_run_ids = [str(s["workflow_run_id"]) for s in self.common_inputs["samples"]]
         sample_names = [s["sample_name"] for s in self.common_inputs["samples"]]
 
         res = self.run_miniwdl()

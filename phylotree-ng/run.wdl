@@ -20,6 +20,9 @@ workflow phylotree {
         String cut_height = .16
         String ska_align_p = .9
         String docker_image_id
+
+        # Dummy values - required by SFN interface
+        String s3_wd_uri = ""
     }
 
     call GetSampleContigFastas {
@@ -72,6 +75,15 @@ workflow phylotree {
         docker_image_id = docker_image_id
     }
 
+    if (GenerateClusterPhylos.phylotree_newick != None) {
+      call AddSampleNamesToNewick {
+        input:
+        newick = select_first([GenerateClusterPhylos.phylotree_newick]),
+        samples = samples,
+        docker_image_id = docker_image_id
+      }
+    }
+
     call FetchNCBIMetadata {
         input:
         reference_accession_ids = additional_reference_accession_ids,
@@ -82,7 +94,7 @@ workflow phylotree {
         File ska_distances = AddSampleNamesToDistances.sample_name_distances
         File clustermap_png = ComputeClusters.clustermap_png
         File clustermap_svg = ComputeClusters.clustermap_svg
-        File phylotree_newick = GenerateClusterPhylos.phylotree_newick
+        File? phylotree_newick = select_first([AddSampleNamesToNewick.phylotree_newick])
         File variants = AddSampleNamesToVariants.sample_name_variants
         File ncbi_metadata_json = FetchNCBIMetadata.ncbi_metadata_json
     }
@@ -232,12 +244,20 @@ task GenerateClusterPhylos {
     ska merge -o ska.merged ska_hashes/*.skf
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
     mv ska_variants.aln ska.variants.aln
+
+    num_zero_variant_samples=`grep -c "^$" ska.variants.aln`
+    if [[ $num_zero_variant_samples -gt 0 ]]; then
+      # If we have more than one 0 variant samples then the samples
+      #   are too divergent and we should not generate a tree
+      exit 0
+    fi
+
     iqtree -s ska.variants.aln
     mv ska.variants.aln.treefile phylotree.nwk
     >>>
 
     output {
-        File phylotree_newick = "phylotree.nwk"
+        File? phylotree_newick = "phylotree.nwk"
         File variants = "ska.variants.aln"
     }
 
@@ -285,6 +305,29 @@ task AddSampleNamesToVariants {
 
     output {
         File sample_name_variants = "ska.variants.aln"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
+task AddSampleNamesToNewick {
+    input {
+        File newick
+        Array[SampleInfo] samples
+        String docker_image_id
+    }
+
+    command <<<
+    python3 /bin/add_sample_names_to_newick.py \
+        --newick ~{newick} \
+        --samples "~{write_json(samples)}" \
+        --output-newick phylotree.nwk
+    >>>
+
+    output {
+        File phylotree_newick = "phylotree.nwk"
     }
 
     runtime {

@@ -32,12 +32,16 @@ workflow consensus_genome {
         String prefix = ""
 
         # ONT-specific inputs
-        File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes.tar.gz"
+        File primer_schemes = "s3://idseq-public-references/consensus-genome/artic-primer-schemes_v2.tar.gz"
+        String primer_set = "nCoV-2019/V3"
         # filters in accordance with recommended parameters in ARTIC SARS-CoV-2 bioinformatics protocol are...
         # ...intended to remove obviously chimeric reads.
         Boolean apply_length_filter = true # Set to False for Clear Labs samples
-        Int min_length = 350
-        Int max_length = 700
+
+        # set default min_length to 350 unless midnight primers are used
+        Int min_length = if primer_set == "nCoV-2019/V1200" then 250 else 350
+        # set default max_length to 1500 unless midnight primers are used
+        Int max_length = if primer_set == "nCoV-2019/V1200" then 1500 else 700
         # normalise: default is set to 1000 to avoid spurious indels observed in validation
         Int normalise  = 1000
         # medaka_model: default is selected to support current Clear Labs workflow
@@ -166,6 +170,14 @@ workflow consensus_genome {
                 minDepth = minDepth,
                 docker_image_id = docker_image_id
         }
+        call RealignConsensus {
+            input:
+                prefix = prefix,
+                sample = sample,
+                ref_fasta = select_first([ref_fasta, FetchSequenceByAccessionId.sequence_fa]),
+                consensus = MakeConsensus.consensus_fa,
+                docker_image_id = docker_image_id
+        }
     }
 
     if (technology == "ONT"){
@@ -177,6 +189,7 @@ workflow consensus_genome {
                 primer_schemes = primer_schemes,
                 normalise = normalise,
                 medaka_model = medaka_model,
+                primer_set = primer_set,
                 docker_image_id = docker_image_id
         }
     }
@@ -192,6 +205,7 @@ workflow consensus_genome {
             no_reads_quast = no_reads_quast,
             technology = technology,
             primer_schemes = primer_schemes, # Only required for ONT; contains reference genome for ARTIC
+            primer_set = primer_set,
             docker_image_id = docker_image_id
     }
 
@@ -244,6 +258,8 @@ workflow consensus_genome {
                     ComputeStats.sam_depths,
                     CallVariants.variants_ch,
                     RunMinion.vcf,
+                    RealignConsensus.muscle_output,
+                    RunMinion.muscle_output,
                     Vadr.vadr_quality,                 # Optional (VADR only runs on default (coronavirus) reference)
                     Vadr.vadr_alerts,                  # Optional (VADR only runs on default (coronavirus) reference)
                     Vadr.vadr_errors                   # Optional (only present if VADR ran and exited with an error)
@@ -261,6 +277,7 @@ workflow consensus_genome {
         File? trim_primers_out_trimmed_bam_ch = select_first([TrimPrimers.trimmed_bam_ch, RunMinion.primertrimmedbam])
         File? trim_primers_out_trimmed_bam_bai = select_first([TrimPrimers.trimmed_bam_bai, RunMinion.primertrimmedbai])
         File? make_consensus_out_consensus_fa = select_first([MakeConsensus.consensus_fa, RunMinion.consensus_fa])
+        File? realign_consensus_fa = select_first([RealignConsensus.muscle_output, RunMinion.muscle_output])
         File? quast_out_quast_txt = Quast.quast_txt
         File? quast_out_quast_tsv = Quast.quast_tsv
         File? call_variants_out_variants_ch = select_first([CallVariants.variants_ch, RunMinion.vcf_pass])
@@ -378,7 +395,6 @@ task ApplyLengthFilter {
         Array[File]+ fastqs
         Int min_length
         Int max_length
-
         String docker_image_id
     }
 
@@ -728,12 +744,40 @@ task CallVariants {
     }
 }
 
+task RealignConsensus {
+    input {
+        String prefix
+        String sample
+        File ref_fasta
+        File consensus
+        String docker_image_id
+    }
+
+    command <<<
+        # MUSCLE accepts a fasta file containing all the sequences that are to be aligned (in this case we want
+        # to align the reference and the consensus genome) and outputs a multiple sequence alignment file. 
+        # Some documentation here: https://www.drive5.com/muscle/manual/basic_alignment.html
+        cat "~{consensus}" "~{ref_fasta}" > "~{sample}.muscle.in.fasta" 
+        muscle -in "~{sample}.muscle.in.fasta" -out "~{sample}.muscle.out.fasta"
+
+    >>>
+
+    output{
+        File muscle_output = "~{sample}.muscle.out.fasta"
+    }
+
+    runtime {
+        docker: docker_image_id
+    }
+}
+
 task RunMinion {
     input {
         String prefix
         String sample
         Array[File]+ fastqs
         File primer_schemes
+        String primer_set
         Int normalise
         String medaka_model
         String docker_image_id
@@ -747,7 +791,7 @@ task RunMinion {
         tar -xzf "~{primer_schemes}"
 
         # TODO: upgrade to artic 1.3.0 when released (https://github.com/artic-network/fieldbioinformatics/pull/70)
-        artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" nCoV-2019/V3 "~{sample}"
+        artic minion --medaka --no-longshot --normalise "~{normalise}" --threads 4 --scheme-directory primer_schemes --read-file ~{sep=' ' fastqs} --medaka-model "~{medaka_model}" "~{primer_set}" "~{sample}"
         # the .bam file doesn't seem to be sorted when it comes out, so explicitly sorting it here because a
         # ...sorted .bam is necessary for ComputeStats step downstream
         samtools sort "~{sample}.primertrimmed.rg.sorted.bam" > "~{sample}.primertrimmed.rg.resorted.bam"
@@ -763,6 +807,7 @@ task RunMinion {
         File vcf_pass = "~{sample}.pass.vcf"
         File vcf = "~{sample}.merged.vcf"
         File consensus_fa = "~{sample}.consensus.fasta"
+        File muscle_output = "~{sample}.muscle.out.fasta"
         File log = "~{sample}.minion.log.txt"
     }
 
@@ -778,11 +823,11 @@ task Quast {
         File assembly   # same as consensus_fa
         File bam
         Array[File]+ fastqs
-        File ref_fasta
+        File? ref_fasta
         File? primer_schemes
+        String? primer_set
         String no_reads_quast
         String technology
-
         Int threads = 4
 
         String docker_image_id
@@ -812,7 +857,7 @@ task Quast {
                     # Currently, the ONT branch only supports the ARTIC SARS-CoV-2 SOP, which bundles its own reference genome.
                     # The ref_fasta parameter is ignored and the bundled genome reference from ARTIC primer_schemes is used instead.
                     tar -xzf ~{primer_schemes}
-                    quast.py --min-contig 0 -o quast -r "primer_schemes/nCoV-2019/V3/nCoV-2019.reference.fasta" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
+                    quast.py --min-contig 0 -o quast -r "primer_schemes/~{primer_set}/nCoV-2019.reference.fasta" -t $CORES --ref-bam "$BAM" "$ASSEMBLY" --nanopore "~{fastqs[0]}"
                 fi
             fi
         else

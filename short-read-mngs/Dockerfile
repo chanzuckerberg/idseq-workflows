@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG MINIWDL_VERSION=1.1.5
 
-LABEL maintainer="IDseq Team idseq-tech@chanzuckerberg.com"
+LABEL maintainer="IDseq Team <idseq-tech@chanzuckerberg.com>"
 
 RUN sed -i s/archive.ubuntu.com/us-west-2.ec2.archive.ubuntu.com/ /etc/apt/sources.list; \
         echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/98idseq; \
@@ -140,3 +140,6 @@ WORKDIR /
 
 COPY idseq-dag /tmp/idseq-dag
 RUN pip3 install /tmp/idseq-dag && rm -rf /tmp/idseq-dag
+
+COPY idseq_utils /tmp/idseq_utils
+RUN pip3 install /tmp/idseq_utils && rm -rf /tmp/idseq_utils

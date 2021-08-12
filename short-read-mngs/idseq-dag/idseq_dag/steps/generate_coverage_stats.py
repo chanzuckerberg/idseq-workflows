@@ -139,9 +139,9 @@ class PipelineStepGenerateCoverageStats(PipelineStep):
                             PipelineStepGenerateCoverageStats._process_contig(input_bam, output_csv, output_json, contig_name)
             except Exception as e:
                 print(f"Exception in subprocess: {e.__class__} '{e}'")
-                print("-"*60)
+                print("-" * 60)
                 traceback.print_exc(file=sys.stdout)
-                print("-"*60)
+                print("-" * 60)
 
         # Compute pileup for each slice
         with LongRunningCodeSection("PipelineStepGenerateCoverageStats.calc_contig2coverage.mt_map"):

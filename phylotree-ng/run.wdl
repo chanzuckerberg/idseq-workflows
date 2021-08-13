@@ -234,14 +234,14 @@ task GenerateClusterPhylos {
 
     CLUSTER_FILE=$(ls cluster_files | head -n 1)
     mkdir cluster
-    for hash in `cat $CLUSTER_FILE`
+    for hash in `cat cluster_files/$CLUSTER_FILE`
     do
         cp ska_hashes/$hash.skf cluster
     done
 
     mkdir ska_outputs
-    ska distance -o ska ska_hashes/*.skf
-    ska merge -o ska.merged ska_hashes/*.skf
+    ska distance -o ska cluster/*.skf
+    ska merge -o ska.merged cluster/*.skf
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
     mv ska_variants.aln ska.variants.aln
 

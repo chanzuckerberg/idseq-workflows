@@ -23,6 +23,8 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
                     if special_char_rows < 10:
                         f.write(f"{line[0]}={line[1:]}")
                         special_char_rows += 1
+                    else:
+                        f.write(line)
                     ids.add(line[1:])
                 else:
                     f.write(line)

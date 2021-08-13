@@ -107,6 +107,7 @@ task GetReferenceAccessionFastas {
     }
 
     command <<<
+    set -euxo pipefail
         for accession_id in ~{sep=' ' accession_ids}; do
             taxoniq get-from-s3 --accession-id $accession_id > $accession_id.fasta
             if [[ $? == 4 ]]; then
@@ -163,6 +164,7 @@ task RunSKA {
     }
 
     command <<<
+    set -euxo pipefail
     k=18
     if [[ "~{superkingdom_name}" == viruses ]]; then
         k=12
@@ -199,7 +201,7 @@ task ComputeClusters {
     }
 
     command <<<
-    set -e
+    set -euxo pipefail
     mkdir cluster_files
     python3 /bin/compute_clusters.py \
         --ska-distances ~{ska_distances} \
@@ -229,6 +231,7 @@ task GenerateClusterPhylos {
     }
 
     command <<<
+    set -euxo pipefail
     tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 

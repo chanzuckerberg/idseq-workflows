@@ -17,12 +17,12 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
         special_char_rows = 0
         for in_f in inputs["priceseq_fa"]:
             f = NamedTemporaryFile("w")
-            for l in open(in_f):
-                if (l[0] == ">" or l[0] == "@") and special_char_rows < 10:
-                    f.write(f"{l[0]}={l[1:]}")
+            for line in open(in_f):
+                if (line[0] == ">" or line[0] == "@") and special_char_rows < 10:
+                    f.write(f"{line[0]}={line[1:]}")
                     special_char_rows += 1
                 else:
-                    f.write(l)
+                    f.write(line)
             input_files.append(f)
 
         inputs["priceseq_fa"] = [f.name for f in input_files]

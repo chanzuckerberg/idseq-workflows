@@ -1,4 +1,5 @@
 import csv
+from typing import Iterable
 
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns
@@ -67,7 +68,7 @@ class PipelineStepRunIDSeqDedup(PipelineStep):  # Deliberately not PipelineCount
         with open(duplicate_clusters_raw_path) as r, open(duplicate_clusters_path, 'w') as w:
             writer = csv.writer(w)
             for row in csv.reader(r):
-                writer.writerow(" " + elem for elem in row)
+                writer.writerow(c if c[0].isalnum() else f"'{c}" for c in row)
 
         # Emit cluster sizes.  One line per cluster.  Format "<cluster_size> <cluster_read_id>".
         # This info is loaded in multiple subsequent steps using m8.load_duplicate_cluster_sizes,

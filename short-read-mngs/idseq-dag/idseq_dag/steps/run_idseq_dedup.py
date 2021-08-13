@@ -1,5 +1,4 @@
 import csv
-from typing import Iterable
 
 import idseq_dag.util.command as command
 import idseq_dag.util.command_patterns as command_patterns

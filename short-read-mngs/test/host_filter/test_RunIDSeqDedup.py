@@ -23,6 +23,7 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
                     special_char_rows += 1
                 else:
                     f.write(line)
+            f.flush()
             input_files.append(f)
 
         inputs["priceseq_fa"] = [f.name for f in input_files]

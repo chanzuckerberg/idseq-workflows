@@ -142,6 +142,7 @@ class PipelineStepGenerateCoverageStats(PipelineStep):
                 print("-" * 60)
                 traceback.print_exc(file=sys.stdout)
                 print("-" * 60)
+                raise e
 
         # Compute pileup for each slice
         with LongRunningCodeSection("PipelineStepGenerateCoverageStats.calc_contig2coverage.mt_map"):

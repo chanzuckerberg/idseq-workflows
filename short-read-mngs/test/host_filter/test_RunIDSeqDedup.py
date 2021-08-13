@@ -46,6 +46,7 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
                         found_quotes += 1
                         continue
                     assert elem[0].isalnum(), f"cell starts with a special character '{elem}'"
+        assert found_quotes == 10
     finally:
         for f in input_files:
             f.close()

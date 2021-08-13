@@ -1,6 +1,7 @@
 import os
 import csv
 import json
+from tempfile import NamedTemporaryFile
 
 
 def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
@@ -11,24 +12,40 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
         )
     )
 
-    outp = util.miniwdl_run(
-        util.repo_dir() / "short-read-mngs/host_filter.wdl",
-        "--task",
-        "RunIDSeqDedup",
-        "-i",
-        json.dumps(inputs),
-    )
+    input_files = []
+    try:
+        special_char_rows = 0
+        for in_f in inputs["priceseq_fa"]:
+            f = NamedTemporaryFile("w")
+            for l in open(in_f):
+                if (l[0] == ">" or l[0] == "@") and special_char_rows < 10:
+                    f.write(f"{l[0]}={l[1:]}")
+                    special_char_rows += 1
+                else:
+                    f.write(l)
+            input_files.append(f)
 
-    dups = outp["outputs"]["RunIDSeqDedup.duplicate_clusters_csv"]
+        inputs["priceseq_fa"] = [f.name for f in input_files]
 
-    # check we have an initial space to prevent CSV injection
-    with open(dups) as f:
-        for row in csv.reader(f):
-            for elem in row:
-                assert elem[0] == " ", f"cell does not have initial space '{elem}'"
+        outp = util.miniwdl_run(
+            util.repo_dir() / "short-read-mngs/host_filter.wdl",
+            "--task",
+            "RunIDSeqDedup",
+            "-i",
+            json.dumps(inputs),
+        )
 
-    # check we can parse our CSV with skipinitialspace
-    with open(dups) as f:
-        for row in csv.reader(f, skipinitialspace=True):
-            for elem in row:
-                assert elem[0] != " ", f"initial space was not stripped from cell '{elem}'"
+        dups = outp["outputs"]["RunIDSeqDedup.duplicate_clusters_csv"]
+
+        found_quotes = 0
+        # check we have an initial space to prevent CSV injection
+        with open(dups) as f:
+            for row in csv.reader(f):
+                for elem in row:
+                    if elem[0] == "'":
+                        found_quotes += 1
+                        continue
+                    assert elem[0].isalnum(), f"cell starts with a special character '{elem}'"
+    finally:
+        for f in input_files:
+            f.close()

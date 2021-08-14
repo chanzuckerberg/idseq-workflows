@@ -28,7 +28,7 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
                     ids.add(line[1:])
                 else:
                     f.write(line)
-            f.flush()
+            f.seek(0)
             input_files.append(f)
 
         assert special_char_rows == 10

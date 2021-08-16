@@ -231,6 +231,9 @@ task GenerateClusterPhylos {
     }
 
     command <<<
+    # -e omitted because iqtree can exit with a non-zero exit code despite
+    #   producing valid output
+    set -uxo pipefail
     tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 

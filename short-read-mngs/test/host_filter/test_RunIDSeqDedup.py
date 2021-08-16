@@ -12,28 +12,22 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
         )
     )
 
-    input_files = []
-    try:
+    with NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w") as input_file:
         special_char_rows = 0
-        ids = set()
-        for in_f in inputs["priceseq_fa"]:
-            f = NamedTemporaryFile(prefix=os.path.dirname(__file__), mode="w")
-            for line in open(in_f):
-                if line[0] == ">" or line[0] == "@":
-                    if special_char_rows < 10:
-                        f.write(f"{line[0]}={line[1:]}")
-                        special_char_rows += 1
-                    else:
-                        f.write(line)
-                    ids.add(line[1:])
+        for line in open(inputs["priceseq_fa"][0]):
+            if line[0] == ">" or line[0] == "@":
+                if special_char_rows < 10:
+                    input_file.write(f"{line[0]}={line[1:]}")
+                    special_char_rows += 1
                 else:
-                    f.write(line)
-            f.seek(0)
-            input_files.append(f)
+                    input_file.write(line)
+            else:
+                input_file.write(line)
 
+        input_file.seek(0)
         assert special_char_rows == 10
 
-        inputs["priceseq_fa"] = [f.name for f in input_files]
+        inputs["priceseq_fa"] = [input_file.name]
 
         outp = util.miniwdl_run(
             util.repo_dir() / "short-read-mngs/host_filter.wdl",
@@ -51,13 +45,10 @@ def test_RunIDSeqDedup_safe_csv(util, short_read_mngs_bench3_viral_outputs):
         with open(dups) as f:
             for row in csv.reader(f):
                 rows += 1
-                for elem in row:
+                for i, elem in enumerate(row):
                     if elem[0] == "'":
-                        found_quotes += 1
+                        if i == 1:
+                            found_quotes += 1
                         continue
                     assert elem[0].isalnum(), f"cell starts with a special character '{elem}'"
-        assert rows == len(ids) - 1
         assert found_quotes == 10
-    finally:
-        for f in input_files:
-            f.close()

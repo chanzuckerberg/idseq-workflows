@@ -241,8 +241,8 @@ task GenerateClusterPhylos {
       exit 0
     fi
 
-    ska distance -o ska cluster/*.skf
-    ska merge -o ska.merged cluster/*.skf
+    ska distance -o ska ska_hashes/*.skf
+    ska merge -o ska.merged ska_hashes/*.skf
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf
     mv ska_variants.aln ska.variants.aln
 

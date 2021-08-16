@@ -231,7 +231,6 @@ task GenerateClusterPhylos {
     }
 
     command <<<
-    set -euxo pipefail
     tar -xzvf "~{clusters_directory}"
     tar -xzvf "~{ska_hashes}"
 
@@ -241,7 +240,6 @@ task GenerateClusterPhylos {
       exit 0
     fi
 
-    mkdir ska_outputs
     ska distance -o ska ska_hashes/*.skf
     ska merge -o ska.merged ska_hashes/*.skf
     ska align -p "~{ska_align_p}" -o ska -v ska.merged.skf

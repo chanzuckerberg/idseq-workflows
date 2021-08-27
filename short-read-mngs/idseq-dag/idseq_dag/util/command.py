@@ -174,7 +174,7 @@ def run_in_subprocess(target):
             p.start()
         p.join()
         timeout = 0
-        while p.exitcode is None and timeout<10:
+        while p.exitcode is None and timeout < 10:
             time.sleep(1)
             timeout += 1
         if p.exitcode != 0:

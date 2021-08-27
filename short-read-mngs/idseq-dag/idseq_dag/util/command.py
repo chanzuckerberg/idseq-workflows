@@ -173,6 +173,10 @@ def run_in_subprocess(target):
             p = multiprocessing.Process(target=target, args=args, kwargs=kwargs)
             p.start()
         p.join()
+        timeout = 0
+        while p.exitcode is None and timeout<10:
+            time.sleep(1)
+            timeout += 1
         if p.exitcode != 0:
             raise RuntimeError(f"Failed {target.__qualname__} with code {p.exitcode} on {list(args)}, {kwargs}")  # singleton list prints prettier than singleton tuple
     return wrapper

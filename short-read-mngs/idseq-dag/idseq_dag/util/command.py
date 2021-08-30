@@ -173,6 +173,10 @@ def run_in_subprocess(target):
             p = multiprocessing.Process(target=target, args=args, kwargs=kwargs)
             p.start()
         p.join()
+        """
+        Occasionally after p.join() returns, the exit code is `None` for a short amount of time.
+        As a mitigation, we wait for max 10 seconds for the exit code to return, then check the error code.
+        """
         timeout = 0
         while p.exitcode is None and timeout < 10:
             time.sleep(1)

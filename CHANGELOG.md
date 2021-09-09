@@ -1,9 +1,34 @@
+# IDSeq Workflows Changelog
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+and is based on recommendations from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). 
+
+To add clarity for users it is [recommended](https://keepachangelog.com/en/1.0.0/) to differentiate between the types of changes that have been made: 
+
+`Added` for new features.
+`Changed` for changes in existing functionality.
+`Deprecated` for soon-to-be removed features.
+`Removed` for now removed features.
+`Fixed` for any bug fixes.
+`Security` in case of vulnerabilities.
+
+In addition, if a modification is made that may affect the results of a pipeline run, we suggest using noting the `[Pipeline Change]` as well as including the specific change that was made, the predicted result to the output. 
+
+### Unreleased
+- [Pipeline Change] Modify parameters to reduce stringency in consensus-genome pipeline
+	- Change: reduce `ivarFreqThreshold` parameter from 0.9 to 0.75 and reduce `minDepth` parameter from 10 to 5 when using generalized consensus genome
+	- Predicted result: fewer ambiguous bases
+- Fixed broken consensus-genome tests
+- Fixed bitrot error in benchmarking notebook
+
 ### short-read-mngs-v6.8.5
 - mitigation for intermittent GenerateCoverageStats error (#161)
 
 ### consensus-genome-v3.4.0
 - truncate consensus genome inputs (#134)
-- Fix input min/max length when using midnight primers (#145)
+- [Pipeline Change] Fix input min/max length when using midnight primers (#145)
+	- Change: Relax length filter from 350-700 to 250-1500 when  using midnight primers
+	- Predicted result: outputs for consensus genomes run with midnight primers will probably make more sense 
 
 ### phylotree-ng-v1.2.2
 - ignore divergent iqtree error (#162)

@@ -165,7 +165,7 @@ In addition, if a modification is made that may affect the results of a pipeline
 - Update CG Dockerfile
 
 
-### short-read-mngs-v6.4.0, tag: refs/tags/short-read-mngs-v6.3.0
+### short-read-mngs-v6.4.0 short-read-mngs-v6.3.0
 - short-read-mngs auto_benchmark: measure precision/recall wrt taxa truth sets (#83)
 - Update README.md
 - short-read-mngs/auto_benchmark/ref_libs: add three CAMI results
@@ -252,7 +252,7 @@ In addition, if a modification is made that may affect the results of a pipeline
 ### short-read-mngs-v5.2.0
 - RunSRST2 unconditionally again (#42)
 
-### short-read-mngs-v5.1.1, tag: refs/tags/akislyuk-use-pipefail-in-srst2-shell-pipeline
+### short-read-mngs-v5.1.1
 - Catch shell pipeline failures in run_srst2
 - switch to a warning for multiple emitted reads from the same cluster (#41)
 
@@ -260,13 +260,10 @@ In addition, if a modification is made that may affect the results of a pipeline
 - local driver wdl for short-read-mngs (#39)
 - Rename main to short-read-mngs in Readme
 
-### short-read-mngs-v5.0.2, tag: refs/tags/short-read-mngs-v5.0.1
-- WIP
-
-### vconsensus-genome-1.2.2, tag: refs/tags/short-read-mngs-v5.0.0, tag: refs/tags/consensus-genome-v1.2.3, tag: refs/tags/consensus-genome-v1.2.2
+### consensus-genome-v1.2.3
 - Fix issues with consensus genome pipeline (#38)
 
-### short-read-mngs-v4.12.2, tag: refs/tags/short-read-mngs-v4.12.1, tag: refs/tags/short-read-mngs-v4.12.0
+### short-read-mngs-v4.12.2
 - Remove unused logo and badges
 - Fix copy command
 - Install bundled idseq-dag instead of repo archive
@@ -280,17 +277,7 @@ In addition, if a modification is made that may affect the results of a pipeline
 - fix version 4.11.8 (#324)
 - support local alignment (#321)
 
-### main-v0.0.5, tag: refs/tags/main-v0.0.4, tag: refs/tags/main-v0.0.3, tag: refs/tags/main-v0.0.2
-- temp use custom branch in idseq
-- remove minDepth param for pileup and nonessential steps (#29)
-
-### main-v0.0.1
-- WIP
-- WIP
-- Use unshallow checkout
-- Begin release github action (#30)
-
-### vconsensus-genome-1.1.0, tag: refs/tags/v3
+### vconsensus-genome-1.1.0
 - support local non host alignment (#25)
 - Add "no reads left" errors (#28)
 - Create CONTRIBUTING.md (#24)
@@ -317,27 +304,6 @@ In addition, if a modification is made that may affect the results of a pipeline
 - Bump idseq-dag to v4.11.4
 - count_reads: correctly count reads in empty file (#317)
 - Add rapsearch2 to docker image (#11)
-
-### v2
-- Restore index_dir_suffix (#14)
-- run tests using just-built docker image (#13)
-
-### vakislyuk-test
-- Add placeholder for phylotree workflow
-- host_filter task unit tests (auto-generated) (#10)
-- Bump idseq-dag to 4.11.3 (#12)
-- STAR determinism (#316)
-- fetch_from_s3: amend local file compatibility hack to check if desired file exists (#314)
-- Deactivate lazy alignment (#315)
-- build docker image through GitHub Actions+Packages (#9)
-- Remove dead code (#313)
-- Disable runtime installation of Python packages (#312)
-- Fix lint errors
-- Add main workflow Dockerfile (#8)
-- Local alignment + fetch_from_s3 compatibility hack (#308)
-- Fix str repr for idseq_dag exceptions
-- Error handling updates (#310)
-- Fix count_reads, add tests (#311)
 
 ### v1.0.2
 - Fix S3 path parameterization for nt_loc.db reference file
@@ -677,3 +643,6 @@ In addition, if a modification is made that may affect the results of a pipeline
 - add unittests
 - python
 - initial checkin
+
+
+Previous releases to the short-read-mngs pipeline can be found [here](https://github.com/chanzuckerberg/idseq-dag#release-notes)

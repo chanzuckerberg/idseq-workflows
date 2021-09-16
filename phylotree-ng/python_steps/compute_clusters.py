@@ -91,7 +91,7 @@ def main(ska_distances: str, trim_height: float, samples: Iterable[Sample], outp
         row_linkage=Z,
         # Set dendogram color.
         tree_kws={'colors': "#767676"},
-        vmax=0.15,
+        vmax=1,
         vmin=0,
     )
 

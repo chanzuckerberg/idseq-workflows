@@ -45,6 +45,7 @@ task RunStar {
     String genome_dir = "STAR_genome/part-0/"
   }
   command<<<
+  # --step-name ryan-test
   set -euxo pipefail
 
   python3 <<CODE

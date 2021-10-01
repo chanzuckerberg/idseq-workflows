@@ -18,8 +18,8 @@ class TestConsensusGenomes(WDLTestCase):
     sc2_ref_fasta = "s3://idseq-public-references/consensus-genome/MN908947.3.fa"
 
     def test_sars_cov2_illumina_cg(self):
-        fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1.fastq.gz")
-        fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2.fastq.gz")
+        fastqs_0 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r1_subsample.fastq.gz")
+        fastqs_1 = os.path.join(os.path.dirname(__file__), "sample_sars-cov-2_paired_r2_subsample.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
                 f"ref_fasta={self.sc2_ref_fasta}"]
         res = self.run_miniwdl(args)
@@ -28,7 +28,7 @@ class TestConsensusGenomes(WDLTestCase):
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
         # TODO: track non-determinism (888.xx vs 889.xx coverage)
-        self.assertGreater(output_stats["depth_avg"], 888)
+        self.assertGreater(output_stats["depth_avg"], 444)
         self.assertEqual(output_stats["total_reads"], 187444)
         self.assertEqual(output_stats["mapped_reads"], 187211)
         self.assertEqual(output_stats["mapped_paired"], 187150)
@@ -180,7 +180,7 @@ class TestConsensusGenomes(WDLTestCase):
         """
         Test that the pipeline will run a variety of different medaka models
         """
-        models = ["r10_min_high_g340", "r103_min_high_g345", "r941_prom_fast_g303"]
+        models = ["r10_min_high_g340", "r941_prom_fast_g303"]
         fastq = os.path.join(os.path.dirname(__file__), "no_host_1.fq.gz")
         for model in models:
             args = ["prefix=''", "sample=test_sample", f"fastqs={fastq}",
@@ -188,6 +188,11 @@ class TestConsensusGenomes(WDLTestCase):
                     "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes_v2.tar.gz",
                     "primer_set=nCoV-2019/V1200"]
             res = self.run_miniwdl(args, task="RunMinion")
+            for filename in res["outputs"].values():
+                self.assertGreater(os.path.getsize(filename), 0)
+            with open(res["outputs"]["RunMinion.log"]) as f:
+                log_output = f.read()
+            self.assertIn("primer_schemes/nCoV-2019/V1200", log_output)
             for filename in res["outputs"].values():
                 self.assertGreater(os.path.getsize(filename), 0)
 
@@ -206,22 +211,6 @@ class TestConsensusGenomes(WDLTestCase):
         miniwdl_error = json.loads(ecm.exception.output)
         self.assertEqual(miniwdl_error["error"], "RunFailed")
         self.assertEqual(miniwdl_error["cause"]["error"], "CommandFailed")
-
-    def test_sars_cov2_midnight_primers_minion(self):
-        """
-        Test that RunMinion will run with midnight primers
-        """
-        fastq = os.path.join(os.path.dirname(__file__), "no_host_1.fq.gz")
-        args = ["prefix=''", "sample=test_sample", f"fastqs={fastq}",
-                "normalise=1000", "medaka_model=r10_min_high_g340",
-                "primer_schemes=s3://idseq-public-references/consensus-genome/artic-primer-schemes_v2.tar.gz",
-                "primer_set=nCoV-2019/V1200"]
-        res = self.run_miniwdl(args, task="RunMinion")
-        with open(res["outputs"]["RunMinion.log"]) as f:
-            log_output = f.read()
-        self.assertIn("primer_schemes/nCoV-2019/V1200", log_output)
-        for filename in res["outputs"].values():
-            self.assertGreater(os.path.getsize(filename), 0)
 
     def test_sars_cov2_midnight_primers_quast(self):
         """

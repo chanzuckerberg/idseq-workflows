@@ -537,7 +537,7 @@ task FilterReads {
             fi
 
             mkdir "${TMPDIR}/kraken_db"
-            tar -xzv -C "${TMPDIR}/kraken_db" -f "~{kraken2_db_tar_gz}"
+            tar -xv --use-compress-program=pigz -C "${TMPDIR}/kraken_db" -f "~{kraken2_db_tar_gz}"
             kraken2 --db ${TMPDIR}/kraken_db/* \
                 --threads $CORES \
                 --report ${TMPDIR}/~{prefix}kraken2_report.txt \

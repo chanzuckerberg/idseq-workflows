@@ -27,7 +27,7 @@ class TestConsensusGenomes(WDLTestCase):
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
-        # TODO: track non-determinism 
+        # TODO: track non-determinism
         self.assertGreater(output_stats["depth_avg"], 222)
         self.assertEqual(output_stats["total_reads"], 47108)
         self.assertEqual(output_stats["mapped_reads"], 47054)
@@ -341,9 +341,8 @@ class TestConsensusGenomes(WDLTestCase):
 
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(task="FetchSequenceByAccessionId", args=["accession_id=NO_ACCESSION_ID"])
-        #import pdb; pdb.set_trace();
-        self.assertRunFailed(ecm, task="FetchSequenceByAccessionId",
-                                error="AccessionIdNotFound", cause="Accession ID NO_ACCESSION_ID not found in the index")
+        self.assertRunFailed(ecm, task="FetchSequenceByAccessionId", error="AccessionIdNotFound",
+                             cause="Accession ID NO_ACCESSION_ID not found in the index")
 
     def test_max_reads_illumina(self):
         fastq_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")

@@ -151,17 +151,17 @@ class TestConsensusGenomes(WDLTestCase):
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
-        self.assertGreater(output_stats["depth_avg"], 13)
-        self.assertGreater(output_stats["depth_frac_above_10x"], 0.5)
+        self.assertGreater(output_stats["depth_avg"], 6)
+        self.assertGreater(output_stats["depth_frac_above_10x"], 0.2)
         self.assertEqual(output_stats["depth_frac_above_100x"], 0)
-        self.assertEqual(output_stats["total_reads"], 1793)
-        self.assertEqual(output_stats["mapped_reads"], 1347)
+        self.assertEqual(output_stats["total_reads"], 912)
+        self.assertEqual(output_stats["mapped_reads"], 689)
         self.assertEqual(output_stats["mapped_paired"], 0)
         self.assertNotIn("ercc_mapped_reads", output_stats)
-        self.assertEqual(output_stats["ref_snps"], 10)
+        self.assertEqual(output_stats["ref_snps"], 2)
         self.assertEqual(output_stats["ref_mnps"], 0)
-        self.assertEqual(output_stats["n_actg"], 7864)
-        self.assertEqual(output_stats["n_missing"], 22039)
+        self.assertEqual(output_stats["n_actg"], 2461)
+        self.assertEqual(output_stats["n_missing"], 27442)
         self.assertEqual(output_stats["n_gap"], 0)
         self.assertEqual(output_stats["n_ambiguous"], 0)
         for output_name, output in outputs.items():
@@ -257,8 +257,8 @@ class TestConsensusGenomes(WDLTestCase):
         with open(outputs["consensus_genome.compute_stats_out_output_stats"]) as fh:
             output_stats = json.load(fh)
         self.assertEqual(output_stats["sample_name"], "test_sample")
-        self.assertGreater(output_stats["depth_avg"], 6)
-        self.assertLess(output_stats["depth_avg"], 7)
+        self.assertGreater(output_stats["depth_avg"], 3)
+        self.assertLess(output_stats["depth_avg"], 4)
 
     def test_sars_cov2_ont_cg_input_file_format(self):
         """

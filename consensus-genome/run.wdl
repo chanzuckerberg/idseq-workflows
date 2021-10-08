@@ -651,7 +651,6 @@ task TrimPrimers {
 
     command <<<
         set -euxo pipefail
-
         samtools view -F4 -q "~{samQualThreshold}" -o ivar.bam "~{alignments}"
         samtools index ivar.bam
         # The SNAP protocol may result in primer position offsets due to polymerases adding additional bases 

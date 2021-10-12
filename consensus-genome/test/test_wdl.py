@@ -265,7 +265,6 @@ class TestConsensusGenomes(WDLTestCase):
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", f"fastqs_1={fastqs_1}", "technology=Illumina",
                 "filter_reads=false", "ref_accession_id=MF965207.1",
                 "primer_bed=s3://idseq-public-references/consensus-genome/na_primers.bed"]
-
         res = self.run_miniwdl(args)
         for output_name, output in res["outputs"].items():
             if isinstance(output, str):

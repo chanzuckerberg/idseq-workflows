@@ -324,8 +324,8 @@ class TestConsensusGenomes(WDLTestCase):
 
         with self.assertRaises(CalledProcessError) as ecm:
             self.run_miniwdl(task="FetchSequenceByAccessionId", args=["accession_id=NO_ACCESSION_ID"])
-        self.assertRunFailed(ecm, task="FetchSequenceByAccessionId", error="AccessionIdNotFound",
-                             cause="Accession ID NO_ACCESSION_ID not found in the index")
+        self.assertRunFailed(ecm, task="FetchSequenceByAccessionId",
+                             error="AccessionIdNotFound", cause="Accession ID NO_ACCESSION_ID not found in the index")
 
     def test_max_reads_illumina(self):
         fastq_0 = os.path.join(os.path.dirname(__file__), "SRR11741455_65054_nh_R1.fastq.gz")

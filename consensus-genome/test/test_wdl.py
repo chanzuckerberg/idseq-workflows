@@ -45,7 +45,7 @@ class TestConsensusGenomes(WDLTestCase):
 
     def test_vadr_error_caught(self):
         # use the long filename error as a proxy for testing VADR error handling
-        consensus = os.path.join(os.path.dirname(__file__), "really-long-name-consensus.fa")
+        consensus = os.path.join(os.path.dirname(__file__), "vadr_input", "really-long-name-consensus.fa")
         vadr_opts_string = ("-s -r --nomisc --mkey NC_045512 --lowsim5term 2 --lowsim3term 2 --fstlowthr 0.0 "
                             "--alt_fail lowscore,fsthicnf,fstlocnf")
         args = ["vadr_model=s3://idseq-public-references/consensus-genome/vadr-models-sarscov2-1.2-2.tar.gz",
@@ -57,7 +57,7 @@ class TestConsensusGenomes(WDLTestCase):
         self.assertEqual(res["outputs"]["Vadr.vadr_quality"], None)
 
     def test_vadr_flag_works(self):
-        consensus = os.path.join(os.path.dirname(__file__), "really-long-name-consensus.fa")
+        consensus = os.path.join(os.path.dirname(__file__), "vadr_input", "really-long-name-consensus.fa")
         vadr_opts_string = ("-s -r --nomisc --mkey sarscov2 --lowsim5term 2 --lowsim3term 2 "
                             "--fstlowthr 0.0 --alt_fail lowscore,fsthicnf,fstlocnf --noseqnamemax")
         args = ["vadr_model=s3://idseq-public-references/consensus-genome/vadr-models-sarscov2-1.2-2.tar.gz",
@@ -69,7 +69,7 @@ class TestConsensusGenomes(WDLTestCase):
 
     # test the depths associated with SNAP ivar trim -x 5
     def test_sars_cov2_illumina_cg_snap(self):
-        aligned_reads = os.path.join(os.path.dirname(__file__), "snap_aligned_reads.bam")
+        aligned_reads = os.path.join(os.path.dirname(__file__), "trim_primers_input", "snap_aligned_reads.bam")
         args = [f"alignments={aligned_reads}",
                 "primer_bed=s3://idseq-public-references/consensus-genome/snap_primers.bed"]
         res = self.run_miniwdl(args, task="TrimPrimers", task_input={"prefix": ""})
@@ -82,7 +82,7 @@ class TestConsensusGenomes(WDLTestCase):
 
     # test the depths associated with tailedseq protocol, ivar trim -x 2
     def test_sars_cov2_illumina_cg_tailedseq(self):
-        aligned_reads = os.path.join(os.path.dirname(__file__), "tailedseq_aligned_reads.bam")
+        aligned_reads = os.path.join(os.path.dirname(__file__), "trim_primers_input", "tailedseq_aligned_reads.bam")
         args = [f"alignments={aligned_reads}",
                 "primer_bed=s3://idseq-public-references/consensus-genome/artic_v3_short_275_primers.bed"]
         res = self.run_miniwdl(args, task="TrimPrimers", task_input={"prefix": ""})
@@ -200,8 +200,8 @@ class TestConsensusGenomes(WDLTestCase):
         """
         Test that Quast will run with midnight primers
         """
-        assembly = os.path.join(os.path.dirname(__file__), "quast", "test_sample.consensus.fasta")
-        bam = os.path.join(os.path.dirname(__file__), "quast", "test_sample.primertrimmed.rg.sorted.bam")
+        assembly = os.path.join(os.path.dirname(__file__), "quast_input", "test_sample.consensus.fasta")
+        bam = os.path.join(os.path.dirname(__file__), "quast_input", "test_sample.primertrimmed.rg.sorted.bam")
         fastq = os.path.join(os.path.dirname(__file__), "no_host_1.fq.gz")
         args = [
             "prefix=''",

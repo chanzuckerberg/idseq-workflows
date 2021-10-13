@@ -343,6 +343,7 @@ task ValidateInput{
 
     output {
         Array[File]+ validated_fastqs = glob("~{prefix}validated*.fastq.gz")
+        File? input_stats = "input_stats.tsv"
     }
 
     runtime {

@@ -303,23 +303,39 @@ task ValidateInput{
     }
 
     command <<<
-        if [[ "~{technology}" == "ONT" ]] && [[ "~{length(fastqs)}" -gt 1 ]]; then
-            export error=InvalidInputFileError cause="Multiple fastqs provided for ONT"
+        set -euxo pipefail 
+        function raise_error {
+            export error=$1 cause=$2
             jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
             exit 1 
+        }
+        if [[ "~{technology}" == "ONT" ]] && [[ "~{length(fastqs)}" -gt 1 ]]; then
+            # ONT pipeline should only have one input
+            raise_error InvalidInputFileError "Multiple fastqs provided for ONT"
         fi 
 
+        seqkit stats ~{sep=" " fastqs} -T > input_stats.tsv 2> read_error.txt
+        if [[ -s read_error.txt ]]; then 
+            # Checks if seqkit can parse input files
+            raise_error InvalidFileFormatError "Error parsing one of the input files: ""$(cat read_error.txt)"
+        fi 
+        
+        if grep  -q "FASTA" <<< $(cut -f 2 input_stats.tsv ); then 
+            # Input files cannot be in FASTA format
+            raise_error InvalidInputFileError "One or more of the input files is in FASTA format"
+        fi 
+        set -e
         if [[ "~{technology}" == "Illumina" ]]; then 
-            MAXLEN=$(seqkit stats ~{sep=" " fastqs} -T | cut -f 8 | tail -n "~{length(fastqs)}" | sort -n | tail -n 1)
+            # check if any of the input files has max length > 300bp
+            MAXLEN=$(cut -f 8 input_stats.tsv | tail -n "~{length(fastqs)}" | sort -n | tail -n 1)
             if [[ $MAXLEN > 300 ]]; then 
-                export error=InvalidInputFileError cause="Read longer than 300bp for Illumina"
-                jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
-                exit 1
+                raise_error InvalidInputFileError "Read longer than 300bp for Illumina"
             fi 
         fi
 
         counter=1
         for fastq in ~{sep=' ' fastqs}; do 
+           # limit max # of reads to max_reads
            seqkit head -n "~{max_reads}" $fastq -o "~{prefix}validated_$counter.fastq.gz" 
            ((counter++))
         done

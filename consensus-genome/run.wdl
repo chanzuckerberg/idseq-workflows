@@ -791,7 +791,6 @@ task RunMinion {
 
     command <<<
         set -euxo pipefail
-
         export CORES=`nproc --all`
 
         tar -xzf "~{primer_schemes}"

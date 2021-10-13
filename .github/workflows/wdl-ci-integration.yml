@@ -1,4 +1,4 @@
-name: WDL CI
+name: Integration Tests
 
 on:
   push
@@ -36,12 +36,6 @@ jobs:
         workflow_dir: ${{fromJson(needs['list-workflow-dirs'].outputs.matrix)}}
     steps:
       - uses: actions/checkout@v2
-      - name: docker login ghcr.io
-        uses: docker/login-action@v1
-        with:
-            registry: ghcr.io
-            username: ${{ github.repository_owner }}
-            password: ${{ secrets.GITHUB_TOKEN }}
       - name: docker build + push to ghcr.io
         run: |
           TAG=$(git describe --long --tags --always --dirty)

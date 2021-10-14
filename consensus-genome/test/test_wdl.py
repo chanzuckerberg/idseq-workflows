@@ -67,28 +67,6 @@ class TestConsensusGenomes(WDLTestCase):
             hash = hashlib.md5(f.read()).hexdigest()
         self.assertEqual(hash, "7028bf8450548391f264f2948b9e19f0")
 
-    def test_length_filter_midnight_primers(self):
-        """
-        Test that the length filters are properly set for midnight primers
-        """
-        fastqs_0 = os.path.join(os.path.dirname(__file__), "blank.fastq.gz")
-        args = [
-            "sample=test_sample",
-            f"fastqs_0={fastqs_0}",
-            "technology=ONT",
-            f"ref_fasta={self.sc2_ref_fasta}",
-            "primer_set=nCoV-2019/V1200",
-        ]
-        with self.assertRaises(CalledProcessError) as ecm:
-            self.run_miniwdl(args)
-        miniwdl_error = json.loads(ecm.exception.output)
-        with open(
-            os.path.join(miniwdl_error["dir"], "call-ApplyLengthFilter", "inputs.json")
-        ) as f:
-            apply_length_filter_inputs = json.load(f)
-        self.assertEqual(apply_length_filter_inputs["min_length"], 250)
-        self.assertEqual(apply_length_filter_inputs["max_length"], 1500)
-
     def test_sars_cov2_ont_cg_no_reads(self):
         fastqs_0 = os.path.join(os.path.dirname(__file__), "blank.fastq.gz")
         args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]

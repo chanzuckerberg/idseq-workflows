@@ -67,18 +67,6 @@ class TestConsensusGenomes(WDLTestCase):
             hash = hashlib.md5(f.read()).hexdigest()
         self.assertEqual(hash, "7028bf8450548391f264f2948b9e19f0")
 
-    def test_sars_cov2_ont_cg_no_reads(self):
-        fastqs_0 = os.path.join(os.path.dirname(__file__), "blank.fastq.gz")
-        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]
-        with self.assertRaises(CalledProcessError) as ecm:
-            self.run_miniwdl(args)
-        self.assertRunFailed(
-            ecm,
-            task="RemoveHost",
-            error="InsufficientReadsError",
-            cause="No reads after RemoveHost"
-        )
-
     def test_sars_cov2_medaka_model(self):
         """
         Test that the pipeline will run a variety of different medaka models

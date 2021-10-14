@@ -161,3 +161,15 @@ class TestConsensusGenomes(WDLTestCase):
             apply_length_filter_inputs = json.load(f)
         self.assertEqual(apply_length_filter_inputs["min_length"], 250)
         self.assertEqual(apply_length_filter_inputs["max_length"], 1500)
+
+    def test_sars_cov2_ont_cg_no_reads(self):
+        fastqs_0 = os.path.join(os.path.dirname(__file__), "blank.fastq.gz")
+        args = ["sample=test_sample", f"fastqs_0={fastqs_0}", "technology=ONT", f"ref_fasta={self.sc2_ref_fasta}"]
+        with self.assertRaises(CalledProcessError) as ecm:
+            self.run_miniwdl(args)
+        self.assertRunFailed(
+            ecm,
+            task="RemoveHost",
+            error="InsufficientReadsError",
+            cause="No reads after RemoveHost"
+        )

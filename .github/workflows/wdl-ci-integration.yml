@@ -66,7 +66,7 @@ jobs:
           export MINIWDL__FILE_IO__DELETE_WORK=success
           export MINIWDL__DOWNLOAD_CACHE__GET=true
           export MINIWDL__DOWNLOAD_CACHE__PUT=true
-          export MINIWDL__DOWNLOAD_CACHE__DIR="$(mktemp -d --tmpdir miniwdl_download_cache_XXXXXX)"
+          export MINIWDL__DOWNLOAD_CACHE__DIR=/tmp/miniwdl_download_cache_workflows/
 
           sudo apt-get -qq update
           sudo apt-get -qq install --yes jq moreutils make virtualenv zip unzip httpie git shellcheck

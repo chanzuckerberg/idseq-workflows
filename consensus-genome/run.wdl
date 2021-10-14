@@ -423,7 +423,6 @@ task RemoveHost {
         Array[File]+ fastqs  
         File ref_host
         String technology
-
         String docker_image_id
     }
 

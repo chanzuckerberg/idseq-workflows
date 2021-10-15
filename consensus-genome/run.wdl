@@ -303,7 +303,7 @@ task ValidateInput{
     }
 
     command <<<
-        set -euxo pipefail 
+        set -uxo pipefail 
         function raise_error {
             export error=$1 cause=$2
             jq -nc ".wdl_error_message=true | .error=env.error | .cause=env.cause" > /dev/stderr
@@ -314,12 +314,18 @@ task ValidateInput{
             raise_error InvalidInputFileError "Multiple fastqs provided for ONT"
         fi 
 
-        seqkit stats ~{sep=" " fastqs} -T > input_stats.tsv 2> read_error.txt
-        if [[ -s read_error.txt ]]; then 
-            # Checks if seqkit can parse input files
-            raise_error InvalidFileFormatError "Error parsing one of the input files: ""$(cat read_error.txt)"
-        fi 
-        
+        counter=1
+        for fastq in ~{sep=' ' fastqs}; do 
+            # limit max # of reads to max_reads
+            seqkit head -n "~{max_reads}" $fastq -o "~{prefix}validated_$counter.fastq.gz" 2> read_error.txt
+            if [[ -s read_error.txt ]]; then 
+                # Checks if seqkit can parse input files
+                raise_error InvalidFileFormatError "Error parsing one of the input files: ""$(cat read_error.txt)"
+            fi 
+           ((counter++))
+        done
+        set -e
+        seqkit stats "~{prefix}"validated*fastq.gz -T > input_stats.tsv
         if grep  -q "FASTA" <<< $(cut -f 2 input_stats.tsv ); then 
             # Input files cannot be in FASTA format
             raise_error InvalidInputFileError "One or more of the input files is in FASTA format"
@@ -332,13 +338,6 @@ task ValidateInput{
                 raise_error InvalidInputFileError "Read longer than 300bp for Illumina"
             fi 
         fi
-
-        counter=1
-        for fastq in ~{sep=' ' fastqs}; do 
-           # limit max # of reads to max_reads
-           seqkit head -n "~{max_reads}" $fastq -o "~{prefix}validated_$counter.fastq.gz" 
-           ((counter++))
-        done
     >>>
 
     output {

@@ -1,6 +1,7 @@
 import json
 import traceback
 
+
 class IDseqDagError(Exception):
     def __init__(self, json):
         super().__init__()

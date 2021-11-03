@@ -334,7 +334,7 @@ task ValidateInput{
         if [[ "~{technology}" == "Illumina" ]]; then 
             # check if any of the input files has max length > 500bp
             MAXLEN=$(cut -f 8 input_stats.tsv | tail -n "~{length(fastqs)}" | sort -n | tail -n 1)
-            if [[ $MAXLEN > 500 ]]; then 
+            if [[ $MAXLEN -gt 500 ]]; then 
                 raise_error InvalidInputFileError "Read longer than 500bp for Illumina"
             fi 
         fi

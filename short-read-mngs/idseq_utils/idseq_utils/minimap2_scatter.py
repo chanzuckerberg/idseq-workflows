@@ -1,5 +1,6 @@
 import os
 import shutil
+import shlex
 import sys
 import errno
 from argparse import ArgumentParser
@@ -40,8 +41,9 @@ def minimap2_alignment(cwd, par_tmpdir, cpus, database, out, queries):
         raise Exception(f"Command failed: {' '.join(cmd)}")
 
 
-def minimap2_merge_cmd(cwd, par_tmpdir, chunks, queries):
-    cmd = ["minimap2", "-cx", "sr", "--split-merge", "-o", f"{par_tmpdir}/out.paf"]
+def minimap2_merge_cmd(cwd, par_tmpdir, chunks, minimap2_args, queries):
+    print("Starting minimap2 merge", file=sys.stderr)
+    cmd = ["minimap2", "--split-merge", "-o", f"{par_tmpdir}/out.paf"]
     for query in queries:
         cmd += [query]
 
@@ -50,6 +52,8 @@ def minimap2_merge_cmd(cwd, par_tmpdir, chunks, queries):
     ]
     for chunk in chunks:
         cmd += [f"{chunk}"]
+
+    cmd.extend(shlex.split(minimap2_args))
 
     res = run(cmd, cwd=cwd, stdout=PIPE, stderr=PIPE)
     if res.returncode != 0:
@@ -120,7 +124,7 @@ def minimap2_chunk(db_chunk: str, output_dir: str, *query: str):
         )
 
 
-def minimap2_merge(chunk_dir, out, *query):
+def minimap2_merge(chunk_dir, out, minimap2_args, *query):
     chunk_dir = abspath(chunk_dir)
     with TemporaryDirectory() as tmp_dir:
         make_par_dir(tmp_dir, "par-tmp")
@@ -134,7 +138,7 @@ def minimap2_merge(chunk_dir, out, *query):
         for f in os.listdir(chunk_dir):
             shutil.copy(join(chunk_dir, f), join(tmp_dir, "par-tmp", f))
             chunks.append(join(tmp_dir, "par-tmp", f))
-        minimap2_merge_cmd(tmp_dir, "par-tmp", chunks, query_tmp)
+        minimap2_merge_cmd(tmp_dir, "par-tmp", chunks, minimap2_args, query_tmp)
         shutil.copy(join(tmp_dir, "par-tmp", "out.paf"), out)
 
 

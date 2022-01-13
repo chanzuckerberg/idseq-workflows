@@ -50,6 +50,7 @@ def diamond_blastx(
     out: str,
     queries: Iterable[str],
     chunk=False,
+    diamond_args="",
     join_chunks=0,
 ):
     cmd = [
@@ -64,6 +65,7 @@ def diamond_blastx(
         database,
         "--out",
         out,
+        f"--{diamond_args}",
     ]
     for query in queries:
         cmd += ["--query", query]
@@ -132,7 +134,7 @@ def make_db(reference_fasta: str, output_dir: str, chunks: int):
         print(f"COMPLETED CHUNK {i}")
 
 
-def blastx_chunk(db_chunk: str, output_dir: str, *query: str):
+def blastx_chunk(db_chunk: str, output_dir: str, diamond_args: str, *query: str):
     try:
         os.mkdir(output_dir)
     except OSError as e:
@@ -150,6 +152,7 @@ def blastx_chunk(db_chunk: str, output_dir: str, *query: str):
             database=abspath(db_chunk),
             out="out.tsv",
             chunk=True,
+            diamond_args=diamond_args,
             queries=(abspath(q) for q in query),
         )
         ref_block_name = f"ref_block_{zero_pad(0, 6)}_{zero_pad(int(chunk), 6)}"
@@ -173,7 +176,7 @@ def mock_reference_fasta(chunks: int, chunk_size: int):
         i += 1
 
 
-def blastx_join(chunk_dir: str, out: str, *query: str):
+def blastx_join(chunk_dir: str, out: str, diamond_args: str, *query: str):
     with TemporaryDirectory() as tmp_dir:
         make_par_dir(tmp_dir, "par-tmp")
         with open(join(tmp_dir, "par-tmp", f"join_todo_{zero_pad(0, 6)}"), "w") as f:
@@ -194,6 +197,7 @@ def blastx_join(chunk_dir: str, out: str, *query: str):
                 database=db.name,
                 out=out,
                 join_chunks=chunks,
+                diamond_args=diamond_args,
                 queries=(abspath(q) for q in query),
             )
 
@@ -216,11 +220,13 @@ if __name__ == "__main__":
     blastx_chunk_parser = subparsers.add_parser("blastx-chunk")
     blastx_chunk_parser.add_argument("--db", required=True)
     blastx_chunk_parser.add_argument("--out-dir", required=True)
+    blastx_chunk_parser.add_argument("--diamond-args", required=False)
     blastx_chunk_parser.add_argument("--query", required=True, action="append")
 
     blastx_chunks_parser = subparsers.add_parser("blastx-chunks")
     blastx_chunks_parser.add_argument("--db-dir", required=True)
     blastx_chunks_parser.add_argument("--out-dir", required=True)
+    blastx_chunks_parser.add_argument("--diamond-args", required=False)
     blastx_chunks_parser.add_argument("--query", required=True, action="append")
 
     blastx_join_parser = subparsers.add_parser("blastx-join")
@@ -232,16 +238,16 @@ if __name__ == "__main__":
     if args.command == "make-db":
         make_db(args.__getattribute__("in"), args.db, args.chunks)
     elif args.command == "blastx-chunk":
-        blastx_chunk(args.db, args.out_dir, *args.query)
+        blastx_chunk(args.db, args.out_dir, args.diamond_args, *args.query)
     elif args.command == "blastx-chunks":
 
         def _blastx_chunk(db):
             print(f"STARTING:  {db}")
-            res = blastx_chunk(join(args.db_dir, db), args.out_dir, *args.query)
+            res = blastx_chunk(join(args.db_dir, db), args.out_dir, args.diamond_args, *args.query)
             print(f"FINISHING: {db}")
             return res
 
         with Pool(48) as p:
             p.map(_blastx_chunk, os.listdir(args.db_dir))
     elif args.command == "blastx-join":
-        blastx_join(args.chunk_dir, args.out, *args.query)
+        blastx_join(args.chunk_dir, args.out, args.diamond_args, *args.query)

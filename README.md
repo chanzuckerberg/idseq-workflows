@@ -1,5 +1,10 @@
 # idseq-workflows - portable IDseq production pipeline logic
 
+
+----------------------------
+Please see https://github.com/chanzuckerberg/czid-workflows for CZ ID workflows. This repository is no longer maintained. 
+
+----------------------------
 #### Infectious Disease Sequencing Platform
 IDseq is a hypothesis-free global software platform that helps scientists identify pathogens in metagenomic sequencing
 data.
